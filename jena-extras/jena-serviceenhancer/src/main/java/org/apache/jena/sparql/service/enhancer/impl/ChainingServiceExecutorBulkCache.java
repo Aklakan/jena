@@ -38,7 +38,7 @@ public class ChainingServiceExecutorBulkCache
 
     public static final int DEFAULT_BULK_SIZE = 30;
     public static final int MAX_BULK_SIZE = 100;
-    public static final int DEFAULT_MAX_BYTE_SIZE = 5000;
+    public static final int DFT_MAX_OUT_OUF_BAND_ITEM_COUNT = 30;
 
     protected int bulkSize;
     protected CacheMode cacheMode;
@@ -67,8 +67,9 @@ public class ChainingServiceExecutorBulkCache
 
         OpServiceExecutorImpl opExecutor = new OpServiceExecutorImpl(serviceInfo.getOpService(), execCxt, chain);
 
-        RequestScheduler<Node, Binding> scheduler = new RequestScheduler<>(serviceInfo::getSubstServiceNode, bulkSize);
-        IteratorCloseable<GroupedBatch<Node, Long, Binding>> inputBatchIterator = scheduler.group(input);
+        int maxOutOfBandItemCount = DFT_MAX_OUT_OUF_BAND_ITEM_COUNT;
+        Batcher<Node, Binding> scheduler = new Batcher<>(serviceInfo::getSubstServiceNode, bulkSize, maxOutOfBandItemCount);
+        IteratorCloseable<GroupedBatch<Node, Long, Binding>> inputBatchIterator = scheduler.batch(input);
 
         RequestExecutor exec = new RequestExecutor(opExecutor, serviceInfo, resultSizeCache, serviceCache, cacheMode, inputBatchIterator);
 
