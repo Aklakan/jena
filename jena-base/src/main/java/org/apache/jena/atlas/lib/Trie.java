@@ -17,6 +17,7 @@
  */
 package org.apache.jena.atlas.lib;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,11 +38,12 @@ import java.util.Map;
  * because the nature of the data structure means that adding a key potentially
  * adds multiple keys many of which will not be associated with a value.
  * </p>
- * 
+ *
  * @param <T>
  *            Type of the value stored.
  */
-public final class Trie<T> {
+public final class Trie<T> implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private TrieNode<T> root = new TrieNode<>(null);
 
@@ -52,7 +54,7 @@ public final class Trie<T> {
      * in the tree so trying to add a null is a no-op. If you want to remove a
      * key use the {@link #remove(String)} method instead.
      * </p>
-     * 
+     *
      * @param key
      *            Key
      * @param value
@@ -67,7 +69,7 @@ public final class Trie<T> {
 
     /**
      * Move to a node creating new nodes if necessary
-     * 
+     *
      * @param key
      *            Key
      * @return Node
@@ -84,7 +86,7 @@ public final class Trie<T> {
 
     /**
      * Try to find a node in the trie
-     * 
+     *
      * @param key
      *            Key
      * @return Node or null if not found
@@ -107,26 +109,29 @@ public final class Trie<T> {
      * This doesn't actually remove the key per-se rather sets the value
      * associated with the key to null.
      * </p>
-     * 
+     *
      * @param key
      *            Key
      */
-    public void remove(String key) {
+    public T remove(String key) {
+        T priorValue = null;
         TrieNode<T> n = this.find(key);
         if (n != null) {
+            priorValue = n.getValue();
             n.setValue(null);
         }
+        return priorValue;
     }
-    
+
     /**
-     * Clear the Trie completely. 
+     * Clear the Trie completely.
      */
     public void clear() {
         root = new TrieNode<>(null);
     }
 
     /**
-     * Test whether the Trie is empty. 
+     * Test whether the Trie is empty.
      */
     public boolean isEmpty() {
         return ! root.hasValue() && root.singletonChild == null;
@@ -135,7 +140,7 @@ public final class Trie<T> {
     /**
      * Gets whether a key exists in the trie and has a non-null value mapped to
      * it
-     * 
+     *
      * @param key
      *            Key
      * @return True if the key exists and has a non-null value mapped to it
@@ -146,7 +151,7 @@ public final class Trie<T> {
 
     /**
      * Gets whether a key exists in the trie and meets the given value criteria
-     * 
+     *
      * @param key
      *            Key
      * @param requireValue
@@ -169,7 +174,7 @@ public final class Trie<T> {
 
     /**
      * Gets whether a key value pair are present in the trie
-     * 
+     *
      * @param key
      *            Key
      * @param value
@@ -187,7 +192,7 @@ public final class Trie<T> {
 
     /**
      * Gets the value associated with a key
-     * 
+     *
      * @param key
      *            Key
      * @return Value
@@ -204,7 +209,7 @@ public final class Trie<T> {
      * prefix. The entirety of the prefix must be matched, if you only want part
      * of the prefix to be matched use the {@link #partialSearch(String)} method
      * instead.
-     * 
+     *
      * @param prefix
      *            Prefix
      * @return List of values associated with the given key
@@ -219,7 +224,7 @@ public final class Trie<T> {
     /**
      * Performs a search and returns any value associated with any partial or
      * whole prefix of the key
-     * 
+     *
      * @param key
      *            Key
      * @return List of values associated with any partial prefix of the key
@@ -238,13 +243,13 @@ public final class Trie<T> {
                 if (current == null)
                     return Collections.unmodifiableList(values);
             }
-            
+
             // If we reach here current is the complete key match
             // so make sure to include it in the values list
             if (current.hasValue()) {
                 values.add(current.getValue());
             }
-            
+
         }
         return Collections.unmodifiableList(values);
     }
@@ -252,7 +257,7 @@ public final class Trie<T> {
     /**
      * Finds the shortest match for a given key i.e. returns the value
      * associated with the shortest prefix of the key that has a value
-     * 
+     *
      * @param key
      *            Key
      * @return Shortest Match or null if no possible matches
@@ -274,7 +279,7 @@ public final class Trie<T> {
     /**
      * Finds the longest match for a given key i.e. returns the value associated
      * with the longest prefix of the key that has a value
-     * 
+     *
      * @param key
      *            Key
      * @return Longest Match or null if no possible matches
@@ -307,9 +312,11 @@ public final class Trie<T> {
      * The implementation is designed to be sparse such that we delay creation
      * of things at both leafs and interior nodes until they are actually needed
      * </p>
-     * 
+     *
      */
-    private static class TrieNode<T> {
+    private static class TrieNode<T> implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private Map<Character, TrieNode<T>> children = null;
         private Character singletonChildChar = null;
         private TrieNode<T> singletonChild = null;
@@ -317,7 +324,7 @@ public final class Trie<T> {
 
         /**
          * Creates a Trie Node
-         * 
+         *
          * @param value
          *            Value
          */
@@ -327,7 +334,7 @@ public final class Trie<T> {
 
         /**
          * Gets the value
-         * 
+         *
          * @return Value
          */
         public T getValue() {
@@ -336,7 +343,7 @@ public final class Trie<T> {
 
         /**
          * Sets the value
-         * 
+         *
          * @param value
          *            Value
          */
@@ -346,7 +353,7 @@ public final class Trie<T> {
 
         /**
          * Returns whether a non-null value is associated with this node
-         * 
+         *
          * @return True if there is a non-null value, false otherwise
          */
         public boolean hasValue() {
@@ -355,7 +362,7 @@ public final class Trie<T> {
 
         /**
          * Gets the child (if it exists)
-         * 
+         *
          * @param c
          *            Character to move to
          * @return Child
@@ -372,7 +379,7 @@ public final class Trie<T> {
 
         /**
          * Moves to a child (creating a new node if necessary)
-         * 
+         *
          * @param c
          *            Character to move to
          * @return Child
@@ -400,7 +407,7 @@ public final class Trie<T> {
 
         /**
          * Gets all values from a given node and its descendants
-         * 
+         *
          * @return Values
          */
         public List<T> getValues() {

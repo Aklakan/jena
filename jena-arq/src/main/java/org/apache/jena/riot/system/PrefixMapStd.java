@@ -24,16 +24,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.apache.jena.atlas.lib.Pair;
 import org.apache.jena.atlas.lib.Trie;
+import org.apache.jena.ext.com.google.common.base.Preconditions;
 import org.apache.jena.ext.com.google.common.cache.Cache;
 import org.apache.jena.ext.com.google.common.cache.CacheBuilder;
+import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.graph.PrefixMappingBase;
 
 /**
@@ -54,22 +59,39 @@ import org.apache.jena.sparql.graph.PrefixMappingBase;
  */
 public class PrefixMapStd extends PrefixMapBase {
 
+    // See the setters of PrefixMapBuilder for explanations of these constants
+
     public static final int DFT_CACHE_SIZE = 1000;
+    public static final boolean DFT_ENABLE_FAST_TRACK = true;
+    public static final boolean DFT_EAGER_IRI_TO_PREFIX = true;
+    public static final boolean DFT_LAST_IRI_WINS = true;
+    public static final boolean DFT_INIT_TRIE_LAZILY = true;
+    public static final boolean DFT_USE_LOCKING = true;
+    public static final Supplier<Map<String, String>> DFT_MAP_FACTORY = ConcurrentHashMap::new;
 
-    private ReadWriteLock rwl = new ReentrantReadWriteLock();
+    /** Prefix-to-iri mapping. never null. */
+    private final Map<String, String> prefixToIri;
+    private final Map<String, String> prefixToIriView;
 
-    private Map<String, String> prefixToIri;
-    private Map<String, String> prefixToIriView;
+    /** The map used for fast track lookups.
+     * For exact matches of IRI namespaces the map is much faster than the trie. */
+    private Map<String, String> iriToPrefixMap = null;
 
-    /** A trie for longest prefix lookups */
-    private Trie<String> iriToPrefixTrie = new Trie<>();
+    /** Trie for longest prefix lookups; may be initialized lazily when needed */
+    private Trie<String> iriToPrefixTrie = null;
 
-    /** For exact matches of IRI strings the map is much faster than the trie */
-    private Map<String, String> iriToPrefixMap = new HashMap<>();
-
-    /** A cache for mapping iris to prefixes.
+    /** Cache for mapping iris to prefixes.
      * Wrapping with Optional is needed because the Guava Cache does not allow for null values */
-    private Cache<String, Optional<String>> cache;
+    private final Cache<String, Optional<String>> cache;
+
+    /** Disabling fast track always resorts to longest prefix lookup */
+    private final boolean enableFastTrack;
+
+    /** If override is enabled then after "add(p1, iri); add(p2, iri);" iri will map to p2; p1 otherwise. */
+    private final boolean lastPrefixWins;
+
+    /** Locking is optional */
+    private final ReadWriteLock rwl;
 
     /** A generation counter that is incremented on modifications and which is
      * used to invalidate the internal cache when needed.
@@ -82,51 +104,97 @@ public class PrefixMapStd extends PrefixMapBase {
         this(DFT_CACHE_SIZE);
     }
 
-    /** Copies the prefixes. Does not copy the cache. */
+    /** Sets up a default PrefixMapStd and copies the prefixes from the argument. */
     public PrefixMapStd(PrefixMap prefixMap) {
         this(DFT_CACHE_SIZE);
         putAll(prefixMap);
     }
 
-    public PrefixMapStd(long prefixLookupCacheSize) {
-        this(new ConcurrentHashMap<>(), prefixLookupCacheSize);
+    public PrefixMapStd(long cacheSize) {
+        this(DFT_MAP_FACTORY.get(), cacheSize, DFT_ENABLE_FAST_TRACK, DFT_EAGER_IRI_TO_PREFIX, DFT_LAST_IRI_WINS, DFT_INIT_TRIE_LAZILY, DFT_USE_LOCKING);
+    }
+
+    private void initIriToPrefixMap() {
+        iriToPrefixMap = new HashMap<>();
+        prefixToIri.forEach((prefix, iri) -> iriToPrefixMap.compute(iri, (i, oldPrefix) -> lastPrefixWins || oldPrefix == null ? prefix : oldPrefix));
+    }
+
+    /** Initializes the trie data structure for faster (non-fast-track) iri-to-prefix lookup. */
+    private void initIriToPrefixLookup() {
+        if (iriToPrefixMap == null) {
+            initIriToPrefixMap();
+        }
+
+        iriToPrefixTrie = new Trie<>();
+        iriToPrefixMap.forEach(iriToPrefixTrie::add);
     }
 
     /**
      * Create a PrefixMapStd instance using the the specified prefix-to-iri map implementation and cache size.
      * @param prefixToIri An empty map into which to store prefixes. Should not be changed externally.
-     * @param prefixLookupCacheSize The cache size for prefix lookups.
+     * @param cacheSize The cache size for prefix lookups.
      */
-    public PrefixMapStd(Map<String, String> prefixToIri, long prefixLookupCacheSize) {
+    public PrefixMapStd(Map<String, String> prefixToIri, long cacheSize, boolean enableFastTrack, boolean eagerIriToPrefix , boolean addOverridesIriToPrefix, boolean initTrieLazily, boolean useLocking) {
         super();
         Objects.requireNonNull(prefixToIri);
-        if (!prefixToIri.isEmpty()) {
+        Preconditions.checkArgument(cacheSize >= 0, "Cache size must be non-negative");
+        this.prefixToIri = prefixToIri;
+        if (!this.prefixToIri.isEmpty()) {
             // Best effort check; the caller may still perform concurrent modifications to the supplied map
             throw new IllegalArgumentException("PrefixToIri map must be initially empty");
         }
-        this.prefixToIri = prefixToIri;
-        this.prefixToIriView =  Collections.unmodifiableMap(prefixToIri);
-        this.cache = CacheBuilder.newBuilder().maximumSize(prefixLookupCacheSize).build();
+        this.prefixToIriView = Collections.unmodifiableMap(prefixToIri);
+        this.cache = cacheSize == 0
+                ? null
+                : CacheBuilder.newBuilder().maximumSize(cacheSize).build();
+        this.enableFastTrack = enableFastTrack;
+        this.lastPrefixWins = addOverridesIriToPrefix;
+        if (eagerIriToPrefix) {
+            initIriToPrefixMap();
+        }
+        if (!initTrieLazily) {
+            initIriToPrefixLookup();
+        }
+        this.rwl = useLocking ? new ReentrantReadWriteLock() : null;
     }
 
+    private Lock readLock() {
+        return rwl == null ? null : rwl.readLock();
+    }
+
+    private Lock writeLock() {
+        return rwl == null ? null : rwl.writeLock();
+    }
+
+    /** If the iri is already mapped to a different prefix then depending on the setup either the first or last one wins */
     @Override
     public void add(String prefix, String iri) {
+        execute(writeLock(), () -> {
+            addInternal(prefix, iri);
+        });
+    }
+
+    /** Internal, non-locking "add" method. This method is called repeatedly during bulk inserts. */
+    private void addInternal(String prefix, String iri) {
         Objects.requireNonNull(prefix);
         Objects.requireNonNull(iri);
         String canonicalPrefix = PrefixLib.canonicalPrefix(prefix);
-        execute(rwl.writeLock(), () -> {
-            String oldIri = prefixToIri.get(canonicalPrefix);
-            if (!Objects.equals(oldIri, iri)) {
-                if (oldIri != null) {
-                    iriToPrefixTrie.remove(oldIri);
-                    iriToPrefixMap.remove(oldIri);
-                }
-                prefixToIri.put(canonicalPrefix, iri);
-                iriToPrefixTrie.add(iri, canonicalPrefix);
-                iriToPrefixMap.put(iri, canonicalPrefix);
-                ++generation;
+        String oldIri = prefixToIri.get(canonicalPrefix);
+        if (!Objects.equals(oldIri, iri)) {
+            prefixToIri.put(canonicalPrefix, iri);
+            // If there was a non-null oldIri and we are in override mode then remove oldIri
+            if (oldIri != null && lastPrefixWins) {
+                if (iriToPrefixMap != null) { iriToPrefixMap.remove(oldIri); }
+                if (iriToPrefixTrie != null) { iriToPrefixTrie.remove(oldIri); }
             }
-        });
+
+            // If in override mode or if the iri was not mapped to a prefix then update
+            if (lastPrefixWins || (iriToPrefixMap != null && iriToPrefixMap.get(iri) == null)) {
+                if (iriToPrefixMap != null) { iriToPrefixMap.put(iri, canonicalPrefix); }
+                if (iriToPrefixTrie != null) { iriToPrefixTrie.add(iri, canonicalPrefix); }
+            }
+            ++generation;
+        }
     }
 
     /** See notes on reverse mappings in {@link PrefixMappingBase}.
@@ -138,14 +206,16 @@ public class PrefixMapStd extends PrefixMapBase {
     public void delete(String prefix) {
         Objects.requireNonNull(prefix);
         String canonicalPrefix = PrefixLib.canonicalPrefix(prefix);
-        execute(rwl.writeLock(), () -> {
+        execute(writeLock(), () -> {
             // Removal returns the previous value or null if there was none
             String iriForPrefix = prefixToIri.remove(canonicalPrefix);
             if (iriForPrefix != null) {
-                String prefixForIri = iriToPrefixMap.get(iriForPrefix);
-                if (canonicalPrefix.equals(prefixForIri)) {
-                    iriToPrefixTrie.remove(iriForPrefix);
-                    iriToPrefixMap.remove(prefixForIri);
+                if (iriToPrefixMap != null) {
+                    String prefixForIri = iriToPrefixMap.get(iriForPrefix);
+                    if (canonicalPrefix.equals(prefixForIri)) {
+                        iriToPrefixMap.remove(prefixForIri);
+                        if (iriToPrefixTrie != null) { iriToPrefixTrie.remove(iriForPrefix); }
+                    }
                 }
                 ++generation;
             }
@@ -155,7 +225,13 @@ public class PrefixMapStd extends PrefixMapBase {
     @Override
     public Pair<String, String> abbrev(String iriStr) {
         Objects.requireNonNull(iriStr);
-        return calculate(rwl.readLock(), () -> {
+
+        // Set up iri-to-prefix-lookup if it hasn't happened yet
+        if (iriToPrefixTrie == null) {
+            execute(writeLock(), this::initIriToPrefixLookup);
+        }
+
+        return calculate(readLock(), () -> {
             Pair<String, String> r = null;
 
             String prefix = performPrefixLookup(iriStr);
@@ -176,7 +252,6 @@ public class PrefixMapStd extends PrefixMapBase {
     public String abbreviate(String iriStr) {
         Objects.requireNonNull(iriStr);
         String result = null;
-        // Locking is only needed in abbrev
         Pair<String, String> prefixAndLocalName = abbrev(iriStr);
         if (prefixAndLocalName != null) {
             String prefix = prefixAndLocalName.getLeft();
@@ -192,10 +267,11 @@ public class PrefixMapStd extends PrefixMapBase {
     @Override
     public String get(String prefix) {
         Objects.requireNonNull(prefix);
-        return calculate(rwl.readLock(), () -> {
-            String canonicalPrefix = PrefixLib.canonicalPrefix(prefix);
-            return prefixToIri.get(canonicalPrefix);
-        });
+        String canonicalPrefix = PrefixLib.canonicalPrefix(prefix);
+        String result = prefixToIri instanceof ConcurrentMap
+                ? prefixToIri.get(canonicalPrefix)
+                : calculate(readLock(), () -> prefixToIri.get(canonicalPrefix));
+        return result;
     }
 
     /** Returns an unmodifiable and non-synchronized(!) view of the mappings */
@@ -206,17 +282,17 @@ public class PrefixMapStd extends PrefixMapBase {
 
     @Override
     public Map<String, String> getMappingCopy() {
-        Map<String, String> result = calculate(rwl.readLock(), () -> Map.copyOf(prefixToIri));
+        Map<String, String> result = calculate(readLock(), () -> Map.copyOf(prefixToIri));
         return result;
     }
 
     @Override
     public void clear() {
-        execute(rwl.writeLock(), () -> {
+        execute(writeLock(), () -> {
             if (!prefixToIri.isEmpty()) {
                 prefixToIri.clear();
-                iriToPrefixTrie.clear();
-                iriToPrefixMap.clear();
+                if (iriToPrefixMap != null) { iriToPrefixMap.clear(); }
+                if (iriToPrefixTrie != null) { iriToPrefixTrie.clear(); }
                 cache.invalidateAll();
                 ++generation;
             }
@@ -225,18 +301,18 @@ public class PrefixMapStd extends PrefixMapBase {
 
     @Override
     public boolean isEmpty() {
-        return calculate(rwl.readLock(), () -> prefixToIri.isEmpty());
+        return calculate(readLock(), () -> prefixToIri.isEmpty());
     }
 
     @Override
     public int size() {
-        return calculate(rwl.readLock(), () -> prefixToIri.size());
+        return calculate(readLock(), () -> prefixToIri.size());
     }
 
     @Override
     public boolean containsPrefix(String prefix) {
         Objects.requireNonNull(prefix);
-        return calculate(rwl.readLock(), () -> {
+        return calculate(readLock(), () -> {
             String canonicalPrefix = PrefixLib.canonicalPrefix(prefix);
             return prefixToIri.containsKey(canonicalPrefix);
         });
@@ -267,17 +343,22 @@ public class PrefixMapStd extends PrefixMapBase {
 
     private String performPrefixLookup(String iriStr) {
         String prefix = null;
-        String iriForPrefix = getPossibleKey(iriStr);
-        // Try fast track first - if it produces a hit then
-        // no overhead writing to the cache is needed
-        // The drawback is that we do not necessarily get the longest prefix
-        if (iriForPrefix != null) {
-            prefix = iriToPrefixMap.get(iriForPrefix);
+
+        if (enableFastTrack) {
+            String possibleIriForPrefix = getPossibleKey(iriStr);
+            // Try fast track first - if it produces a hit then
+            // no overhead writing to the cache is needed
+            // The drawback is that we do not necessarily get the longest prefix
+            if (possibleIriForPrefix != null) {
+                prefix = iriToPrefixMap.get(possibleIriForPrefix);
+            }
         }
 
         // If no solution yet then search for longest prefix
         if (prefix == null) {
-            prefix = cachedPrefixLookup(iriStr).orElse(null);
+            prefix = cache != null
+                    ? cachedPrefixLookup(iriStr).orElse(null)
+                    : uncachedPrefixLookup(iriStr);
         }
         return prefix;
     }
@@ -302,23 +383,159 @@ public class PrefixMapStd extends PrefixMapBase {
         return prefix;
     }
 
+    /** Runs the action within a read lock. */
+    @Override
+    public void forEach(BiConsumer<String, String> action) {
+        execute(readLock(), () -> {
+            prefixToIri.forEach(action);
+        });
+    }
+
+    @Override
+    public void putAll(PrefixMap pmap) {
+        if (pmap != this) {
+            execute(writeLock(), () -> {
+                pmap.forEach(this::addInternal);
+            });
+        }
+    }
+
+    @Override
+    public void putAll(PrefixMapping pmap) {
+        putAll(pmap.getNsPrefixMap());
+    }
+
+    @Override
+    public void putAll(Map<String, String> mapping) {
+        execute(writeLock(), () -> {
+            mapping.forEach(this::addInternal);
+        });
+    }
+
     private static void execute(Lock lock, Runnable runnable) {
-        lock.lock();
-        try {
+        if (lock == null) {
             runnable.run();
-        } finally {
-            lock.unlock();
+        } else {
+            lock.lock();
+            try {
+                runnable.run();
+            } finally {
+                lock.unlock();
+            }
         }
     }
 
     private static <T> T calculate(Lock lock, Supplier<T> supplier) {
         T result;
-        lock.lock();
-        try {
+        if (lock == null) {
             result = supplier.get();
-        } finally {
-            lock.unlock();
+        } else {
+            lock.lock();
+            try {
+                result = supplier.get();
+            } finally {
+                lock.unlock();
+            }
         }
         return result;
+    }
+
+    public static PrefixMapBuilder builder() {
+        return new PrefixMapBuilder();
+    }
+
+    public static class PrefixMapBuilder {
+        private long cacheSize;
+        private boolean enableFastTrack;
+        private boolean eagerIriToPrefix;
+        private boolean lastIriWins;
+        private boolean initTrieLazily;
+        private boolean useLocking;
+        private Supplier<Map<String, String>> mapFactory;
+
+        PrefixMapBuilder() {
+            this.cacheSize = DFT_CACHE_SIZE;
+            this.enableFastTrack = DFT_ENABLE_FAST_TRACK;
+            this.eagerIriToPrefix = DFT_EAGER_IRI_TO_PREFIX;
+            this.lastIriWins = DFT_LAST_IRI_WINS;
+            this.initTrieLazily = DFT_INIT_TRIE_LAZILY;
+            this.useLocking = DFT_USE_LOCKING;
+            this.mapFactory = DFT_MAP_FACTORY;
+        }
+
+        public Supplier<Map<String, String>> getMapFactory() {
+            return mapFactory;
+        }
+
+        public PrefixMapBuilder setMapFactory(Supplier<Map<String, String>> mapFactory) {
+            this.mapFactory = mapFactory;
+            return this;
+        }
+
+        public long getCacheSize() {
+            return cacheSize;
+        }
+
+        /** Set the cache size for longest prefix lookups during abbreviation. A value of 0 disables it.*/
+        public PrefixMapBuilder setCacheSize(long cacheSize) {
+            this.cacheSize = cacheSize;
+            return this;
+        }
+
+        public boolean isEnableFastTrack() {
+            return enableFastTrack;
+        }
+
+        public PrefixMapBuilder setEnableFastTrack(boolean enableFastTrack) {
+            this.enableFastTrack = enableFastTrack;
+            return this;
+        }
+
+        public boolean isEagerIriToPrefix() {
+            return eagerIriToPrefix;
+        }
+
+        /** Whether to initialize the reverse mapping from iri to prefix eagerly.
+         * If lastIriWins semantics are desired but the prefixToIri map is not insert order preserving then
+         * this flag must be true.
+         * Conversely, if prefixToIri is insert order preserving then the correct reverse
+         * mapping w.r.t. lastIriWins can be computed on-demand; thus saving the extra efforts if not needed.
+         * If false then initialization happens on the first call to {@link PrefixMap#abbrev(String)} which
+         * iterates the entries of prefixToIri in it's inherent order.
+         * */
+        public PrefixMapBuilder setEagerIriToPrefix(boolean eagerIriToPrefix) {
+            this.eagerIriToPrefix = eagerIriToPrefix;
+            return this;
+        }
+
+        public boolean isLastPrefixWins() {
+            return lastIriWins;
+        }
+
+        public PrefixMapBuilder setLastPrefixWins(boolean lastPrefixWins) {
+            this.lastIriWins = lastPrefixWins;
+            return this;
+        }
+
+        public boolean isInitTrieLazily() {
+            return initTrieLazily;
+        }
+
+        public void setInitTrieLazily(boolean initTrieLazily) {
+            this.initTrieLazily = initTrieLazily;
+        }
+
+        public boolean isUseLocking() {
+            return useLocking;
+        }
+
+        public PrefixMapBuilder setUseLocking(boolean useLocking) {
+            this.useLocking = useLocking;
+            return this;
+        }
+
+        public PrefixMap build() {
+            return new PrefixMapStd(mapFactory.get(), cacheSize, enableFastTrack, eagerIriToPrefix, lastIriWins, initTrieLazily, useLocking);
+        }
     }
 }
