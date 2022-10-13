@@ -33,7 +33,6 @@ import java.util.Set;
 import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.SortCondition;
-import org.apache.jena.sparql.algebra.Algebra;
 import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.algebra.OpAsQuery;
 import org.apache.jena.sparql.algebra.op.OpExtend;
@@ -136,7 +135,6 @@ public class BatchQueryRewriter {
     }
 
     public BatchQueryRewriteResult rewrite(Batch<Integer, PartitionRequest<Binding>> batchRequest) {
-
         Op newOp = null;
         List<Entry<Integer, PartitionRequest<Binding>>> es = new ArrayList<>(batchRequest.getItems().entrySet());
         Collections.reverse(es);
@@ -161,6 +159,11 @@ public class BatchQueryRewriter {
         }
 
         sortConditions.addAll(localSortConditions);
+
+        if (!omitEndMarker) {
+            Op endMarker = OpExtend.create(OpTable.unit(), idxVar, NV_REMOTE_END_MARKER);
+            newOp = newOp == null ? endMarker : OpUnion.create(newOp, endMarker);
+        }
 
         for (Entry<Integer, PartitionRequest<Binding>> e : es) { // batchRequest.getItems().entrySet()) {
 
@@ -189,21 +192,20 @@ public class BatchQueryRewriter {
                 // otherwise, we can remove any ordering on the member
             } else {
                 // Member order may not be retained - remove it from the query
-
-                // TODO This should be done once OpServiceInfo
-                Query tmp = normQuery.cloneQuery();
-                if (tmp.hasOrderBy()) {
-                    tmp.getOrderBy().clear();
-                }
-
-                op = Algebra.compile(tmp);
+                // TODO It might be better to clear the order by only once in OpServiceInfo
+//                Query tmp = normQuery.cloneQuery();
+//
+//                if (tmp.hasOrderBy()) {
+//                    tmp.getOrderBy().clear();
+//                }
+                // TODO Algebra.compile on a query with an empty OrderBy creates a needless OpOrder
+//                op = Algebra.compile(tmp);
                 // TODO Something is odd with ordering here
                 // Add the sort conditions
                 // op = new OpOrder(op, localSortConditions);
             }
 
             op = QC.substitute(op, normedBinding);
-            op = OpExtend.create(op, idxVar, NodeValue.makeInteger(idx));
 
             long o = req.hasOffset() ? req.getOffset() : Query.NOLIMIT;
             long l = req.hasLimit() ? req.getLimit() : Query.NOLIMIT;
@@ -211,14 +213,11 @@ public class BatchQueryRewriter {
             if (o != Query.NOLIMIT || l != Query.NOLIMIT) {
                 op = new OpSlice(op, o, l);
             }
+            op = OpExtend.create(op, idxVar, NodeValue.makeInteger(idx));
 
             newOp = newOp == null ? op : OpUnion.create(op, newOp);
         }
 
-        if (!omitEndMarker) {
-            Op endMarker = OpExtend.create(OpTable.unit(), idxVar, NV_REMOTE_END_MARKER);
-            newOp = newOp == null ? endMarker : OpUnion.create(newOp, endMarker);
-        }
 
         if (orderNeeded) {
             newOp = new OpOrder(newOp, sortConditions);

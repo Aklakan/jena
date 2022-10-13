@@ -21,6 +21,7 @@ package org.apache.jena.sparql.service.enhancer.impl;
 /** Helper class to capture a range of data w.r.t. a partition key (typically a binding) and assign it an id */
 public class PartitionRequest<I>
 {
+    // Out
     protected long outputId;
     protected I partitionKey;
     protected long offset;
