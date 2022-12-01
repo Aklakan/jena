@@ -84,11 +84,6 @@ public class BatchQueryRewriter {
     static int REMOTE_END_MARKER = 1000000000;
     static NodeValue NV_REMOTE_END_MARKER = NodeValue.makeInteger(REMOTE_END_MARKER);
 
-    /** True if either local or remote end marker */
-//    public static boolean isLocalOrRemoteEndMarker(int id) {
-//        return isRemoteEndMarker(id) || isLocalEndMarker(id);
-//    }
-
     public static boolean isRemoteEndMarker(int id) {
         return id == REMOTE_END_MARKER;
     }
@@ -96,21 +91,6 @@ public class BatchQueryRewriter {
     public static boolean isRemoteEndMarker(Integer id) {
         return Objects.equals(id, REMOTE_END_MARKER);
     }
-
-
-
-    // Local end marker is not returned by the remote service
-//    static int LOCAL_END_MARKER = 1000000001;
-//    static NodeValue NV_LOCAL_END_MARKER = NodeValue.makeInteger(LOCAL_END_MARKER);
-//
-//    public static boolean isLocalEndMarker(int id) {
-//        return id == LOCAL_END_MARKER;
-//    }
-//
-//    public static boolean isLocalEndMarker(Integer id) {
-//        return Objects.equals(id, LOCAL_END_MARKER);
-//    }
-
 
     public BatchQueryRewriter(OpServiceInfo serviceInfo, Var idxVar,
             boolean sequentialUnion, boolean orderRetainingUnion,
@@ -165,9 +145,9 @@ public class BatchQueryRewriter {
             newOp = newOp == null ? endMarker : OpUnion.create(newOp, endMarker);
         }
 
-        for (Entry<Integer, PartitionRequest<Binding>> e : es) { // batchRequest.getItems().entrySet()) {
+        for (Entry<Integer, PartitionRequest<Binding>> e : es) {
 
-            PartitionRequest<Binding> req = e.getValue(); // batchRequest.get(i);
+            PartitionRequest<Binding> req = e.getValue();
             long idx = e.getKey();
             Binding scopedBinding = req.getPartitionKey();
 
@@ -176,7 +156,6 @@ public class BatchQueryRewriter {
             Map<Var, Var> varMapScopedToNormed = ServiceCacheKeyFactory
                     .createJoinVarMapScopedToNormed(serviceInfo, scopedBindingVars);
 
-            // Binding plainBinding = BindingUtils.renameKeys(scopedBinding, serviceInfo.getMentionedSubOpVarsScopedToPlain());
             Binding normedBinding = BindingUtils.renameKeys(scopedBinding, varMapScopedToNormed);
 
             // Op op = serviceInfo.getNormedQueryOp();
@@ -184,26 +163,6 @@ public class BatchQueryRewriter {
 
             // Note: QC.substitute does not remove variables being substituted from projections
             //   This may cause unbound variables to be projected
-
-            // If the union is sequential and order retaining we can retain the order on the members
-            // otherwise, we can remove any ordering on the member
-            if ((sequentialUnion && orderRetainingUnion) || localSortConditions.isEmpty()) {
-                // If the union is sequential and order retaining we can retain the order on the members
-                // otherwise, we can remove any ordering on the member
-            } else {
-                // Member order may not be retained - remove it from the query
-                // TODO It might be better to clear the order by only once in OpServiceInfo
-//                Query tmp = normQuery.cloneQuery();
-//
-//                if (tmp.hasOrderBy()) {
-//                    tmp.getOrderBy().clear();
-//                }
-                // TODO Algebra.compile on a query with an empty OrderBy creates a needless OpOrder
-//                op = Algebra.compile(tmp);
-                // TODO Something is odd with ordering here
-                // Add the sort conditions
-                // op = new OpOrder(op, localSortConditions);
-            }
 
             op = QC.substitute(op, normedBinding);
 
