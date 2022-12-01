@@ -19,6 +19,8 @@
 package org.apache.jena.riot.system;
 
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 
 import org.apache.jena.shared.PrefixMapping;
 
@@ -172,4 +174,149 @@ public class PrefixMapFactory {
         return PrefixMapZero.empty ;
     }
 
+
+    public static PrefixMapBuilder builder() {
+        return new PrefixMapBuilder();
+    }
+
+    public static class PrefixMapBuilder {
+        private long cacheSize;
+        private boolean useDelta;
+        private boolean isFastTrackEnabled;
+        private boolean isTrieEnabled;
+        private boolean eagerIriToPrefix;
+        private boolean lastIriWins;
+        private boolean initTrieLazily;
+        private boolean useLocking;
+        private char fastTrackSeparators[];
+        private Supplier<Map<String, String>> mapFactory;
+
+        PrefixMapBuilder() {
+            this.cacheSize = PrefixMapStd.DFT_CACHE_SIZE;
+            this.useDelta = PrefixMapStd.DFT_DELTA_ENABLED;
+            this.isFastTrackEnabled = PrefixMapStd.DFT_FAST_TRACK_ENABLED;
+            this.fastTrackSeparators = PrefixMapStd.DFT_FAST_TRACK_SEPARATORS;
+            this.isTrieEnabled = PrefixMapStd.DFT_TRIE_ENABLED;
+            this.eagerIriToPrefix = PrefixMapStd.DFT_EAGER_IRI_TO_PREFIX;
+            this.lastIriWins = PrefixMapStd.DFT_LAST_IRI_WINS;
+            this.initTrieLazily = PrefixMapStd.DFT_INIT_TRIE_LAZILY;
+            this.useLocking = PrefixMapStd.DFT_LOCKING_ENABLED;
+            this.mapFactory = PrefixMapStd.DFT_MAP_FACTORY;
+        }
+
+        public Supplier<Map<String, String>> getMapFactory() {
+            return mapFactory;
+        }
+
+        public PrefixMapBuilder setMapFactory(Supplier<Map<String, String>> mapFactory) {
+            this.mapFactory = mapFactory;
+            return this;
+        }
+
+        public boolean isUseDelta() {
+            return useDelta;
+        }
+
+        /** Update reverse-lookup data structures incrementally and only when needed.
+         * Changes are tracked in a prefix-to-iri map. A reverse lookup materializes them.
+         */
+        public PrefixMapBuilder setUseDelta(boolean useDelta) {
+            this.useDelta = useDelta;
+            return this;
+        }
+
+        public long getCacheSize() {
+            return cacheSize;
+        }
+
+        /** Set the cache size for longest prefix lookups during abbreviation. A value of 0 disables it.*/
+        public PrefixMapBuilder setCacheSize(long cacheSize) {
+            this.cacheSize = cacheSize;
+            return this;
+        }
+
+        public boolean isFastTrackEnabled() {
+            return isFastTrackEnabled;
+        }
+
+        public PrefixMapBuilder setFastTrackEnabled(boolean fastTrackEnabled) {
+            this.isFastTrackEnabled = fastTrackEnabled;
+            return this;
+        }
+
+        public char[] getFastTrackSeparators() {
+            return fastTrackSeparators;
+        }
+
+        public PrefixMapBuilder setFastTrackSeparators(char[] fastTrackSeparators) {
+            this.fastTrackSeparators = fastTrackSeparators;
+            return this;
+        }
+
+        public boolean isTrieEnabled() {
+            return isTrieEnabled;
+        }
+
+        public PrefixMapBuilder setTrieEnabled(boolean trieEnabled) {
+            this.isTrieEnabled = trieEnabled;
+            return this;
+        }
+
+        public boolean isEagerIriToPrefix() {
+            return eagerIriToPrefix;
+        }
+
+        /** Whether to initialize the reverse mapping from iri to prefix eagerly.
+         * If lastIriWins semantics are desired but the prefixToIri map is not insert order preserving then
+         * this flag must be true.
+         * Conversely, if prefixToIri is insert order preserving then the correct reverse
+         * mapping w.r.t. lastIriWins can be computed on-demand; thus saving the extra efforts if not needed.
+         * If false then initialization happens on the first call to {@link PrefixMap#abbrev(String)} which
+         * iterates the entries of prefixToIri in it's inherent order.
+         * */
+        public PrefixMapBuilder setEagerIriToPrefix(boolean eagerIriToPrefix) {
+            this.eagerIriToPrefix = eagerIriToPrefix;
+            return this;
+        }
+
+        public boolean isLastPrefixWins() {
+            return lastIriWins;
+        }
+
+        /** */
+        public PrefixMapBuilder setLastPrefixWins(boolean lastPrefixWins) {
+            this.lastIriWins = lastPrefixWins;
+            return this;
+        }
+
+
+        public boolean isInitTrieLazily() {
+            return initTrieLazily;
+        }
+
+        /** If true then the internal trie structure is only initialized on the first reverse lookup.
+         * Otherwise the trie is initialized eagerly which increases the cost of modifications */
+        public void setInitTrieLazily(boolean initTrieLazily) {
+            this.initTrieLazily = initTrieLazily;
+        }
+
+        public boolean isUseLocking() {
+            return useLocking;
+        }
+
+        /** If true then created instances will internally use a {@link ReentrantReadWriteLock}
+         *  to synchronize modifications and lookups */
+        public PrefixMapBuilder setUseLocking(boolean useLocking) {
+            this.useLocking = useLocking;
+            return this;
+        }
+
+        public PrefixMap build() {
+            // Rules:
+            // if trie is disabled then don't use cache
+            // if neither fast-track nor fastpath is enabled then reverse lookups would always yield null - should we raise invalid configuration?!
+
+            return new PrefixMapStd(mapFactory.get(), useDelta, cacheSize, isFastTrackEnabled, fastTrackSeparators, isTrieEnabled, eagerIriToPrefix, lastIriWins, initTrieLazily, useLocking);
+        }
+    }
 }

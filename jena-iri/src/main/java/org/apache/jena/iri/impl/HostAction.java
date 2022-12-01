@@ -27,8 +27,8 @@ public class HostAction extends GroupAction {
     }
     @Override
     public void check(Matcher m, Parser parser, int range) {
-        Parser.hostLexer().analyse(parser,range,m.group(group));
-        
+        parser.hostLexer().analyse(parser,range,m.group(group));
+
     }
 
 }

@@ -41,7 +41,7 @@ abstract class AbsLexer implements ViolationCodes {
     synchronized public void analyse(Parser p,int r) {
         parser = p;
         range = r;
-        if (!parser.has(range)) 
+        if (!parser.has(range))
             return;
         parser.uri.getChars(
                 parser.start(range),
@@ -68,17 +68,17 @@ abstract class AbsLexer implements ViolationCodes {
        catch (java.io.IOException e) {
        }
     }
-    
-    
+
+
     abstract  int yylex() throws java.io.IOException;
     abstract char[] zzBuffer();
-    
+
     protected void error(int e) {
         parser.recordError(range,e);
     }
-    
+
     final protected void rule(int rule) {
-        parser.matchedRule(range,rule,yytext());
+        // parser.matchedRule(range,rule,yytext());
     }
     abstract String yytext();
     protected void surrogatePair() {
@@ -109,7 +109,7 @@ abstract class AbsLexer implements ViolationCodes {
             error(NON_XML_CHARACTER);
         if (codePoint>0xFFFD && codePoint < 0x10000)
             error(NON_XML_CHARACTER);
-        
+
         /* Discouraged XML chars
         [#x7F-#x84], [#x86-#x9F], [#xFDD0-#xFDDF],
         [#1FFFE-#x1FFFF], [#2FFFE-#x2FFFF], [#3FFFE-#x3FFFF],
@@ -119,7 +119,7 @@ abstract class AbsLexer implements ViolationCodes {
         [#DFFFE-#xDFFFF], [#EFFFE-#xEFFFF], [#FFFFE-#xFFFFF],
         [#10FFFE-#x10FFFF].
         */
-        
+
         if ( codePoint >= 0xFDD0 && codePoint <= 0xFDDF)
             error(DISCOURAGED_XML_CHARACTER);
         if (codePoint>0x10000) {
@@ -127,9 +127,9 @@ abstract class AbsLexer implements ViolationCodes {
             if (lowBits==0xFFFE||lowBits==0xFFFF)
                 error(DISCOURAGED_XML_CHARACTER);
         }
-        
+
         // TODO more char tests, make more efficient
-        
+
         if (isDeprecated(codePoint))
             error(DEPRECATED_UNICODE_CHARACTER);
         if (!Character.isDefined(codePoint)) {
@@ -146,30 +146,30 @@ abstract class AbsLexer implements ViolationCodes {
             error(UNASSIGNED_UNICODE_CHARACTER);
             break;
         }
-        
+
         if (!Normalizer.isNormalized(txt, Normalizer.Form.NFC)) {
             error(NOT_NFC);
         }
-        
+
         if (!Normalizer.isNormalized(txt, Normalizer.Form.NFKC)) {
             error(NOT_NFKC);
         }
-        
+
         if (Character.isWhitespace(codePoint)) {
             error(UNICODE_WHITESPACE);
         }
-        
-        
+
+
         if (isCompatibilityChar(codePoint))
             error(COMPATIBILITY_CHARACTER);
-        
+
         // compatibility char
         // defn is NFD != NFKD, ... hmmm
-        
+
     }
 
     private boolean isCompatibilityChar(int codePoint) {
-        
+
         // Slight optimistation inherited from ICU4J version
         // Not sure it's worth it since we can't do some of the ICU4J checks
         UnicodeBlock block = UnicodeBlock.of(codePoint);
@@ -205,32 +205,32 @@ abstract class AbsLexer implements ViolationCodes {
 
         // codepoint -> charsequence ought to be easy
         String cp = new String(new int[]{codePoint}, 0, 1);
-        
+
         // Compatibility char is where NFD differs from NFKD
         return
         !Normalizer.normalize(cp,Normalizer.Form.NFD).equals(
                 Normalizer.normalize(cp,Normalizer.Form.NFKD)
                 );
-       
+
     }
 
     protected void difficultChar() {
         difficultCodePoint(yytext().charAt(0),yytext());
     }
-    
+
     /**
      * Unicode deprecated characters. Not available from standard java libs.
      * Taken from {@link "http://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B:deprecated:%5D"}
      * @param codePoint
-     * @return 
+     * @return
      */
     private static boolean isDeprecated(int codePoint) {
-        
+
         // Common case
         if (codePoint < 0x0149) return false;
-        
+
         if (codePoint >= 0xE0020 && codePoint <= 0xE007F) return true;
-        
+
         switch (codePoint) {
             case 0x0149:
             case 0x0673:

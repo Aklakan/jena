@@ -20,6 +20,7 @@ package org.apache.jena.sparql.expr;
 
 import java.util.Objects;
 
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.query.Query;
 import org.apache.jena.sparql.ARQConstants;
 import org.apache.jena.sparql.ARQInternalErrorException;
@@ -81,6 +82,10 @@ public class E_IRI extends ExprFunction1 {
                     baseIRI = query.getBaseURI();
             }
         }
+
+        // Performance test
+        if (true) { return NodeValue.makeNode(NodeFactory.createURI(relative.asString())); }
+
         // XXX Need fix for relative already a URI
         if ( NodeFunctions.isIRI(relative.asNode()) ) {
             relative = NodeValue.makeString(relative.asString());

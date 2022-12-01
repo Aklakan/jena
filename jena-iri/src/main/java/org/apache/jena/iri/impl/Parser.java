@@ -28,22 +28,27 @@ import org.apache.jena.iri.* ;
 
 public class Parser implements IRIComponents, ViolationCodes {
 
-    static Lexer lexers[][] = new Lexer[8][];
-    static {
+    static final ThreadLocal<Lexer[][]> threadLocalLexers = ThreadLocal.withInitial(Parser::createLexers);
+
+    private static Lexer[][] createLexers() {
+        Lexer lexers[][] = new Lexer[8][];
+
         for (int i = 0; i < lexers.length; i++)
-            lexers[i] = new Lexer[] { 
+            lexers[i] = new Lexer[] {
                     new LexerScheme((Reader) null),
                     new LexerUserinfo((Reader) null),
-                    new LexerHost((Reader) null), 
+                    new LexerHost((Reader) null),
                     new LexerPort((Reader) null),
                     new LexerPath((Reader) null),
                     new LexerQuery((Reader) null),
-                    new LexerFragment((Reader) null), 
-                    new LexerXHost((Reader) null), 
+                    new LexerFragment((Reader) null),
+                    new LexerXHost((Reader) null),
                     };
+        return lexers;
     }
 
-    static int nextLexer = 0;
+    Lexer[][] lexers = threadLocalLexers.get();
+    int nextLexer = 0;
 
     static boolean DEBUG = false;
 
@@ -70,15 +75,15 @@ public class Parser implements IRIComponents, ViolationCodes {
     final Matcher m;
 
     final String uri;
-    
+
     int found;
 
     final long errors[] = new long[fields.length];
 
     // public long allErrors = 0l;
     IRIImpl iri;
-    
-    
+
+
     public Parser(String uri, IRIImpl iri) {
         this.uri = uri;
         this.iri = iri;
@@ -99,7 +104,7 @@ public class Parser implements IRIComponents, ViolationCodes {
             int range = fields[i];
             if (has(range)) {
                 if ((range!=PATH && range != HOST)|| start(range)!=end(range) ) {
-                    found |= 1<<range;   
+                    found |= 1<<range;
                 }
                 lex[i].analyse(this, range);
                 iri.scheme.analyse(this, range);
@@ -115,7 +120,7 @@ public class Parser implements IRIComponents, ViolationCodes {
                         // ignore
                     }
                 }
-            } 
+            }
         }
         if (has(AUTHORITY))
             found |= 1<<AUTHORITY;
@@ -145,7 +150,7 @@ public class Parser implements IRIComponents, ViolationCodes {
                 recordError(HOST, BAD_IDN, e);
             }
         }
-        
+
         hasComponents(~found & iri.scheme.getRequired(),
                 REQUIRED_COMPONENT_MISSING);
         hasComponents(found & iri.scheme.getProhibited(),
@@ -153,16 +158,16 @@ public class Parser implements IRIComponents, ViolationCodes {
 
     }
 
-    static private Lexer[] nextLexer() {
+    private Lexer[] nextLexer() {
         Lexer lex[] = lexers[nextLexer];
         nextLexer = (nextLexer + 1) % lexers.length;
         return lex;
     }
-    
-    static LexerHost hostLexer() {
+
+    LexerHost hostLexer() {
         return (LexerHost)nextLexer()[2];
     }
-    
+
     private void hasComponents(int errorComponents,int eCode) {
         if (errorComponents==0)
             return;
@@ -227,14 +232,14 @@ public class Parser implements IRIComponents, ViolationCodes {
         LineNumberReader in = new LineNumberReader(new StringReader(uriStr));
         devParse(in);
     }
-    
+
     static public void main(String args[]) throws IOException {
         LineNumberReader in = new LineNumberReader(new InputStreamReader(System.in));
         devParse(in);
     }
-    
+
     static private void devParse(LineNumberReader in) throws IOException {
-        
+
         IRIImpl last = null;
         DEBUG = true;
 
@@ -267,7 +272,7 @@ public class Parser implements IRIComponents, ViolationCodes {
         iri.allErrors |= (1l << e);
         iri.idnaException = ex;
     }
-    
+
     long errors(int r) {
         return errors[invFields[r]];
     }

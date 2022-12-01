@@ -67,7 +67,7 @@ public class TestAsyncParser {
 
     @Test(expected = RiotNotFoundException.class)
     public void async_parse_4() {
-        test(DIR + "no-suchfile.ttl");
+        test(DIR + "no-suchfile.ttl"); 
     }
 
     @Test
