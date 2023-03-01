@@ -40,7 +40,7 @@ public class DatasetRDFSAssembler extends DatasetAssembler {
     /**
      * <pre>
      * &lt;#rdfsDS&gt; rdf:type ja:DatasetRDFS ;
-     *      ja:rdfs "vocab.ttl";
+     *      ja:rdfsSchema "vocab.ttl";
      *      ja:dataset &lt;#baseDS&gt; ;
      *      .
      *
