@@ -51,7 +51,7 @@ public class TestServiceEnhancerDatasetAssembler
     private static final String SPEC_STR_01 = String.join("\n",
             "PREFIX ja: <http://jena.hpl.hp.com/2005/11/Assembler#>",
             "PREFIX se: <http://jena.apache.org/service-enhancer#>",
-            "<urn:example:root> a se:DatasetServiceEnhancer ; ja:baseDataset <urn:example:base> .",
+            "<urn:example:root> a se:DatasetServiceEnhancer ; ja:dataset <urn:example:base> .",
             "<urn:example:root> se:cacheMaxEntryCount 5 ; se:cachePageSize 1000 ; se:cacheMaxPageCount 10 .",
             "<urn:example:root> se:bulkMaxSize 20 ; se:bulkSize 10 ; se:bulkMaxOutOfBandSize 5 .",
             "<urn:example:base> a ja:MemoryDataset ."
@@ -86,7 +86,7 @@ public class TestServiceEnhancerDatasetAssembler
         String specStr = String.join("\n",
             "PREFIX ja: <http://jena.hpl.hp.com/2005/11/Assembler#>",
             "PREFIX se: <http://jena.apache.org/service-enhancer#>",
-            "<urn:example:root> a se:DatasetServiceEnhancer ; ja:baseDataset <urn:example:base> .",
+            "<urn:example:root> a se:DatasetServiceEnhancer ; ja:dataset <urn:example:base> .",
             "<urn:example:base> a ja:MemoryDataset ."
         );
 
@@ -105,7 +105,7 @@ public class TestServiceEnhancerDatasetAssembler
         String specStr = String.join("\n",
             "PREFIX ja: <http://jena.hpl.hp.com/2005/11/Assembler#>",
             "PREFIX se: <http://jena.apache.org/service-enhancer#>",
-            "<urn:example:root> a se:DatasetServiceEnhancer ; se:enableMgmt true ; ja:baseDataset <urn:example:base> .",
+            "<urn:example:root> a se:DatasetServiceEnhancer ; se:enableMgmt true ; ja:dataset <urn:example:base> .",
             "<urn:example:base> a ja:MemoryDataset ."
         );
 
@@ -139,7 +139,7 @@ public class TestServiceEnhancerDatasetAssembler
                     "PREFIX ja: <http://jena.hpl.hp.com/2005/11/Assembler#>",
                     "PREFIX se: <http://jena.apache.org/service-enhancer#>",
                     "PREFIX tdb2: <http://jena.apache.org/2016/tdb#>",
-                    "<urn:example:root> a se:DatasetServiceEnhancer ; ja:baseDataset <urn:example:base> .",
+                    "<urn:example:root> a se:DatasetServiceEnhancer ; ja:dataset <urn:example:base> .",
                     "<urn:example:root> se:cacheMaxEntryCount 5 ; se:cachePageSize 1000 ; se:cacheMaxPageCount 10 .",
                     "<urn:example:root> se:bulkMaxSize 20 ; se:bulkSize 10 ; se:bulkMaxOutOfBandSize 5 .",
                     "<urn:example:base> a tdb2:DatasetTDB2 .",

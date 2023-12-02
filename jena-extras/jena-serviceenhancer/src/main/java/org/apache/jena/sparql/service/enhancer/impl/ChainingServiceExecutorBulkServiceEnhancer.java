@@ -40,15 +40,18 @@ public class ChainingServiceExecutorBulkServiceEnhancer
     public QueryIterator createExecution(OpService opService, QueryIterator input, ExecutionContext execCxt,
             ServiceExecutorBulk chain) {
 
-        QueryIterator result;
+        // Don't interfere if service node is not an IRI
         Node node = opService.getService();
-        List<Entry<String, String>> opts = ServiceOpts.parseAsOptions(node);
+        if (node == null || !node.isURI()) {
+            return chain.createExecution(opService, input, execCxt);
+        }
+        List<Entry<String, String>> opts = ServiceOpts.parseEntries(node);
 
+        // The following variables will be updated based on the options
         boolean enableBulk = false;
-
         int bulkSize = 1;
+        CacheMode requestedCacheMode = null;
 
-        CacheMode cacheMode = null;
         Context cxt = execCxt.getContext();
         int n = opts.size();
         int i = 0;
@@ -67,9 +70,9 @@ public class ChainingServiceExecutorBulkServiceEnhancer
                 String v = val == null ? "" : val.toLowerCase();
 
                 switch (v) {
-                case "off": cacheMode = CacheMode.OFF; break;
-                case "clear": cacheMode = CacheMode.CLEAR; break;
-                default: cacheMode = CacheMode.DEFAULT; break;
+                case "off": requestedCacheMode = CacheMode.OFF; break;
+                case "clear": requestedCacheMode = CacheMode.CLEAR; break;
+                default: requestedCacheMode = CacheMode.DEFAULT; break;
                 }
 
                 break;
@@ -89,13 +92,15 @@ public class ChainingServiceExecutorBulkServiceEnhancer
                 }
                 bulkSize = Math.max(Math.min(bulkSize, maxBulkSize), 1);
                 break;
+            case "": // Skip over separator entries
+                break;
             default:
                 break outer;
             }
         }
 
         List<Entry<String, String>> subList = opts.subList(i, n);
-        String serviceStr = ServiceOpts.unparse(subList);
+        String serviceStr = ServiceOpts.unparseEntries(subList);
         OpService newOp = null;
         if (serviceStr.isEmpty()) {
             Op subOp = opService.getSubOp();
@@ -111,17 +116,15 @@ public class ChainingServiceExecutorBulkServiceEnhancer
             newOp = new OpService(node, opService.getSubOp(), opService.getSilent());
         }
 
-        CacheMode effCacheMode = CacheMode.effectiveMode(cacheMode);
-
-        boolean enableSpecial = effCacheMode != CacheMode.OFF || enableBulk; // || enableLoopJoin; // || !overrides.isEmpty();
-
+        QueryIterator result;
+        CacheMode finalCacheMode = CacheMode.effectiveMode(requestedCacheMode);
+        boolean enableSpecial = finalCacheMode != CacheMode.OFF || enableBulk; // || enableLoopJoin; // || !overrides.isEmpty();
         if (enableSpecial) {
-            ChainingServiceExecutorBulkCache exec = new ChainingServiceExecutorBulkCache(bulkSize, effCacheMode);
+            ChainingServiceExecutorBulkCache exec = new ChainingServiceExecutorBulkCache(bulkSize, finalCacheMode);
             result = exec.createExecution(newOp, input, execCxt, chain);
         } else {
             result = chain.createExecution(newOp, input, execCxt);
         }
-
         return result;
     }
 }
