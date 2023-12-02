@@ -20,8 +20,6 @@ package org.apache.jena.sparql.service.enhancer.assembler;
 
 import java.util.Objects;
 
-import com.google.common.base.Preconditions;
-
 import org.apache.commons.lang3.function.TriFunction;
 import org.apache.jena.assembler.Assembler;
 import org.apache.jena.assembler.exceptions.AssemblerException;
@@ -36,6 +34,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphWrapper;
 import org.apache.jena.sparql.core.assembler.DatasetAssembler;
+import org.apache.jena.sparql.core.assembler.DatasetAssemblerVocab;
 import org.apache.jena.sparql.service.enhancer.impl.ChainingServiceExecutorBulkCache;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceResponseCache;
 import org.apache.jena.sparql.service.enhancer.impl.util.GraphUtilsExtra;
@@ -45,6 +44,8 @@ import org.apache.jena.sparql.util.Context;
 import org.apache.jena.sparql.util.Symbol;
 import org.apache.jena.sparql.util.graph.GraphUtils;
 
+import com.google.common.base.Preconditions;
+
 /**
  * Assembler that sets up a base dataset's context with the service enhancer machinery.
  * As changes are only applied to the context the resulting dataset is the base dataset itself.
@@ -52,9 +53,22 @@ import org.apache.jena.sparql.util.graph.GraphUtils;
 public class DatasetAssemblerServiceEnhancer
     extends DatasetAssembler
 {
+    @SuppressWarnings("deprecation")
     @Override
     public DatasetGraph createDataset(Assembler a, Resource root) {
         Resource baseDatasetRes = GraphUtils.getResourceValue(root, ServiceEnhancerVocab.baseDataset);
+        if (baseDatasetRes != null) {
+            Log.warn(DatasetAssemblerServiceEnhancer.class, "Use of " + ServiceEnhancerVocab.baseDataset.getURI() + " is deprecated. Please use " + DatasetAssemblerVocab.pDataset.getURI() + " instead.");
+        }
+
+        Resource tmp = GraphUtils.getResourceValue(root, DatasetAssemblerVocab.pDataset);
+        if (tmp != null) {
+            if (baseDatasetRes != null) {
+                throw new AssemblerException(root, "Both " + DatasetAssemblerVocab.pDataset.getURI() + " and " + ServiceEnhancerVocab.baseDataset.getURI() + " specified. Please only use the former.");
+            }
+            baseDatasetRes = tmp;
+        }
+
         Objects.requireNonNull(baseDatasetRes, "No ja:baseDataset specified on " + root);
         Object obj = a.open(baseDatasetRes);
 
