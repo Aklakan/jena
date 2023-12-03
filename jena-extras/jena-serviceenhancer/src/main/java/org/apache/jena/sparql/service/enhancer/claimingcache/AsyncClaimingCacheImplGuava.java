@@ -18,8 +18,16 @@
 
 package org.apache.jena.sparql.service.enhancer.claimingcache;
 
-import java.util.*;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -29,12 +37,16 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import com.google.common.cache.*;
-
 import org.apache.jena.sparql.service.enhancer.impl.util.LockUtils;
 import org.apache.jena.sparql.service.enhancer.slice.api.Disposable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalCause;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 
 /**
  * Implementation of async claiming cache.
@@ -62,7 +74,8 @@ public class AsyncClaimingCacheImplGuava<K, V>
     protected Map<K, RefFuture<V>> level1;
 
     // level2: the caffine cache - items in this cache are not claimed are subject to eviction according to configuration
-    protected LoadingCache<K, CompletableFuture<V>> level2;
+    protected Cache<K, CompletableFuture<V>> level2;
+    protected Function<K, CompletableFuture<V>> level3AwareCacheLoader;
 
     // level3: items evicted from level2 but caught be eviction protection
     protected Map<K, V> level3;
@@ -82,13 +95,14 @@ public class AsyncClaimingCacheImplGuava<K, V>
 
     // Runs atomically when an item is evicted or invalidated and will thus no longer be present in any levels
     // See also https://github.com/ben-manes/caffeine/wiki/Removal
-    protected RemovalListener<K, V> atomicRemovalListener;
+    protected RemovalListener<K, V> evictionListener;
 
     protected Set<K> suppressedRemovalEvents;
 
     public AsyncClaimingCacheImplGuava(
             Map<K, RefFuture<V>> level1,
-            LoadingCache<K, CompletableFuture<V>> level2,
+            Cache<K, CompletableFuture<V>> level2,
+            Function<K, V> level3AwareCacheLoader,
             Map<K, V> level3,
             Collection<Predicate<? super K>> evictionGuards,
             BiConsumer<K, RefFuture<V>> claimListener,
@@ -99,12 +113,19 @@ public class AsyncClaimingCacheImplGuava<K, V>
         super();
         this.level1 = level1;
         this.level2 = level2;
+        // Wrapped as CompletableFuture for easier upgrade to caffeine cache
+        this.level3AwareCacheLoader = k -> CompletableFuture.completedFuture(level3AwareCacheLoader.apply(k));
         this.level3 = level3;
         this.evictionGuards = evictionGuards;
         this.claimListener = claimListener;
         this.unclaimListener = unclaimListener;
-        this.atomicRemovalListener = atomicRemovalListener;
+        this.evictionListener = atomicRemovalListener;
         this.suppressedRemovalEvents = suppressedRemovalEvents;
+    }
+
+    @Override
+    public void cleanUp() {
+        level2.cleanUp();
     }
 
     protected Map<K, Latch> keyToSynchronizer = new ConcurrentHashMap<>();
@@ -140,7 +161,7 @@ public class AsyncClaimingCacheImplGuava<K, V>
 
             boolean isGuarded = evictionGuards.stream().anyMatch(p -> p.test(k));
             if (!isGuarded) {
-                atomicRemovalListener.onRemoval(RemovalNotification.create(k, v, RemovalCause.COLLECTED));
+                evictionListener.onRemoval(RemovalNotification.create(k, v, RemovalCause.COLLECTED));
                 it.remove();
             }
         }
@@ -153,6 +174,11 @@ public class AsyncClaimingCacheImplGuava<K, V>
         // We rely on ConcurrentHashMap.compute operating atomically
         Latch synchronizer = keyToSynchronizer.compute(key, (k, before) -> before == null ? new Latch() : before.inc());
 
+        // XXX In principle, we could move to synchronizedMap.compute for (approximately) per-key synchronization.
+        //   The issue is, that RefImpl currently uses synchronized (synchronizer) { } blocks.
+        //   This could be abstracted as a lambda that runs actions in either in a synchronized block or
+        //   a synchronizedMap.compute function.
+
         // /guarded_entry/ marker; referenced in comment below
 
         synchronized (synchronizer) {
@@ -164,17 +190,20 @@ public class AsyncClaimingCacheImplGuava<K, V>
                 return level1.computeIfAbsent(key, k -> {
                     // Wrap the loaded reference such that closing the fully loaded reference adds it to level 2
 
-                    logger.trace("Claiming item [" + key + "] from level2");
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("Claiming item [" + key + "] from level2");
+                    }
                     CompletableFuture<V> future;
                     try {
-                        future = level2.get(key);
+                        future = level2.get(key, () -> level3AwareCacheLoader.apply(key));
                     } catch (ExecutionException e) {
                         throw new RuntimeException("Should not happen", e);
                     }
 
-                    // This triggers removal
+                    // level2.invalidate(key) triggers level2's removal listener but we are about to add the item to level1
+                    // so we don't want to publish a removal event to the outside
                     suppressedRemovalEvents.add(key);
-                    level2.asMap().remove(key);
+                    level2.invalidate(key);
                     suppressedRemovalEvents.remove(key);
 
                     @SuppressWarnings("unchecked")
@@ -193,7 +222,9 @@ public class AsyncClaimingCacheImplGuava<K, V>
 
                             RefFutureImpl.cancelFutureOrCloseValue(future, null);
                             level1.remove(key);
-                            logger.trace("Item [" + key + "] was unclaimed. Transferring to level2.");
+                            if (logger.isTraceEnabled()) {
+                                logger.trace("Item [" + key + "] was unclaimed. Transferring to level2.");
+                            }
                             level2.put(key, future);
 
                             // If there are no waiting threads we can remove the latch
@@ -225,14 +256,14 @@ public class AsyncClaimingCacheImplGuava<K, V>
 
     public static class Builder<K, V>
     {
-        protected CacheBuilder<Object, Object> cacheBuilder;
+        protected CacheBuilder<Object, Object> level2Builder;
         protected Function<K, V> cacheLoader;
         protected BiConsumer<K, RefFuture<V>> claimListener;
         protected BiConsumer<K, RefFuture<V>> unclaimListener;
-        protected RemovalListener<K, V> userAtomicRemovalListener;
+        protected RemovalListener<K, V> evictionListener;
 
         Builder<K, V> setCacheBuilder(CacheBuilder<Object, Object> caffeine) {
-            this.cacheBuilder = caffeine;
+            this.level2Builder = caffeine;
             return this;
         }
 
@@ -251,8 +282,8 @@ public class AsyncClaimingCacheImplGuava<K, V>
             return this;
         }
 
-        public Builder<K, V> setAtomicRemovalListener(RemovalListener<K, V> userAtomicRemovalListener) {
-            this.userAtomicRemovalListener = userAtomicRemovalListener;
+        public Builder<K, V> setEvictionListener(RemovalListener<K, V> evictionListener) {
+            this.evictionListener = evictionListener;
             return this;
         }
 
@@ -267,7 +298,6 @@ public class AsyncClaimingCacheImplGuava<K, V>
                 K k = n.getKey();
                 V v = n.getValue();
                 RemovalCause c = n.getCause();
-
                 // Check for actual removal - key no longer present in level1
                 if (!level1.containsKey(k)) {
 
@@ -277,7 +307,9 @@ public class AsyncClaimingCacheImplGuava<K, V>
                         for (Predicate<? super K> evictionGuard : evictionGuards) {
                             isGuarded = evictionGuard.test(k);
                             if (isGuarded) {
-                                logger.debug("Protecting from eviction: " + k + " - " + level3.size() + " items protected");
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug("Protecting from eviction: " + k + " - " + level3.size() + " items protected");
+                                }
                                 level3.put(k, v);
                                 break;
                             }
@@ -285,19 +317,19 @@ public class AsyncClaimingCacheImplGuava<K, V>
                     }
 
                     if (!isGuarded) {
-                        if (userAtomicRemovalListener != null) {
-                            userAtomicRemovalListener.onRemoval(RemovalNotification.create(k, v, c));
+                        if (evictionListener != null) {
+                            evictionListener.onRemoval(RemovalNotification.create(k, v, c));
                         }
                     }
                 }
             };
 
-            Set<K> suppressedRemovalEvents = Collections.newSetFromMap(new ConcurrentHashMap<K, Boolean>());
+            Set<K> suppressedRemovalEvents = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-            cacheBuilder.removalListener(n -> {
+            CacheBuilder<Object, Object> finalLevel2Builder = level2Builder.removalListener(n -> {
                 K kk = (K)n.getKey();
-
-                if (!suppressedRemovalEvents.contains(kk)) {
+                boolean isEventSuppressed = suppressedRemovalEvents.contains(kk);
+                if (!isEventSuppressed) {
                     CompletableFuture<V> cfv = (CompletableFuture<V>)n.getValue();
 
                     V vv = null;
@@ -310,11 +342,10 @@ public class AsyncClaimingCacheImplGuava<K, V>
                     }
 
                     RemovalCause c = n.getCause();
-
-                    level3AwareAtomicRemovalListener.onRemoval(RemovalNotification.create(kk, vv, c));
+                    RemovalNotification<K, V> notification = RemovalNotification.create(kk, vv, c);
+                    level3AwareAtomicRemovalListener.onRemoval(notification);
                 }
             });
-
 
             // Cache loader that checks for existing items in level3
             Function<K, V> level3AwareCacheLoader = k -> {
@@ -332,10 +363,8 @@ public class AsyncClaimingCacheImplGuava<K, V>
                 return r;
             };
 
-            LoadingCache<K, CompletableFuture<V>> level2 = cacheBuilder.build(
-                    CacheLoader.from(k -> CompletableFuture.completedFuture(level3AwareCacheLoader.apply(k))));
-
-            AsyncClaimingCacheImplGuava<K, V> result = new AsyncClaimingCacheImplGuava<>(level1, level2, level3, evictionGuards, claimListener, unclaimListener, level3AwareAtomicRemovalListener, suppressedRemovalEvents);
+            Cache<K, CompletableFuture<V>> level2 = finalLevel2Builder.build();
+            AsyncClaimingCacheImplGuava<K, V> result = new AsyncClaimingCacheImplGuava<>(level1, level2, level3AwareCacheLoader, level3, evictionGuards, claimListener, unclaimListener, level3AwareAtomicRemovalListener, suppressedRemovalEvents);
             return result;
         }
     }
@@ -350,9 +379,9 @@ public class AsyncClaimingCacheImplGuava<K, V>
         // TODO This should become a test case that tests the eviction guard feature
 
         AsyncClaimingCacheImplGuava<String, String> cache = AsyncClaimingCacheImplGuava.<String, String>newBuilder(
-                CacheBuilder.newBuilder().maximumSize(10).expireAfterWrite(1, TimeUnit.SECONDS))
+                CacheBuilder.newBuilder().expireAfterWrite(Duration.ofSeconds(1)))
             .setCacheLoader(key -> "Loaded " + key)
-            .setAtomicRemovalListener(n -> System.out.println("Evicted " + n.getKey()))
+            .setEvictionListener(n -> System.out.println("Evicted " + n.getKey()))
             .setClaimListener((k, v) -> System.out.println("Claimed: " + k))
             .setUnclaimListener((k, v) -> System.out.println("Unclaimed: " + k))
             .build();
@@ -369,8 +398,15 @@ public class AsyncClaimingCacheImplGuava<K, V>
                 }
             }
         }
+        System.out.println("Present keys: " + cache.getPresentKeys());
 
         TimeUnit.SECONDS.sleep(5);
+        System.out.println("Present keys: " + cache.getPresentKeys());
+        // Guava cache by default does not use a separate maintenance thread to evict stale entries
+        // A quirk is, that the set returned by guavaCache.getPresentKeys() may already omit keys fo
+        // which the eviction listeners have not yet been called!
+        // In the case of guava, calling cleanUp() runs the listeners for the pending items.
+        cache.cleanUp();
         System.out.println("done");
     }
 
@@ -404,20 +440,31 @@ public class AsyncClaimingCacheImplGuava<K, V>
                         try {
                             v = vFuture.get();
                         } catch (Exception e) {
-                            logger.warn("Detected cache entry that failed to load during invalidation", e);
+                            if (logger.isWarnEnabled()) {
+                                logger.warn("Detected cache entry that failed to load during invalidation", e);
+                            }
                         }
                     }
 
-                    atomicRemovalListener.onRemoval(RemovalNotification.create(k, v, RemovalCause.EXPLICIT));
+                    evictionListener.onRemoval(RemovalNotification.create(k, v, RemovalCause.EXPLICIT));
                     return null;
                 });
             }
         });
     }
 
+    /**
+     * This method returns a snapshot of all keys across all internal cache levels.
+     * It should only be used for informational purposes.
+     */
     @Override
     public Collection<K> getPresentKeys() {
-        return new LinkedHashSet<>(level2.asMap().keySet());
+        // return new LinkedHashSet<>(level2.asMap().keySet());
+        Set<K> result = new LinkedHashSet<>();
+        result.addAll(level1.keySet());
+        result.addAll(level2.asMap().keySet());
+        result.addAll(level3.keySet());
+        return result;
     }
 
     /** Essentially a 'NonAtomicInteger' */

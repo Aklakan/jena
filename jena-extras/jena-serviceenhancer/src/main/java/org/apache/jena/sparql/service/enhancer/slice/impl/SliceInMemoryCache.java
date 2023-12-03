@@ -55,7 +55,7 @@ public class SliceInMemoryCache<A>
         this.metaData = new SliceMetaDataWithPagesImpl(pageSize);
         this.pageCache = cacheBuilder
                 .setCacheLoader(this::loadPage)
-                .setAtomicRemovalListener(n -> evictPage(n.getKey()))
+                .setEvictionListener(n -> evictPage(n.getKey()))
                 .build();
     }
 
