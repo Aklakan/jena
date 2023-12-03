@@ -56,4 +56,7 @@ public interface AsyncClaimingCache<K, V> {
 
     void invalidateAll();
     void invalidateAll(Iterable<? extends K> keys);
+
+    /** Run maintenance actions as needed, such as eviction of keys */
+    void cleanUp();
 }
