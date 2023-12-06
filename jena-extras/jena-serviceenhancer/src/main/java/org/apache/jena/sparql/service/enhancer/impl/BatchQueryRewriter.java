@@ -30,7 +30,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import org.apache.jena.atlas.logging.Log;
+import org.apache.commons.io.IOUtils;
+import org.apache.jena.atlas.io.IO;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.SortCondition;
 import org.apache.jena.sparql.algebra.Op;
@@ -42,7 +43,11 @@ import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.main.QC;
 import org.apache.jena.sparql.expr.ExprVar;
 import org.apache.jena.sparql.expr.NodeValue;
+import org.apache.jena.sparql.service.enhancer.impl.util.AssertionUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
+import org.apache.jena.sparql.service.enhancer.impl.util.StackTraceUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Rewriter for instantiating a query such that a list of initial bindings are injected.
@@ -59,6 +64,8 @@ import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
  * </ul>
  */
 public class BatchQueryRewriter {
+    private static final Logger logger = LoggerFactory.getLogger(BatchQueryRewriter.class);
+
     protected OpServiceInfo serviceInfo;
     protected Var idxVar;
 
@@ -174,14 +181,25 @@ public class BatchQueryRewriter {
             newOp = newOp == null ? op : OpUnion.create(op, newOp);
         }
 
-
         if (orderNeeded) {
             newOp = new OpOrder(newOp, sortConditions);
         }
 
-        Query q = OpAsQuery.asQuery(newOp);
-
-        Log.info(BatchQueryRewriter.class, "Rewritten bulk query: " + q);
+        if (logger.isInfoEnabled()) {
+            Query q = OpAsQuery.asQuery(newOp);
+            String str = q.toString();
+            // Cut off strings unless assertions are enabled
+            String note = "";
+            int len = str.length();
+            if (!AssertionUtils.IS_ASSERT_ENABLED) {
+                int maxlen = 1024;
+                if (len > maxlen) {
+                    str = str.subSequence(0, maxlen) + " ...";
+                    note = " (enable assertions using the -ea jvm option to see the full query)";
+                }
+            }
+            logger.info("Rewritten bulk query has " + len + " characters" + note + ": " + str);
+        }
 
         // Add a rename for idxVar so that QueryIter.map does not omit it
         Map<Var, Var> renames = new HashMap<>(serviceInfo.getVisibleSubOpVarsNormedToScoped());

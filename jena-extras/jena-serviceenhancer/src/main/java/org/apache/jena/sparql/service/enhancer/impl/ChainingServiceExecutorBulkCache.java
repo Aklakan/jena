@@ -50,9 +50,7 @@ public class ChainingServiceExecutorBulkCache
     }
 
     @Override
-    public QueryIterator createExecution(OpService original, QueryIterator input, ExecutionContext execCxt,
-            ServiceExecutorBulk chain) {
-
+    public QueryIterator createExecution(OpService original, QueryIterator input, ExecutionContext execCxt, ServiceExecutorBulk chain) {
         Context cxt = execCxt.getContext();
         // int bulkSize = cxt.getInt(InitServiceEnhancer.serviceBulkMaxBindingCount, DEFAULT_BULK_SIZE);
         ServiceResponseCache serviceCache = CacheMode.OFF.equals(cacheMode)
@@ -72,7 +70,6 @@ public class ChainingServiceExecutorBulkCache
         IteratorCloseable<GroupedBatch<Node, Long, Binding>> inputBatchIterator = scheduler.batch(input);
 
         RequestExecutor exec = new RequestExecutor(opExecutor, serviceInfo, resultSizeCache, serviceCache, cacheMode, inputBatchIterator);
-
         return exec;
     }
 }
