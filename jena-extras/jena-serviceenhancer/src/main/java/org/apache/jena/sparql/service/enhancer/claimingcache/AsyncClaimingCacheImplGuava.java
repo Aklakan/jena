@@ -250,7 +250,6 @@ public class AsyncClaimingCacheImplGuava<K, V>
                 secondaryRef.close();
             }
         }
-
         return result;
     }
 

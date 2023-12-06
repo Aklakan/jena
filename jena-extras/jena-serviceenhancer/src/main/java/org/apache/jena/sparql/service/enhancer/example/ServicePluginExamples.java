@@ -33,6 +33,11 @@ public class ServicePluginExamples {
         customLinearJoin(DatasetFactory.empty());
     }
 
+    /**
+     * This example shows how to programmatically enable
+     * {@code SERVICE <loop:>} using
+     * {@link ServiceEnhancerInit#wrapOptimizer(Context)}.
+     */
     public static void customLinearJoin(Dataset dataset) {
         Context cxt = ARQ.getContext().copy();
         ServiceEnhancerInit.wrapOptimizer(cxt);
