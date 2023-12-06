@@ -30,8 +30,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.jena.atlas.io.IO;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.SortCondition;
 import org.apache.jena.sparql.algebra.Op;
@@ -48,7 +46,6 @@ import org.apache.jena.sparql.expr.ExprVar;
 import org.apache.jena.sparql.expr.NodeValue;
 import org.apache.jena.sparql.service.enhancer.impl.util.AssertionUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
-import org.apache.jena.sparql.service.enhancer.impl.util.StackTraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
