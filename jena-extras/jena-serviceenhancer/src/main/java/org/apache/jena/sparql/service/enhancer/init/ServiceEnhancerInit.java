@@ -195,8 +195,7 @@ public class ServiceEnhancerInit
         return result;
     }
 
-    static void registerWith(AssemblerGroup g)
-    {
+    static void registerWith(AssemblerGroup g) {
         AssemblerUtils.register(g, ServiceEnhancerVocab.DatasetServiceEnhancer, new DatasetAssemblerServiceEnhancer(), DatasetAssembler.getGeneralType());
 
         // Note: We can't install the plugin on graphs because they don't have a context
@@ -269,16 +268,19 @@ public class ServiceEnhancerInit
         return result;
     }
 
+    /**
+     * Return the value for {@link ServiceEnhancerConstants#datasetId} in the context.
+     * If it is null then instead return an IRI that includes the involved dataset's
+     * system identity hash code.
+     */
     public static Node resolveSelfId(ExecutionContext execCxt) {
         Context context = execCxt.getContext();
-
         Node id = context.get(ServiceEnhancerConstants.datasetId);
         if (id == null) {
             DatasetGraph dg = execCxt.getDataset();
             int hashCode = System.identityHashCode(dg);
             id = NodeFactory.createLiteralString(ServiceEnhancerConstants.SELF.getURI() + "@dataset" + hashCode);
         }
-
         return id;
     }
 }

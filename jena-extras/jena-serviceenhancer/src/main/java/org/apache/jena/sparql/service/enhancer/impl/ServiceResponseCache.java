@@ -22,8 +22,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.jena.atlas.logging.Log;
-import com.google.common.cache.CacheBuilder;
 import org.apache.jena.query.ARQ;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCache;
@@ -34,8 +32,14 @@ import org.apache.jena.sparql.service.enhancer.slice.api.ArrayOps;
 import org.apache.jena.sparql.service.enhancer.slice.api.Slice;
 import org.apache.jena.sparql.service.enhancer.slice.impl.SliceInMemoryCache;
 import org.apache.jena.sparql.util.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.cache.CacheBuilder;
 
 public class ServiceResponseCache {
+    private static final Logger logger = LoggerFactory.getLogger(ServiceResponseCache.class);
+
     // Default parameters (can cache up to 150K bindings for 300 queries amounting to up to 45M bindings)
     public static final int DFT_MAX_ENTRY_COUNT = 300;
     public static final int DFT_PAGE_SIZE = 10000;
@@ -63,7 +67,9 @@ public class ServiceResponseCache {
                     idToKey.put(id, key);
                     Slice<Binding[]> slice = SliceInMemoryCache.create(ArrayOps.createFor(Binding.class), pageSize, maxPageCount);
                     ServiceCacheValue r = new ServiceCacheValue(id, slice);
-                    Log.debug(ServiceResponseCache.class, "Loaded cache entry: " + id);
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Loaded cache entry: {}", id);
+                    }
                     return r;
                 })
                 .setEvictionListener(n -> {
@@ -72,7 +78,9 @@ public class ServiceResponseCache {
                     ServiceCacheValue v = n.getValue();
                     if (v != null) {
                         long id = v.getId();
-                        Log.debug(ServiceResponseCache.class, "Removed cache entry: " + id);
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Removed cache entry: {}", id);
+                        }
                         idToKey.remove(id);
                     }
                 });
