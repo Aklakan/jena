@@ -514,7 +514,7 @@ public class QueryIterServiceBulk
                 lock = slice.getReadWriteLock().readLock();
 
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Created cache key: " + cacheKey);
+                    logger.debug("Created cache key: {}", cacheKey);
                 }
                 // Log.debug(BatchRequestIterator.class, "Cached ranges: " + slice.getLoadedRanges().toString());
 

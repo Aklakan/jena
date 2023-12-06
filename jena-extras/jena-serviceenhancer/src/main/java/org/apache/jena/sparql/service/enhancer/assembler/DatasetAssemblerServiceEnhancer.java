@@ -23,7 +23,6 @@ import java.util.Objects;
 import org.apache.commons.lang3.function.TriFunction;
 import org.apache.jena.assembler.Assembler;
 import org.apache.jena.assembler.exceptions.AssemblerException;
-import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.graph.Node;
 import org.apache.jena.query.ARQ;
 import org.apache.jena.query.Dataset;
@@ -43,6 +42,8 @@ import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerInit;
 import org.apache.jena.sparql.util.Context;
 import org.apache.jena.sparql.util.Symbol;
 import org.apache.jena.sparql.util.graph.GraphUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
@@ -53,12 +54,16 @@ import com.google.common.base.Preconditions;
 public class DatasetAssemblerServiceEnhancer
     extends DatasetAssembler
 {
+    private static final Logger logger = LoggerFactory.getLogger(DatasetAssemblerServiceEnhancer.class);
+
     @SuppressWarnings("deprecation")
     @Override
     public DatasetGraph createDataset(Assembler a, Resource root) {
         Resource baseDatasetRes = GraphUtils.getResourceValue(root, ServiceEnhancerVocab.baseDataset);
         if (baseDatasetRes != null) {
-            Log.warn(DatasetAssemblerServiceEnhancer.class, "Use of " + ServiceEnhancerVocab.baseDataset.getURI() + " is deprecated. Please use " + DatasetAssemblerVocab.pDataset.getURI() + " instead.");
+            if (logger.isWarnEnabled()) {
+                logger.warn("Use of {} is deprecated. Please use {} instead.", ServiceEnhancerVocab.baseDataset.getURI(), DatasetAssemblerVocab.pDataset.getURI() );
+            }
         }
 
         Resource tmp = GraphUtils.getResourceValue(root, DatasetAssemblerVocab.pDataset);
@@ -124,7 +129,9 @@ public class DatasetAssemblerServiceEnhancer
                 result = DatasetFactory.wrap(new DatasetGraphWrapper(result.asDatasetGraph(), cxt));
             }
 
-            Log.info(DatasetAssemblerServiceEnhancer.class, "Dataset self id set to " + selfId);
+            if (logger.isInfoEnabled()) {
+                logger.info("Dataset self id set to {}", selfId);
+            }
         } else {
             Class<?> cls = obj == null ? null : obj.getClass();
             throw new AssemblerException(root, "Expected ja:baseDataset to be a Dataset but instead got " + Objects.toString(cls));
@@ -132,7 +139,6 @@ public class DatasetAssemblerServiceEnhancer
 
         return result.asDatasetGraph();
     }
-
 
     /** Transfer a resource's property value to a context symbol's value */
     private static <T> void configureCxt(Resource root, Property property, Context cxt, Symbol symbol, boolean applyDefaultValueIfPropertyAbsent, T defaultValue, TriFunction<Resource, Property, T, T> getValue) {
