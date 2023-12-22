@@ -21,6 +21,7 @@ package org.apache.jena.sparql.service.enhancer.impl;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import org.apache.jena.query.ARQ;
 import org.apache.jena.sparql.engine.binding.Binding;
@@ -58,17 +59,21 @@ public class ServiceResponseCache {
     }
 
     public ServiceResponseCache(int maxCacheSize, int pageSize, int maxPageCount) {
-        //super();
+        this(maxCacheSize, () -> SliceInMemoryCache.create(ArrayOps.createFor(Binding.class), pageSize, maxPageCount));
+    }
+
+    public ServiceResponseCache(int maxCacheSize, Supplier<Slice<Binding[]>> sliceFactory) {
+        super();
         AsyncClaimingCacheImplGuava.Builder<ServiceCacheKey, ServiceCacheValue> builder =
                 AsyncClaimingCacheImplGuava.newBuilder(CacheBuilder.newBuilder().maximumSize(maxCacheSize));
         builder = builder
                 .setCacheLoader(key -> {
                     long id = entryCounter.getAndIncrement();
                     idToKey.put(id, key);
-                    Slice<Binding[]> slice = SliceInMemoryCache.create(ArrayOps.createFor(Binding.class), pageSize, maxPageCount);
+                    Slice<Binding[]> slice = sliceFactory.get();
                     ServiceCacheValue r = new ServiceCacheValue(id, slice);
                     if (logger.isDebugEnabled()) {
-                        logger.debug("Loaded cache entry: {}", id);
+                        logger.debug("Loaded cache entry: {} - {}", key.getServiceNode(), id);
                     }
                     return r;
                 })
@@ -79,13 +84,14 @@ public class ServiceResponseCache {
                     if (v != null) {
                         long id = v.getId();
                         if (logger.isDebugEnabled()) {
-                            logger.debug("Removed cache entry: {}", id);
+                            logger.debug("Removed cache entry: {} - {}", n.getKey().getServiceNode(), id);
                         }
                         idToKey.remove(id);
                     }
                 });
         cache = builder.build();
     }
+
 
     public AsyncClaimingCache<ServiceCacheKey, ServiceCacheValue> getCache() {
         return cache;
