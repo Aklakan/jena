@@ -33,14 +33,6 @@ import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.atlas.iterator.IteratorCloseable;
 import org.apache.jena.atlas.iterator.IteratorOnClose;
 import org.apache.jena.atlas.lib.Closeable;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeMap;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeBasedTable;
-import com.google.common.collect.TreeRangeMap;
-import com.google.common.collect.TreeRangeSet;
-import com.google.common.math.LongMath;
 import org.apache.jena.graph.Node;
 import org.apache.jena.query.Query;
 import org.apache.jena.sparql.algebra.Algebra;
@@ -72,6 +64,15 @@ import org.apache.jena.sparql.service.enhancer.slice.api.SliceAccessor;
 import org.apache.jena.sparql.util.NodeFactoryExtra;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeMap;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeBasedTable;
+import com.google.common.collect.TreeRangeMap;
+import com.google.common.collect.TreeRangeSet;
+import com.google.common.math.LongMath;
 
 /**
  * QueryIter to process service requests in bulk with support for streaming caching.
@@ -247,7 +248,6 @@ public class QueryIterServiceBulk
 
                             // If there is insufficient buffer available we can still try whether we see a result set limit
                             // alternatively we could just set resetRequest to true
-
                             boolean isResultSetLimitReached = false; // reached end without seeing the end marker
                             while (obtainedRowCount < remainingNeededBackendRowCount) { // Repeat until we can serve another binding
 
@@ -767,4 +767,3 @@ public class QueryIterServiceBulk
         return outputToSliceKey.get(outputId);
     }
 }
-
