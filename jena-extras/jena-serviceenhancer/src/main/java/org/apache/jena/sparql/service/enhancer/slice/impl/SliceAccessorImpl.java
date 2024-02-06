@@ -31,6 +31,18 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
 
+import org.apache.jena.atlas.lib.Closeable;
+import org.apache.jena.sparql.service.enhancer.claimingcache.Ref;
+import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
+import org.apache.jena.sparql.service.enhancer.impl.util.AutoCloseableWithLeakDetectionBase;
+import org.apache.jena.sparql.service.enhancer.impl.util.FinallyRunAll;
+import org.apache.jena.sparql.service.enhancer.impl.util.PageUtils;
+import org.apache.jena.sparql.service.enhancer.slice.api.Slice;
+import org.apache.jena.sparql.service.enhancer.slice.api.SliceAccessor;
+import org.apache.jena.sparql.service.enhancer.slice.api.SliceWithPages;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.DiscreteDomain;
@@ -39,17 +51,6 @@ import com.google.common.collect.RangeMap;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeMap;
 import com.google.common.primitives.Ints;
-import org.apache.jena.sparql.service.enhancer.claimingcache.Ref;
-import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
-import org.apache.jena.sparql.service.enhancer.impl.util.AutoCloseableWithLeakDetectionBase;
-import org.apache.jena.sparql.service.enhancer.impl.util.FinallyRunAll;
-import org.apache.jena.sparql.service.enhancer.impl.util.PageUtils;
-import org.apache.jena.sparql.service.enhancer.slice.api.Disposable;
-import org.apache.jena.sparql.service.enhancer.slice.api.Slice;
-import org.apache.jena.sparql.service.enhancer.slice.api.SliceAccessor;
-import org.apache.jena.sparql.service.enhancer.slice.api.SliceWithPages;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A sequence of claimed ranges within a certain range, whereas the range
@@ -81,7 +82,7 @@ public class SliceAccessorImpl<A>
     /** The number of items to process in one batch (before checking for conditions such as interrupts or no-more-demand) */
     protected int bulkSize = 16;
 
-    protected Collection<Disposable> evictionGuards = new ArrayList<>();
+    protected Collection<Closeable> evictionGuards = new ArrayList<>();
 
     public SliceAccessorImpl(SliceWithPages<A> cache) {
         super();
@@ -454,7 +455,7 @@ public class SliceAccessorImpl<A>
 
     @Override
     public void addEvictionGuard(RangeSet<Long> ranges) {
-        Disposable disposable = slice.addEvictionGuard(ranges);
+        Closeable disposable = slice.addEvictionGuard(ranges);
         if (disposable != null) {
             evictionGuards.add(disposable);
         }
