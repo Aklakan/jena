@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 import org.apache.jena.query.ARQ;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCache;
-import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCacheImplGuava;
+import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCacheImplCaffeine;
 import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
 import org.apache.jena.sparql.service.enhancer.slice.api.ArrayOps;
@@ -36,7 +36,7 @@ import org.apache.jena.sparql.util.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 public class ServiceResponseCache {
     private static final Logger logger = LoggerFactory.getLogger(ServiceResponseCache.class);
@@ -64,8 +64,8 @@ public class ServiceResponseCache {
 
     public ServiceResponseCache(int maxCacheSize, Supplier<Slice<Binding[]>> sliceFactory) {
         super();
-        AsyncClaimingCacheImplGuava.Builder<ServiceCacheKey, ServiceCacheValue> builder =
-                AsyncClaimingCacheImplGuava.newBuilder(CacheBuilder.newBuilder().maximumSize(maxCacheSize));
+        AsyncClaimingCacheImplCaffeine.Builder<ServiceCacheKey, ServiceCacheValue> builder =
+                AsyncClaimingCacheImplCaffeine.newBuilder(Caffeine.newBuilder().maximumSize(maxCacheSize));
         builder = builder
                 .setCacheLoader(key -> {
                     long id = entryCounter.getAndIncrement();
@@ -77,14 +77,14 @@ public class ServiceResponseCache {
                     }
                     return r;
                 })
-                .setEvictionListener(n -> {
+                .setEvictionListener((k, v, c) -> {
                     // We are not yet handling cancellation of loading a key; in that case the value may not yet be available
                     // Handle it here here with null for v?
-                    ServiceCacheValue v = n.getValue();
+                    // ServiceCacheValue v = n.getValue();
                     if (v != null) {
                         long id = v.getId();
                         if (logger.isDebugEnabled()) {
-                            logger.debug("Removed cache entry: {} - {}", n.getKey().getServiceNode(), id);
+                            logger.debug("Removed cache entry: {} - {}", k.getServiceNode(), id);
                         }
                         idToKey.remove(id);
                     }
