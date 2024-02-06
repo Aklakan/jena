@@ -28,6 +28,7 @@ import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.query.ResultSetFactory;
+import org.apache.jena.query.ResultSetFormatter;
 import org.apache.jena.query.ResultSetRewindable;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -162,7 +163,31 @@ public abstract class AbstractTestServiceEnhancerResultSetLimits {
         return testCore(identityWrap(model), queryStr, hiddenLimit);
     }
 
+    public static void assertRowCount(int expectedRowCount, Model model, String queryStr, int hiddenLimit) {
+        assertRowCount(expectedRowCount, DatasetFactory.wrap(model), queryStr, hiddenLimit);
+    }
+
+    public static void assertRowCount(int expectedRowCount, Dataset dataset, String queryStr, int hiddenLimit) {
+        ResultSetRewindable rs = exec(dataset, queryStr, hiddenLimit);
+        int actualSize = rs.size();
+        if (actualSize != expectedRowCount) {
+            rs.reset();
+            ResultSetFormatter.outputAsJSON(rs);
+        }
+        Assert.assertEquals(expectedRowCount, actualSize);
+    }
+
     public static int testCore(Dataset dataset, String queryStr, int hiddenLimit) {
+        ResultSetRewindable rs = exec(dataset, queryStr, hiddenLimit);
+        int result = rs.size();
+        return result;
+    }
+
+    /**
+     * Execute a query against a dataset and cut off result sets upon reaching "hiddenLimit" result rows.
+     * The returned ResultSetRewindable is not attached to any resources that might need closing.
+     */
+    public static ResultSetRewindable exec(Dataset dataset, String queryStr, int hiddenLimit) {
         Query query = QueryFactory.create(queryStr);
 
         // Set up a custom service executor registry that "secretly" slices
@@ -174,17 +199,16 @@ public abstract class AbstractTestServiceEnhancerResultSetLimits {
             return new QueryIterSlice(chain.createExecution(opExec, opOrig, binding, execCxt), 0, hiddenLimit, execCxt);
         });
 
-        int result;
+        ResultSetRewindable result;
         try (QueryExecution qe = QueryExecution.create(query, dataset)) {
             Context cxt = qe.getContext();
             // cxt.put(ARQ.enablePropertyFunctions, true);
             ServiceEnhancerInit.wrapOptimizer(cxt);
             ServiceExecutorRegistry.set(qe.getContext(), reg);
-            ResultSetRewindable rs = ResultSetFactory.makeRewindable(qe.execSelect());
+            result = ResultSetFactory.makeRewindable(qe.execSelect());
             // ResultSetFormatter.outputAsJSON(rs);
-            result = rs.size();
         }
-
         return result;
     }
+
 }
