@@ -21,7 +21,7 @@ package org.apache.jena.sparql.service.enhancer.claimingcache;
 import java.util.Collection;
 import java.util.function.Predicate;
 
-import org.apache.jena.sparql.service.enhancer.slice.api.Disposable;
+import org.apache.jena.atlas.lib.Closeable;
 
 /**
  * Interface for an async cache that allows "claiming" entries.
@@ -49,7 +49,7 @@ public interface AsyncClaimingCache<K, V> {
     /**
      * Protect eviction of certain keys as long as the guard is not disposed.
      * Disposable may immediately evict all no longer guarded items */
-    Disposable addEvictionGuard(Predicate<? super K> predicate);
+    Closeable addEvictionGuard(Predicate<? super K> predicate);
 
     /** Return a snapshot of all present keys */
     Collection<K> getPresentKeys();

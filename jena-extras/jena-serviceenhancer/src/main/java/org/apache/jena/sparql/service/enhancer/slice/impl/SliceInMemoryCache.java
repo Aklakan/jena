@@ -22,21 +22,22 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
+import org.apache.jena.atlas.lib.Closeable;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCache;
-import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCacheImplGuava;
+import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCacheImplCaffeine;
 import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
 import org.apache.jena.sparql.service.enhancer.impl.util.LockUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.PageUtils;
 import org.apache.jena.sparql.service.enhancer.slice.api.ArrayOps;
-import org.apache.jena.sparql.service.enhancer.slice.api.Disposable;
 import org.apache.jena.sparql.service.enhancer.slice.api.Slice;
 import org.apache.jena.sparql.service.enhancer.slice.api.SliceMetaDataBasic;
 import org.apache.jena.sparql.service.enhancer.slice.api.SliceWithPages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
 
 /**
  * A slice implementation that starts to discard pages once there are too many.
@@ -50,18 +51,18 @@ public class SliceInMemoryCache<A>
     protected SliceMetaDataWithPages metaData;
     protected AsyncClaimingCache<Long, BufferView<A>> pageCache;
 
-    protected SliceInMemoryCache(ArrayOps<A> arrayOps, int pageSize, AsyncClaimingCacheImplGuava.Builder<Long, BufferView<A>> cacheBuilder) {
+    protected SliceInMemoryCache(ArrayOps<A> arrayOps, int pageSize, AsyncClaimingCacheImplCaffeine.Builder<Long, BufferView<A>> cacheBuilder) {
         super(arrayOps);
         this.metaData = new SliceMetaDataWithPagesImpl(pageSize);
         this.pageCache = cacheBuilder
                 .setCacheLoader(this::loadPage)
-                .setEvictionListener(n -> evictPage(n.getKey()))
+                .setEvictionListener((k, v, c) -> evictPage(k))
                 .build();
     }
 
     public static <A> Slice<A> create(ArrayOps<A> arrayOps, int pageSize, int maxCachedPages) {
-        AsyncClaimingCacheImplGuava.Builder<Long, BufferView<A>> cacheBuilder = AsyncClaimingCacheImplGuava.newBuilder(
-            CacheBuilder.newBuilder().maximumSize(maxCachedPages));
+        AsyncClaimingCacheImplCaffeine.Builder<Long, BufferView<A>> cacheBuilder = AsyncClaimingCacheImplCaffeine.newBuilder(
+            Caffeine.newBuilder().maximumSize(maxCachedPages));
 
         return new SliceInMemoryCache<>(arrayOps, pageSize, cacheBuilder);
     }
@@ -129,7 +130,7 @@ public class SliceInMemoryCache<A>
     }
 
     @Override
-    public Disposable addEvictionGuard(RangeSet<Long> ranges) {
+    public Closeable addEvictionGuard(RangeSet<Long> ranges) {
         long pageSize = getPageSize();
         Set<Long> pageIds = PageUtils.touchedPageIndices(ranges.asRanges(), pageSize);
 
@@ -137,7 +138,7 @@ public class SliceInMemoryCache<A>
             logger.debug("Added eviction guard over ranges " + ranges + " affecting page ids " + pageIds);
         }
 
-        Disposable core = pageCache.addEvictionGuard(key -> pageIds.contains(key));
+        Closeable core = pageCache.addEvictionGuard(key -> pageIds.contains(key));
         return () -> {
             if (logger.isDebugEnabled()) {
                 logger.debug("Removed eviction guard over ranges " + ranges + " affecting page ids " + pageIds);

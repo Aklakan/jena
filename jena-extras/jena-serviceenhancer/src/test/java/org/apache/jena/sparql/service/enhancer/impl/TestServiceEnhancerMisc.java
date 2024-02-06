@@ -18,7 +18,6 @@
 
 package org.apache.jena.sparql.service.enhancer.impl;
 
-import com.google.common.base.StandardSystemProperty;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.query.ARQ;
 import org.apache.jena.query.Dataset;
@@ -47,6 +46,8 @@ import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_JoinStrategy;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
 import org.junit.Assert;
 import org.junit.Test;
+
+import com.google.common.base.StandardSystemProperty;
 
 /** Miscellaneous tests for many aspects of the service enhancer plugin. */
 public class TestServiceEnhancerMisc {
@@ -291,8 +292,7 @@ public class TestServiceEnhancerMisc {
                 "  ?id se:cacheLs ()",
                 "}");
 
-        int actualRowCount = AbstractTestServiceEnhancerResultSetLimits.testCore(ModelFactory.createDefaultModel(), queryStr, 1000);
-        Assert.assertEquals(1, actualRowCount);
+        AbstractTestServiceEnhancerResultSetLimits.assertRowCount(1, ModelFactory.createDefaultModel(), queryStr, 1000);
     }
 
     /** Tests for the presence of the property function cacheLs */
