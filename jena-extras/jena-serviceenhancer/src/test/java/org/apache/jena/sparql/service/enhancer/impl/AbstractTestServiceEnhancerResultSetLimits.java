@@ -153,18 +153,16 @@ public abstract class AbstractTestServiceEnhancerResultSetLimits {
     public static int testWithCleanCaches(Dataset dataset, String queryStr, int hiddenLimit) {
         ServiceResultSizeCache.get().invalidateAll();
         ServiceResponseCache.get().invalidateAll();
-
         int result = testCore(dataset, queryStr, hiddenLimit);
         return result;
     }
-
 
     public static int testCore(Model model, String queryStr, int hiddenLimit) {
         return testCore(identityWrap(model), queryStr, hiddenLimit);
     }
 
     public static void assertRowCount(int expectedRowCount, Model model, String queryStr, int hiddenLimit) {
-        assertRowCount(expectedRowCount, DatasetFactory.wrap(model), queryStr, hiddenLimit);
+        assertRowCount(expectedRowCount, identityWrap(model), queryStr, hiddenLimit);
     }
 
     public static void assertRowCount(int expectedRowCount, Dataset dataset, String queryStr, int hiddenLimit) {
