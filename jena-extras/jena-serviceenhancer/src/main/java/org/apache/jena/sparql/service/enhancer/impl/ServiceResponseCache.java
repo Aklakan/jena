@@ -77,16 +77,19 @@ public class ServiceResponseCache {
                     }
                     return r;
                 })
-                .setEvictionListener((k, v, c) -> {
+                .setAtomicRemovalListener((k, v, c) -> {
                     // We are not yet handling cancellation of loading a key; in that case the value may not yet be available
                     // Handle it here here with null for v?
-                    // ServiceCacheValue v = n.getValue();
                     if (v != null) {
                         long id = v.getId();
                         if (logger.isDebugEnabled()) {
                             logger.debug("Removed cache entry: {} - {}", k.getServiceNode(), id);
                         }
                         idToKey.remove(id);
+                    } else {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Removed cache entry without value {}", k);
+                        }
                     }
                 });
         cache = builder.build();
