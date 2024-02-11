@@ -18,6 +18,7 @@
 
 package org.apache.jena.sparql.service.enhancer.impl;
 
+import org.apache.jena.atlas.logging.LogCtl;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.query.ARQ;
 import org.apache.jena.query.Dataset;
@@ -216,6 +217,7 @@ public class TestServiceEnhancerMisc {
         Assert.assertEquals(referenceRowCount, actualRowCount);
     }
 
+    /** Test case where LIMIT/OFFSET is used within the SERVICE <cache:> block. */
     @Test
     public void testCacheRefreshWithOffsetInside() {
         String queryStr = String.join("\n",
@@ -282,14 +284,13 @@ public class TestServiceEnhancerMisc {
     /** Tests whether cacheLs with empty argument only lists the ids */
     @Test
     public void testCacheMgmtList01() {
-
         // This call creates one cache entry
         testCacheRefreshWithOffsetInside();
 
         String queryStr = String.join("\n",
                 "PREFIX se: <http://jena.apache.org/service-enhancer#>",
                 "SELECT * WHERE {",
-                "  ?id se:cacheLs ()",
+                "  ?id se:cacheLs (?service ?queryStr)",
                 "}");
 
         AbstractTestServiceEnhancerResultSetLimits.assertRowCount(1, ModelFactory.createDefaultModel(), queryStr, 1000);

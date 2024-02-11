@@ -648,6 +648,8 @@ public class QueryIterServiceBulk
                             IteratorCloseable<Binding> baseIt = new IteratorOverReadableChannel<>(channel.getArrayOps(), channel, 1024 * 4);
 
                             // The last iterator's close method also unclaims the cache entry
+                            // FIXME the close action must also be run when this queryIter is aborted!
+                            //   Currently this causes a resource leak
                             Runnable cacheEntryCloseAction = rangeIt.hasNext() || finalCacheValueRef == null
                                     ? baseIt::close
                                     : () -> {
