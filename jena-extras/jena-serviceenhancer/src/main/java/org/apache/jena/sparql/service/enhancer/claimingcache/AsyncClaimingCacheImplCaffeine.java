@@ -20,9 +20,9 @@ package org.apache.jena.sparql.service.enhancer.claimingcache;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -36,6 +36,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.apache.jena.atlas.lib.Closeable;
+import org.apache.jena.sparql.service.enhancer.claimingcache.SynchronizerMap.SynchronizerImpl;
 import org.apache.jena.sparql.service.enhancer.impl.util.LockUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.Scheduler;
+import com.google.common.collect.Sets;
 
 
 /**
@@ -94,7 +96,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
     // The predicates are assumed to always return the same result for the same argument.
     protected final Collection<Predicate<? super K>> evictionGuards;
 
-    protected RemovalListener<K, V> evictionListener;
+    protected RemovalListener<K, V> atomicRemovalListener;
 
     protected Set<K> suppressedRemovalEvents;
 
@@ -106,7 +108,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
             Collection<Predicate<? super K>> evictionGuards,
             BiConsumer<K, RefFuture<V>> claimListener,
             BiConsumer<K, RefFuture<V>> unclaimListener,
-            RemovalListener<K, V> evictionListener,
+            RemovalListener<K, V> atomicRemovalListener,
             Set<K> suppressedRemovalEvents
             ) {
         super();
@@ -117,7 +119,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
         this.evictionGuards = evictionGuards;
         this.claimListener = claimListener;
         this.unclaimListener = unclaimListener;
-        this.evictionListener = evictionListener;
+        this.atomicRemovalListener = atomicRemovalListener;
         this.suppressedRemovalEvents = suppressedRemovalEvents;
     }
 
@@ -126,7 +128,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
         level2.synchronous().cleanUp();
     }
 
-    protected Map<K, Latch> keyToSynchronizer = new ConcurrentHashMap<>();
+    protected SynchronizerMap<K> synchronizerMap = new SynchronizerMap<>();
 
     /**
      * Registers a predicate that 'caches' entries about to be evicted
@@ -158,7 +160,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
 
             boolean isGuarded = evictionGuards.stream().anyMatch(p -> p.test(k));
             if (!isGuarded) {
-                evictionListener.onRemoval(k, v, RemovalCause.COLLECTED);
+                atomicRemovalListener.onRemoval(k, v, RemovalCause.COLLECTED);
                 it.remove();
             }
         }
@@ -166,23 +168,10 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
 
     @Override
     public RefFuture<V> claim(K key) {
-        RefFuture<V> result;
+        RefFuture<V> result = synchronizerMap.compute(key, synchronizer -> {
+            Holder<Boolean> isFreshSecondaryRef = Holder.of(Boolean.FALSE);
 
-        // We rely on ConcurrentHashMap.compute operating atomically
-        Latch synchronizer = keyToSynchronizer.compute(key, (k, before) -> before == null ? new Latch() : before.inc());
-
-        // XXX In principle, we could move to synchronizedMap.compute for (approximately) per-key synchronization.
-        //   The issue is, that RefImpl currently uses synchronized (synchronizer) { } blocks.
-        //   This could be abstracted as a lambda that runs actions in either in a synchronized block or
-        //   a synchronizedMap.compute function.
-
-        // /guarded_entry/ marker; referenced in comment below
-
-        synchronized (synchronizer) {
-            keyToSynchronizer.compute(key, (k, before) -> before.dec());
-            boolean[] isFreshSecondaryRef = { false };
-
-            // Guard against concurrent invalidations
+            // Guard against concurrent invalidation requests
             RefFuture<V> secondaryRef = LockUtils.runWithLock(invalidationLock.readLock(), () -> {
                 return level1.computeIfAbsent(key, k -> {
                     // Wrap the loaded reference such that closing the fully loaded reference adds it to level 2
@@ -204,19 +193,19 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                     suppressedRemovalEvents.remove(key);
 
                     @SuppressWarnings("unchecked")
-                    RefFuture<V>[] holder = new RefFuture[] {null};
-
+                    Holder<RefFuture<V>> holder = Holder.of(null); // new RefFuture[] {null};
                     Ref<CompletableFuture<V>> freshSecondaryRef =
                         RefImpl.create(future, synchronizer, () -> {
 
                             // This is the unclaim action
 
-                            RefFuture<V> v = holder[0];
+                            RefFuture<V> v = holder.get();
 
                             if (unclaimListener != null) {
                                 unclaimListener.accept(key, v);
                             }
 
+                            // FIXME This looks odd - are we adding a cancelled future to level2?
                             RefFutureImpl.cancelFutureOrCloseValue(future, null);
                             level1.remove(key);
                             if (logger.isTraceEnabled()) {
@@ -224,102 +213,27 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                             }
                             level2.put(key, future);
 
-                            // If there are no waiting threads we can remove the latch
-                            keyToSynchronizer.compute(key, (kk, before) -> before.get() == 0 ? null : before);
-                            // syncRef.close();
+                            // Run a ceheck whether to free the key's proxy
+                            // object in the synchronizerMap if the count is zero
+                            synchronizer.clearEntryIfZero();
                         });
-                    isFreshSecondaryRef[0] = true;
-
+                    isFreshSecondaryRef.set(Boolean.TRUE);
                     RefFuture<V> r = RefFutureImpl.wrap(freshSecondaryRef);
-                    holder[0] = r;
-
+                    holder.set(r);
                     return r;
                 });
             });
 
-            result = secondaryRef.acquire();
-
+            RefFuture<V> r = secondaryRef.acquire("secondary ref");
             if (claimListener != null) {
-                claimListener.accept(key, result);
+                claimListener.accept(key, r);
             }
 
-            if (isFreshSecondaryRef[0]) {
+            if (isFreshSecondaryRef.get()) {
                 secondaryRef.close();
             }
-        }
-        return result;
-    }
-
-    // @Override
-    public RefFuture<V> claimOld(K key) {
-        RefFuture<V> result;
-
-        // We rely on ConcurrentHashMap.compute operating atomically
-        Latch synchronizer = keyToSynchronizer.compute(key, (k, before) -> before == null ? new Latch() : before.inc());
-
-        // XXX In principle, we could move to synchronizedMap.compute for (approximately) per-key synchronization.
-        //   The issue is, that RefImpl currently uses synchronized (synchronizer) { } blocks.
-        //   This could be abstracted as a lambda that runs actions in either in a synchronized block or
-        //   a synchronizedMap.compute function.
-
-        // /guarded_entry/ marker; referenced in comment below
-
-        synchronized (synchronizer) {
-            keyToSynchronizer.compute(key, (k, before) -> before.dec());
-            boolean[] isFreshSecondaryRef = { false };
-
-            // Guard against concurrent invalidations
-            RefFuture<V> secondaryRef = LockUtils.runWithLock(invalidationLock.readLock(), () -> {
-                return level1.computeIfAbsent(key, k -> {
-                    // Wrap the loaded reference such that closing the fully loaded reference adds it to level 2
-
-                    logger.trace("Claiming item [" + key + "] from level2");
-                    CompletableFuture<V> future = level2.get(key, (kkk, exec) -> null /* FIXME */);
-                    level2.asMap().remove(key);
-
-
-                    @SuppressWarnings("unchecked")
-                    RefFuture<V>[] holder = new RefFuture[] {null};
-
-
-                    Ref<CompletableFuture<V>> freshSecondaryRef =
-                        RefImpl.create(future, synchronizer, () -> {
-
-                            // This is the unclaim action
-
-                            RefFuture<V> v = holder[0];
-
-                            if (unclaimListener != null) {
-                                unclaimListener.accept(key, v);
-                            }
-
-                            RefFutureImpl.cancelFutureOrCloseValue(future, null);
-                            level1.remove(key);
-                            logger.trace("Item [" + key + "] was unclaimed. Transferring to level2.");
-                            level2.put(key, future);
-
-                            // If there are no waiting threads we can remove the latch
-                            keyToSynchronizer.compute(key, (kk, before) -> before.get() == 0 ? null : before);
-                        });
-                    isFreshSecondaryRef[0] = true;
-
-                    RefFuture<V> r = RefFutureImpl.wrap(freshSecondaryRef);
-                    holder[0] = r;
-
-                    return r;
-                });
-            });
-
-            result = secondaryRef.acquire();
-
-            if (claimListener != null) {
-                claimListener.accept(key, result);
-            }
-
-            if (isFreshSecondaryRef[0]) {
-                secondaryRef.close();
-            }
-        }
+            return r;
+        });
 
         return result;
     }
@@ -330,7 +244,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
         protected CacheLoader<K, V> cacheLoader;
         protected BiConsumer<K, RefFuture<V>> claimListener;
         protected BiConsumer<K, RefFuture<V>> unclaimListener;
-        protected RemovalListener<K, V> evictionListener;
+        protected RemovalListener<K, V> atomicRemovalListener;
 
         Builder<K, V> setCaffeine(Caffeine<Object, Object> caffeine) {
             this.caffeine = caffeine;
@@ -352,8 +266,11 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
             return this;
         }
 
-        public Builder<K, V> setEvictionListener(RemovalListener<K, V> evictionListener) {
-            this.evictionListener = evictionListener;
+        /**
+         * The given removal listener is run atomically both during eviction and invalidation.
+         */
+        public Builder<K, V> setAtomicRemovalListener(RemovalListener<K, V> atomicRemovalListener) {
+            this.atomicRemovalListener = atomicRemovalListener;
             return this;
         }
 
@@ -384,16 +301,18 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                     }
 
                     if (!isGuarded) {
-                        if (evictionListener != null) {
-                            evictionListener.onRemoval(k, v, c);
+                        if (atomicRemovalListener != null) {
+                            atomicRemovalListener.onRemoval(k, v, c);
                         }
                     }
                 }
             };
 
-            Set<K> suppressedRemovalEvents = Collections.newSetFromMap(new ConcurrentHashMap<>());
+            Set<K> suppressedRemovalEvents = Sets.newConcurrentHashSet();
 
-            // Caffeine<Object, Object> finalLevel2Builder = caffeine.removalListener((k, v, c) -> {
+            // Eviction listener is part of the cache's atomic operation
+            // Important: The caffeine.evictionListener is atomic but NEVER called
+            //   as a consequence of cache.invalidateAll()
             Caffeine<Object, Object> finalLevel2Builder = caffeine.evictionListener((k, v, c) -> {
                 K kk = (K)k;
                 boolean isEventSuppressed = suppressedRemovalEvents.contains(kk);
@@ -413,18 +332,6 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                     level3AwareAtomicRemovalListener.onRemoval(kk, vv, c);
                 }
             });
-
-//
-//            caffeine.evictionListener((k, v, c) -> {
-//                K kk = (K)k;
-//                V vv = (V)v;
-//
-//                // Check for actual removal - key no longer present in level1
-//                if (!level1.containsKey(k)) {
-//                    level3AwareEvictionListener.onRemoval(kk, vv, c);
-//                }
-//            });
-
 
             // Cache loader that checks for existing items in level
             Function<K, V> level3AwareCacheLoader = k -> {
@@ -449,7 +356,6 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
 
             AsyncCache<K, V> level2 = finalLevel2Builder.buildAsync();
 
-
             return new AsyncClaimingCacheImplCaffeine<>(level1, level2, level3AwareCacheLoader, level3, evictionGuards, claimListener, unclaimListener, level3AwareAtomicRemovalListener, suppressedRemovalEvents);
         }
     }
@@ -460,13 +366,12 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
         return result;
     }
 
-
     public static void main(String[] args) throws InterruptedException {
 
         AsyncClaimingCacheImplCaffeine<String, String> cache = AsyncClaimingCacheImplCaffeine.<String, String>newBuilder(
                 Caffeine.newBuilder().maximumSize(10).expireAfterWrite(1, TimeUnit.SECONDS).scheduler(Scheduler.systemScheduler()))
             .setCacheLoader(key -> "Loaded " + key)
-            .setEvictionListener((k, v, c) -> System.out.println("Evicted " + k))
+            .setAtomicRemovalListener((k, v, c) -> System.out.println("Evicted " + k))
             .setClaimListener((k, v) -> System.out.println("Claimed: " + k))
             .setUnclaimListener((k, v) -> System.out.println("Unclaimed: " + k))
             .build();
@@ -504,40 +409,40 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
         return result;
     }
 
-
     @Override
     public void invalidateAll() {
         LockUtils.runWithLock(invalidationLock.writeLock(), () -> {
-            level2.synchronous().invalidateAll();
-            int present = level2.asMap().size();
-            // int present = getPresentKeys().size();
-            // if (present != 0) {
-                System.out.println("Still present: " + present);
-            // }
+            // Cache<K, V> synchronousCache = level2.synchronous();
+            List<K> keys = new ArrayList<>(level2.asMap().keySet()); //synchronousCache.asMap().keySet());
+            invalidateAllInternal(keys);
         });
     }
 
     @Override
     public void invalidateAll(Iterable<? extends K> keys) {
         LockUtils.runWithLock(invalidationLock.writeLock(), () -> {
-            Map<K, CompletableFuture<V>> map = level2.asMap();
-            for (K key : keys) {
-                map.compute(key, (k, vFuture) -> {
-                    V v = null;
-                    if (v != null && vFuture.isDone()) {
-                        try {
-                            v = vFuture.get();
-                        } catch (Exception e) {
-                            if (logger.isWarnEnabled()) {
-                                logger.warn("Detected cache entry that failed to load during invalidation", e);
-                            }
-                        }
-                        evictionListener.onRemoval(k, v, RemovalCause.EXPLICIT);
-                    }
-                    return null;
-                });
-            }
+            invalidateAllInternal(keys);
         });
+    }
+
+    private void invalidateAllInternal(Iterable<? extends K> keys) {
+        Map<K, CompletableFuture<V>> map = level2.asMap();
+        for (K key : keys) {
+            map.compute(key, (k, vFuture) -> {
+                V v = null;
+                if (vFuture != null && vFuture.isDone()) {
+                    try {
+                        v = vFuture.get();
+                    } catch (Exception e) {
+                        if (logger.isWarnEnabled()) {
+                            logger.warn("Detected cache entry that failed to load during invalidation", e);
+                        }
+                    }
+                    atomicRemovalListener.onRemoval(k, v, RemovalCause.EXPLICIT);
+                }
+                return null;
+            });
+        }
     }
 
     /**
@@ -551,21 +456,5 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
         result.addAll(level2.asMap().keySet());
         result.addAll(level3.keySet());
         return result;
-    }
-
-    /** Inner class use to synchronize per-key access - Essentially a 'NonAtomicInteger' */
-    private static class Latch {
-        // A flag to indicate that removal of the corresponding entry from keyToSynchronizer needs to be prevented
-        // because another thread already started reusing this latch
-        volatile int numWaitingThreads = 1;
-
-        Latch inc() { ++numWaitingThreads; return this; }
-        Latch dec() { --numWaitingThreads; return this; }
-        int get() { return numWaitingThreads; }
-
-        @Override
-        public String toString() {
-            return "Latch " + System.identityHashCode(this) + " has "+ numWaitingThreads + " threads waiting";
-        }
     }
 }

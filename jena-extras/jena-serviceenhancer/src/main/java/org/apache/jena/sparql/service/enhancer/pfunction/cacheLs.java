@@ -103,7 +103,7 @@ public class cacheLs
             ExecutionContext execCxt) {
 
         Context context = execCxt.getContext();
-        ServiceResponseCache cache = context.get(ServiceEnhancerConstants.serviceCache);
+        ServiceResponseCache cache = ServiceResponseCache.get(context);
 
         Node s = subject.getArg();
         Var sv = s instanceof Var ? (Var)s : null;

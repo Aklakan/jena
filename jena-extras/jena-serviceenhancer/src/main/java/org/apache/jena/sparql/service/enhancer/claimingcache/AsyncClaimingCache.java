@@ -54,7 +54,17 @@ public interface AsyncClaimingCache<K, V> {
     /** Return a snapshot of all present keys */
     Collection<K> getPresentKeys();
 
+    /**
+     * Synchronous(!) invalidation of all keys.
+     * The cache is expected to be empty when this method returns in a non-concurrent setting.
+     */
     void invalidateAll();
+
+    /**
+     * Synchronous(!) invalidation of the given keys.
+     * The cache entries for the given keys are expected to be removed when this method returns
+     * in a non-concurrent setting.
+     */
     void invalidateAll(Iterable<? extends K> keys);
 
     /** Run maintenance actions as needed, such as eviction of keys */

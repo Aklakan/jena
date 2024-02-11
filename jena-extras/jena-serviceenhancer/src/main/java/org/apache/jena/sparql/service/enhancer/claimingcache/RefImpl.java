@@ -59,7 +59,7 @@ public class RefImpl<T>
      * closing a reference removes the map entry before it can be accessed and conversely,
      * synchronizing on the map prevents the reference from becoming released.
      */
-    protected Object synchronizer;
+    protected Synchronizer synchronizer;
 
     protected Object comment; // An attribute which can be used for debugging reference chains
     protected RefImpl<T> parent;
@@ -81,18 +81,25 @@ public class RefImpl<T>
     public RefImpl(
             RefImpl<T> parent,
             T value,
-            Object synchronizer,
+            Synchronizer synchronizer,
             AutoCloseable releaseAction,
             Object comment) {
         super();
         this.parent = parent;
         this.value = value;
         this.releaseAction = releaseAction;
-        this.synchronizer = synchronizer == null ? this : synchronizer;
+        this.synchronizer = synchronizer == null ? this::defaultSynchronizer : synchronizer;
         this.comment = comment;
 
         if (traceAcquisitions) {
             acquisitionStackTrace = StackTraceUtils.getStackTraceIfEnabled();
+        }
+    }
+
+    /** Default synchronizer runs the action while synchronizing on 'this' */
+    protected void defaultSynchronizer(Runnable action) {
+        synchronized (this) {
+            action.run();
         }
     }
 
@@ -105,7 +112,7 @@ public class RefImpl<T>
     protected void finalize() throws Throwable {
         try {
             if (!isClosed) {
-                synchronized (synchronizer) {
+                synchronizer.accept(() -> {
                     if (!isClosed) {
                         String msg = "Ref released by GC rather than user logic - indicates resource leak."
                                 + "Acquired at " + StackTraceUtils.toString(acquisitionStackTrace);
@@ -113,7 +120,7 @@ public class RefImpl<T>
 
                         close();
                     }
-                }
+                });
             }
         } finally {
             super.finalize();
@@ -125,7 +132,7 @@ public class RefImpl<T>
     }
 
     @Override
-    public Object getSynchronizer() {
+    public Synchronizer getSynchronizer() {
         return synchronizer;
     }
 
@@ -144,9 +151,16 @@ public class RefImpl<T>
         return value;
     }
 
+    /**
+     *
+     * @param comment
+     * @param isUnsafe Run the acquire action without synchronization. Use only when already synchronized.
+     * @return
+     */
     @Override
     public Ref<T> acquire(Object comment) {
-        synchronized (synchronizer) {
+        Holder<Ref<T>> result = Holder.of(null);
+        Runnable action = () -> {
             if (!isAlive()) {
                 String msg = "Cannot acquire from a reference with status 'isAlive=false'"
                         + "\nClose triggered at: " + StackTraceUtils.toString(closeTriggerStackTrace);
@@ -158,13 +172,16 @@ public class RefImpl<T>
             Ref[] tmp = new Ref[1];
             tmp[0] = new RefImpl<>(this, value, synchronizer, () -> release(tmp[0]), comment);
 
-            @SuppressWarnings("unchecked")
-            Ref<T> result = tmp[0];
-            childRefs.put(result, comment);
+            result.set((Ref<T>)tmp[0]);
+            childRefs.put(result.get(), comment);
             ++activeChildRefs;
             //activeChildRefs.incrementAndGet();
-            return result;
-        }
+            // return result;
+        };
+
+        synchronizer.accept(action);
+
+        return result.get();
     }
 
     protected void release(Object childRef) {
@@ -188,7 +205,7 @@ public class RefImpl<T>
 
     @Override
     public void close() {
-        synchronized (synchronizer) {
+        Runnable action = () -> {
             if (isClosed) {
                 String msg = "Reference was already closed." +
                         "\nReleased at: " + StackTraceUtils.toString(closeStackTrace) +
@@ -205,7 +222,8 @@ public class RefImpl<T>
 
                 checkRelease();
             }
-        }
+        };
+        synchronizer.accept(action);
     }
 
     protected void checkRelease() {
@@ -225,20 +243,20 @@ public class RefImpl<T>
         }
     }
 
-    public static <T extends AutoCloseable> Ref<T> fromCloseable(T value, Object synchronizer) {
+    public static <T extends AutoCloseable> Ref<T> fromCloseable(T value, Synchronizer synchronizer) {
         return create(value, synchronizer, value);
     }
 
     /** Create method where the close action is created from a provided lambda that accepts the value */
-    public static <T> Ref<T> create2(T value, Object synchronizer, Consumer<? super T> closer) {
+    public static <T> Ref<T> create2(T value, Synchronizer synchronizer, Consumer<? super T> closer) {
         return create(value, synchronizer, () -> closer.accept(value), null);
     }
 
-    public static <T> Ref<T> create(T value, Object synchronizer, AutoCloseable releaseAction) {
+    public static <T> Ref<T> create(T value, Synchronizer synchronizer, AutoCloseable releaseAction) {
         return create(value, synchronizer, releaseAction, null);
     }
 
-    public static <T> Ref<T> create(T value, Object synchronizer, AutoCloseable releaseAction, Object comment) {
+    public static <T> Ref<T> create(T value, Synchronizer synchronizer, AutoCloseable releaseAction, Object comment) {
         return new RefImpl<>(null, value, synchronizer, releaseAction, comment);
     }
 
