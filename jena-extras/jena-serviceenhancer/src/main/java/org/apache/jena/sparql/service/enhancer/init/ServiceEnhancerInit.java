@@ -64,6 +64,7 @@ import org.apache.jena.sparql.service.enhancer.assembler.ServiceEnhancerVocab;
 import org.apache.jena.sparql.service.enhancer.function.cacheRm;
 import org.apache.jena.sparql.service.enhancer.impl.ChainingServiceExecutorBulkServiceEnhancer;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceOpts;
+import org.apache.jena.sparql.service.enhancer.impl.ServiceOptsSE;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceResponseCache;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceResultSizeCache;
 import org.apache.jena.sparql.service.enhancer.impl.util.DynamicDatasetUtils;
@@ -118,14 +119,14 @@ public class ServiceEnhancerInit
     public static void registerServiceExecutorSelf(ServiceExecutorRegistry registry) {
         ChainingServiceExecutor selfExec = (opExec, opOrig, binding, execCxt, chain) -> {
             QueryIterator r;
-            ServiceOpts so = ServiceOpts.getEffectiveService(opExec);
+            ServiceOpts so = ServiceOptsSE.getEffectiveService(opExec);
             OpService target = so.getTargetService();
             DatasetGraph dataset = execCxt.getDataset();
 
             // It seems that we always need to run the optimizer here
             // in order to have property functions recognized properly
             if (ServiceEnhancerConstants.SELF.equals(target.getService())) {
-                String optimizerMode = so.getFirstValue(ServiceOpts.SO_OPTIMIZE, "on", "on");
+                String optimizerMode = so.getFirstValue(ServiceOptsSE.SO_OPTIMIZE, "on", "on");
                 Op op = opExec.getSubOp();
 
                 boolean useQc = false;

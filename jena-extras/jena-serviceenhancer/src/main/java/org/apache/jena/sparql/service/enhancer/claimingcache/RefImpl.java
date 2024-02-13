@@ -168,11 +168,10 @@ public class RefImpl<T>
             }
 
             // A bit of ugliness to allow the reference to release itself
-            @SuppressWarnings("rawtypes")
-            Ref[] tmp = new Ref[1];
-            tmp[0] = new RefImpl<>(this, value, synchronizer, () -> release(tmp[0]), comment);
+            Holder<Ref<T>> tmp = Holder.of(null);
+            tmp.set(new RefImpl<>(this, value, synchronizer, () -> release(tmp.get()), comment));
 
-            result.set((Ref<T>)tmp[0]);
+            result.set(tmp.get());
             childRefs.put(result.get(), comment);
             ++activeChildRefs;
             //activeChildRefs.incrementAndGet();

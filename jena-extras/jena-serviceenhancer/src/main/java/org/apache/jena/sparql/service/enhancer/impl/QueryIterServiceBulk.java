@@ -453,12 +453,15 @@ public class QueryIterServiceBulk
         freeResources();
     }
 
-    /** Prepare the lazy execution of the next batch and register all iterators with {@link #sliceKeyToIter} */
+    /**
+     * Prepare the lazy execution of the next batch and register all iterators with {@link #sliceKeyToIter}.
+     * Only called from the synchronized method {@link #moveToNext()}.
+     */
     // seqId = sequential number injected into the request
     // inputId = id (index) of the input binding
     // rangeId = id of the range w.r.t. to the input binding
     // sliceKey = (inputId, rangeId)
-    public void prepareNextBatchExec(boolean bypassCacheOnFirstInput) {
+    protected void prepareNextBatchExec(boolean bypassCacheOnFirstInput) {
 
         freeResources();
 

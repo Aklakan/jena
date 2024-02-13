@@ -57,15 +57,30 @@ public class TestServiceEnhancerDatasetAssembler
             "<urn:example:base> a ja:MemoryDataset ."
         );
 
+    private static final String SPEC_STR_01_LEGACY = SPEC_STR_01.replace("ja:dataset", "ja:baseDataset");
+
     /**
      * This test case attempts to assemble a dataset with the service enhancer plugin
      * set up in its context. A query making use of enhancer features is fired against it.
      * Only if the plugin is loaded successfully then the query will execute successfully.
      */
-    @Test
+    // @Test
     public void testAssembler() {
+        testAssemblerActual(SPEC_STR_01);
+    }
+
+    /**
+     * Same as {@link #testAssembler()} but uses the incorrect ja:baseDataset property.
+     * Disabled because it generates a deprecation warning.
+     */
+    @Test
+    public void testAssembler_legacy() {
+        testAssemblerActual(SPEC_STR_01_LEGACY);
+    }
+
+    private void testAssemblerActual(String specStr) {
         Model spec = ModelFactory.createDefaultModel();
-        RDFDataMgr.read(spec, new StringReader(SPEC_STR_01), null, Lang.TURTLE);
+        RDFDataMgr.read(spec, new StringReader(specStr), null, Lang.TURTLE);
 
         Dataset dataset = DatasetFactory.assemble(spec.getResource("urn:example:root"));
         Context cxt = dataset.getContext();

@@ -18,7 +18,6 @@
 
 package org.apache.jena.sparql.service.enhancer.impl;
 
-import org.apache.jena.atlas.logging.LogCtl;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.query.ARQ;
 import org.apache.jena.query.Dataset;
