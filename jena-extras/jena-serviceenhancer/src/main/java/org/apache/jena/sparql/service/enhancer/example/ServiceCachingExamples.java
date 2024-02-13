@@ -39,8 +39,8 @@ import com.google.common.base.Stopwatch;
 /** Examples for setting up and using SERVICE caching */
 public class ServiceCachingExamples {
 
-    // This logger is initialized here only for the sake of examples
-    // It will override any prior logger configuration
+    // This logger is initialized here only for the sake of examples.
+    // It will override any prior logger configuration.
     static { LogCtl.setLogging(); }
 
     public static void main(String[] args) {
