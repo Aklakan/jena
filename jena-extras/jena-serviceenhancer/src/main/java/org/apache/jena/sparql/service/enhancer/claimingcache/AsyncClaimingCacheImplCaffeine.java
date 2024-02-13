@@ -36,7 +36,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.apache.jena.atlas.lib.Closeable;
-import org.apache.jena.sparql.service.enhancer.claimingcache.SynchronizerMap.SynchronizerImpl;
 import org.apache.jena.sparql.service.enhancer.impl.util.LockUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +47,6 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.Scheduler;
 import com.google.common.collect.Sets;
-
 
 /**
  * Implementation of async claiming cache.
@@ -192,8 +190,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                     level2.synchronous().invalidate(key);
                     suppressedRemovalEvents.remove(key);
 
-                    @SuppressWarnings("unchecked")
-                    Holder<RefFuture<V>> holder = Holder.of(null); // new RefFuture[] {null};
+                    Holder<RefFuture<V>> holder = Holder.of(null);
                     Ref<CompletableFuture<V>> freshSecondaryRef =
                         RefImpl.create(future, synchronizer, () -> {
 

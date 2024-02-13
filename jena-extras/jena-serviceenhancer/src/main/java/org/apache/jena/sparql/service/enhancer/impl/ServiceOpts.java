@@ -279,26 +279,4 @@ public class ServiceOpts {
                 : new ServiceOpts(new OpService(NodeFactory.createURI(serviceStr), currentOp.getSubOp(), isSilent), opts);
         return result;
     }
-
-    // Domain adaption for the ServiceEnhancer executor
-
-    public static final String SO_OPTIMIZE = "optimize";
-    public static final String SO_CACHE = "cache";
-    public static final String SO_BULK = "bulk";
-    public static final String SO_LOOP = "loop";
-    public static final String SO_LATERAL = "lateral";
-
-    public static boolean isKnownOption(String key) {
-        Set<String> knownOptions = new LinkedHashSet<>();
-        knownOptions.add(SO_CACHE);
-        knownOptions.add(SO_BULK);
-        knownOptions.add(SO_LOOP);
-        knownOptions.add(SO_OPTIMIZE);
-        knownOptions.add(SO_LATERAL);
-        return knownOptions.contains(key);
-    }
-
-    public static ServiceOpts getEffectiveService(OpService opService) {
-        return getEffectiveService(opService, ServiceEnhancerConstants.SELF.getURI(), ServiceOpts::isKnownOption);
-    }
 }
