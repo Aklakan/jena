@@ -44,8 +44,8 @@ import org.apache.jena.sparql.graph.NodeTransform;
 import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.QueryIterSlottedBase;
 import org.apache.jena.sparql.service.enhancer.impl.util.VarUtilsExtra;
-import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerInit;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
+import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerInit;
 
 /**
  * Prepare and execute bulk requests
@@ -175,7 +175,7 @@ public class RequestExecutor
         GroupedBatch<Node, Long, Binding> batchRequest = batchIterator.next();
 
         // TODO Support ServiceOpts from Node directly
-        ServiceOpts so = ServiceOpts.getEffectiveService(serviceInfo.getOpService());
+        ServiceOpts so = ServiceOptsSE.getEffectiveService(serviceInfo.getOpService());
 
         Node targetServiceNode = so.getTargetService().getService();
 

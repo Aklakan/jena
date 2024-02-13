@@ -64,7 +64,7 @@ public class TestServiceOpts {
     public void testServiceOpts_01() {
         Node node = NodeFactory.createURI("cache:foo:bar:");
         OpService op = new OpService(node, OpTable.unit(), false);
-        ServiceOpts opts = ServiceOpts.getEffectiveService(op);
+        ServiceOpts opts = ServiceOptsSE.getEffectiveService(op);
         Assert.assertEquals("foo:bar:", opts.getTargetService().getService().getURI());
         Assert.assertEquals(List.of(new SimpleEntry<>("cache", null)), opts.getOptions());
     }

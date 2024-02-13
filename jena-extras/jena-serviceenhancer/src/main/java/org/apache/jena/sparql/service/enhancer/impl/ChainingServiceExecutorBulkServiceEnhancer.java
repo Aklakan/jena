@@ -61,12 +61,12 @@ public class ChainingServiceExecutorBulkServiceEnhancer
             String val = opt.getValue();
 
             switch (key) {
-            case ServiceOpts.SO_LOOP:
+            case ServiceOptsSE.SO_LOOP:
                 // Loop (lateral join) is handled on the algebra level
                 // nothing to do here except for suppressing forward to
                 // to the remainder of the chain
                 break;
-            case ServiceOpts.SO_CACHE: // Enables caching
+            case ServiceOptsSE.SO_CACHE: // Enables caching
                 String v = val == null ? "" : val.toLowerCase();
 
                 switch (v) {
@@ -76,7 +76,7 @@ public class ChainingServiceExecutorBulkServiceEnhancer
                 }
 
                 break;
-            case ServiceOpts.SO_BULK: // Enables bulk requests
+            case ServiceOptsSE.SO_BULK: // Enables bulk requests
                 enableBulk = true;
 
                 int maxBulkSize = cxt.get(ServiceEnhancerConstants.serviceBulkMaxBindingCount, ChainingServiceExecutorBulkCache.DFT_MAX_BULK_SIZE);

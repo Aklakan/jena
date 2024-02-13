@@ -42,6 +42,7 @@ import org.apache.jena.sparql.expr.ExprList;
 import org.apache.jena.sparql.graph.NodeTransform;
 import org.apache.jena.sparql.graph.NodeTransformLib;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceOpts;
+import org.apache.jena.sparql.service.enhancer.impl.ServiceOptsSE;
 
 /**
  * Checks for the presence of <code>SERVICE &lt;loop:&gt; { }</code>
@@ -63,8 +64,8 @@ public class TransformSE_JoinStrategy extends TransformCopy
         Op effectiveRight = right;
         if (right instanceof OpService) {
             OpService op = (OpService)right;
-            ServiceOpts opts = ServiceOpts.getEffectiveService(op);
-            canDoLinear = opts.containsKey(ServiceOpts.SO_LOOP);
+            ServiceOpts opts = ServiceOptsSE.getEffectiveService(op);
+            canDoLinear = opts.containsKey(ServiceOptsSE.SO_LOOP);
             if (canDoLinear) {
                 NodeTransform joinVarRename = renameForImplicitJoinVars(left);
                 effectiveRight = NodeTransformLib.transform(joinVarRename, right);
@@ -89,8 +90,8 @@ public class TransformSE_JoinStrategy extends TransformCopy
             Op newOp = right;
             if (right instanceof OpService) {
                 OpService op = (OpService)right;
-                ServiceOpts opts = ServiceOpts.getEffectiveService(op);
-                boolean isLoop = opts.containsKey(ServiceOpts.SO_LOOP);
+                ServiceOpts opts = ServiceOptsSE.getEffectiveService(op);
+                boolean isLoop = opts.containsKey(ServiceOptsSE.SO_LOOP);
                 if (isLoop) {
                     NodeTransform joinVarRename = renameForImplicitJoinVars(visibleVarsLeft);
                     newOp = NodeTransformLib.transform(joinVarRename, right);
@@ -117,8 +118,8 @@ public class TransformSE_JoinStrategy extends TransformCopy
             Op newOp = right;
             if (right instanceof OpService) {
                 OpService op = (OpService)right;
-                ServiceOpts opts = ServiceOpts.getEffectiveService(op);
-                boolean isLoop = opts.containsKey(ServiceOpts.SO_LOOP);
+                ServiceOpts opts = ServiceOptsSE.getEffectiveService(op);
+                boolean isLoop = opts.containsKey(ServiceOptsSE.SO_LOOP);
                 if (isLoop) {
                     NodeTransform joinVarRename = renameForImplicitJoinVars(visibleVarsLeft);
                     newOp = NodeTransformLib.transform(joinVarRename, right);
@@ -142,8 +143,8 @@ public class TransformSE_JoinStrategy extends TransformCopy
         Op effectiveRight = right;
         if (right instanceof OpService) {
             OpService op = (OpService)right;
-            ServiceOpts opts = ServiceOpts.getEffectiveService(op);
-            canDoLinear = opts.containsKey(ServiceOpts.SO_LOOP);
+            ServiceOpts opts = ServiceOptsSE.getEffectiveService(op);
+            canDoLinear = opts.containsKey(ServiceOptsSE.SO_LOOP);
             if (canDoLinear) {
                 NodeTransform joinVarRename = renameForImplicitJoinVars(left);
                 effectiveRight = NodeTransformLib.transform(joinVarRename, right);
