@@ -22,6 +22,7 @@ import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.algebra.TransformCopy;
 import org.apache.jena.sparql.algebra.op.OpService;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceOpts;
+import org.apache.jena.sparql.service.enhancer.impl.ServiceOptsSE;
 
 /**
  * Detects options on SERVICE and materializes them.
@@ -46,7 +47,7 @@ public class TransformSE_EffectiveOptions
     @Override
     public Op transform(OpService opService, Op subOp) {
         OpService tmp = new OpService(opService.getService(), subOp, opService.getSilent());
-        ServiceOpts so = ServiceOpts.getEffectiveService(tmp);
+        ServiceOpts so = ServiceOptsSE.getEffectiveService(tmp);
         OpService result = so.toService();
         return result;
     }
