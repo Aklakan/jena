@@ -45,7 +45,6 @@ import org.apache.jena.vocabulary.RDF;
 import org.junit.Assert;
 import org.junit.Test;
 
-
 public class TestServiceEnhancerDatasetAssembler
 {
     private static final String SPEC_STR_01 = String.join("\n",
@@ -57,6 +56,7 @@ public class TestServiceEnhancerDatasetAssembler
             "<urn:example:base> a ja:MemoryDataset ."
         );
 
+    // Replace the property property "ja:dataset" with the legacy one.
     private static final String SPEC_STR_01_LEGACY = SPEC_STR_01.replace("ja:dataset", "ja:baseDataset");
 
     /**
@@ -64,16 +64,15 @@ public class TestServiceEnhancerDatasetAssembler
      * set up in its context. A query making use of enhancer features is fired against it.
      * Only if the plugin is loaded successfully then the query will execute successfully.
      */
-    // @Test
+    @Test
     public void testAssembler() {
         testAssemblerActual(SPEC_STR_01);
     }
 
     /**
      * Same as {@link #testAssembler()} but uses the incorrect ja:baseDataset property.
-     * Disabled because it generates a deprecation warning.
      */
-    @Test
+    // @Test // Disabled by default because it generates a deprecation warning.
     public void testAssembler_legacy() {
         testAssemblerActual(SPEC_STR_01_LEGACY);
     }
