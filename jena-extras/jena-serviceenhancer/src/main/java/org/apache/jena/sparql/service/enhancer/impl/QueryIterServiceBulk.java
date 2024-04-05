@@ -438,6 +438,7 @@ public class QueryIterServiceBulk
             Closeable closeable = sliceKeyToIter.get(partKey);
             closeable.close();
         }
+
         sliceKeyToClose.clear();
 
         inputToRangeToOutput.clear();
@@ -505,6 +506,7 @@ public class QueryIterServiceBulk
 
                 // Note: cacheValueRef must be closed as part of the iterators that read from the cache
                 cacheValueRef = cache.getCache().claim(cacheKey);
+
                 ServiceCacheValue serviceCacheValue = cacheValueRef.await();
 
                 // Lock an existing cache entry so we can read out the loaded ranges
@@ -566,6 +568,7 @@ public class QueryIterServiceBulk
                     ? Range.atLeast(start)
                     : Range.closedOpen(start, end);
 
+                Range<Long> lastPresentRange = null;
                 RangeMap<Long, Boolean> allRanges = TreeRangeMap.create();
                 if (bypassCacheOnFirstInput && isFirstInput) {
                     allRanges.put(requestedRange, false);
@@ -577,6 +580,10 @@ public class QueryIterServiceBulk
 
                     presentRanges.asRanges().forEach(r -> allRanges.put(r, true));
                     absentRanges.asRanges().forEach(r -> allRanges.put(r, false));
+
+                    if (!presentRanges.isEmpty()) {
+                        lastPresentRange = presentRanges.asDescendingSetOfRanges().iterator().next();
+                    }
                 }
 
                 // If the beginning of the request range is covered by a cache then serve from it
@@ -621,10 +628,10 @@ public class QueryIterServiceBulk
                     boolean usesCacheRead = false;
                     while (rangeIt.hasNext()) {
                         SliceKey sliceKey = new SliceKey(inputId, rangeId);
-                        Entry<Range<Long>, Boolean> f = rangeIt.next();
+                        Entry<Range<Long>, Boolean> rangeAndState = rangeIt.next();
 
-                        Range<Long> range = f.getKey();
-                        boolean isLoaded = f.getValue();
+                        Range<Long> range = rangeAndState.getKey();
+                        boolean isLoaded = rangeAndState.getValue();
 
                         long lo = range.lowerEndpoint();
                         long hi = range.hasUpperBound() ? range.upperEndpoint() : Long.MAX_VALUE;
@@ -651,17 +658,14 @@ public class QueryIterServiceBulk
                             IteratorCloseable<Binding> baseIt = new IteratorOverReadableChannel<>(channel.getArrayOps(), channel, 1024 * 4);
 
                             // The last iterator's close method also unclaims the cache entry
-                            // FIXME the close action must also be run when this queryIter is aborted!
-                            //   Currently this causes a resource leak
-                            Runnable cacheEntryCloseAction = rangeIt.hasNext() || finalCacheValueRef == null
-                                    ? baseIt::close
-                                    : () -> {
-                                        baseIt.close();
-                                        finalCacheValueRef.close();
-                                    };
+                            IteratorCloseable<Binding> coreIt = !range.equals(lastPresentRange) || finalCacheValueRef == null
+                                ? baseIt
+                                : Iter.onClose(baseIt, () -> {
+                                    finalCacheValueRef.close();
+                                });
 
                             // Bridge the cache iterator to jena
-                            QueryIterator qIterA = QueryIterPlainWrapper.create(Iter.onClose(baseIt, cacheEntryCloseAction), execCxt);
+                            QueryIterator qIterA = QueryIterPlainWrapper.create(coreIt, execCxt);
 
                             Map<Var, Var> normedToScoped = serviceInfo.getVisibleSubOpVarsNormedToScoped();
                             qIterA = new QueryIteratorMapped(qIterA, normedToScoped);
@@ -675,7 +679,7 @@ public class QueryIterServiceBulk
 
                             sliceKeyToIter.put(sliceKey, it);
                             sliceKeyToClose.add(sliceKey);
-                        } else {
+                        } else { // if range is not loaded into cache then schedule a backend request
                             PartitionRequest<Binding> request = new PartitionRequest<>(nextAllocOutputId, inputBinding, lo, lim);
                             backendRequests.put(nextAllocOutputId, request);
                             sliceKeysForBackend.add(sliceKey);
