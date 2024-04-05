@@ -210,8 +210,8 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                             }
                             level2.put(key, future);
 
-                            // Run a ceheck whether to free the key's proxy
-                            // object in the synchronizerMap if the count is zero
+                            // Run a check whether to free the key's proxy object
+                            // in the synchronizerMap if the count is zero
                             synchronizer.clearEntryIfZero();
                         });
                     isFreshSecondaryRef.set(Boolean.TRUE);
