@@ -147,6 +147,8 @@ public class QueryIterServiceBulk
             ServiceResponseCache cache,
             CacheMode cacheMode
         ) {
+        super(execCxt);
+
         this.serviceInfo = serviceInfo;
         this.cacheKeyFactory = cacheKeyFactory;
         this.opExecutor = opExecutor;
@@ -723,11 +725,11 @@ public class QueryIterServiceBulk
                 return r;
             };
 
-            QueryIterator qIter = new QueryIterDefer(qIterSupplier);
+            QueryIterator qIter = new QueryIterDefer(execCxt, qIterSupplier);
 
             // Wrap the iterator such that the items are cached
             if (cache != null) {
-                qIter = new QueryIterWrapperCache(qIter, cacheBulkSize, cache, cacheKeyFactory, backendRequests, idxVar, targetService);
+                qIter = new QueryIterWrapperCache(execCxt, qIter, cacheBulkSize, cache, cacheKeyFactory, backendRequests, idxVar, targetService);
             }
 
             // Apply renaming after cache to avoid mismatch between op and bindings

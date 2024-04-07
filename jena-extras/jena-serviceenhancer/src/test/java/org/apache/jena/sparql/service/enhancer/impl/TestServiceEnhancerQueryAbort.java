@@ -11,16 +11,20 @@ import java.util.stream.IntStream;
 
 import org.apache.jena.atlas.logging.LogCtl;
 import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryCancelledException;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.query.ResultSetFormatter;
 import org.apache.jena.rdf.model.Model;
+import org.junit.Assert;
 import org.junit.Test;
 
+
 public class TestServiceEnhancerQueryAbort {
-    // @Test
+
+    @Test
     public void test_01() {
         LogCtl.setLogging();
 
@@ -30,12 +34,15 @@ public class TestServiceEnhancerQueryAbort {
             Model model = AbstractTestServiceEnhancerResultSetLimits.createModel(1000);
 
             // Produce a sufficiently large result set so that abort will surely hit in mid-execution
-            Query query = QueryFactory.create("SELECT * { SERVICE <cache:> { ?a ?b ?c . ?d ?e ?f . ?g ?h ?i . ?j ?k ?l } }");
+            // Query query = QueryFactory.create("SELECT * { SERVICE <cache:> { ?a ?b ?c . ?d ?e ?f . ?g ?h ?i . ?j ?k ?l } }");
+            Query query = QueryFactory.create("SELECT * { ?a ?b ?c . ?d ?e ?f . ?g ?h ?i . ?j ?k ?l }");
 
             Random random = new Random();
 
             List<Integer> list = IntStream.range(0, 1000).boxed().collect(Collectors.toList());
-            list.parallelStream()
+            list
+                //.parallelStream()
+                    .stream()
                     .forEach(i -> {
                         QueryExecution qe = QueryExecutionFactory.create(query, model);
                         Future<Integer> future = executorService.submit(() -> doCount(qe));
@@ -45,15 +52,22 @@ public class TestServiceEnhancerQueryAbort {
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
                         }
+                        System.out.println("Abort: " + qe);
                         qe.abort();
                         try {
+                            System.out.println("Waiting for: " + qe);
                             future.get();
-                        } catch (InterruptedException | ExecutionException e) {
-                            throw new RuntimeException(e);
+                        } catch (ExecutionException e) {
+                            Throwable cause = e.getCause();
+                            e.printStackTrace();
+                            Assert.assertEquals(QueryCancelledException.class, cause.getClass());
+                        } catch (InterruptedException e) {
+                            // Ignore?
+                            // throw new RuntimeException(e);
+                        } finally {
+                            System.out.println("Completed: " + qe);
                         }
                     });
-
-
         } finally {
             executorService.shutdownNow();
         }

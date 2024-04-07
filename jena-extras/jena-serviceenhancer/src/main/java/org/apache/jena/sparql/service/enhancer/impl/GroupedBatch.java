@@ -21,30 +21,27 @@ package org.apache.jena.sparql.service.enhancer.impl;
 /**
  * Implementation that combines a batch with a group key.
  */
-public class GroupedBatchImpl<G, K extends Comparable<K>, V>
-    implements GroupedBatch<G, K, V>
+public class GroupedBatch<G, K extends Comparable<K>, V>
 {
     protected G groupKey;
     protected Batch<K, V> batch;
 
-    public GroupedBatchImpl(G groupKey, Batch<K, V> batch) {
+    public GroupedBatch(G groupKey, Batch<K, V> batch) {
         super();
         this.groupKey = groupKey;
         this.batch = batch;
     }
 
-    @Override
     public G getGroupKey() {
         return groupKey;
     }
 
-    @Override
     public Batch<K, V> getBatch() {
         return batch;
     }
 
     @Override
     public String toString() {
-        return "GroupedBatchImpl [groupKey=" + groupKey + ", batch=" + batch + "]";
+        return "GroupedBatch [groupKey=" + groupKey + ", batch=" + batch + "]";
     }
 }
