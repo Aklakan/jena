@@ -84,6 +84,8 @@ public class RequestExecutor
             ServiceResponseCache cache,
             CacheMode cacheMode,
             IteratorCloseable<GroupedBatch<Node, Long, Binding>> batchIterator) {
+        super(opExector.getExecCxt());
+
         this.opExecutor = opExector;
         // this.useLoopJoin = useLoopJoin;
         this.serviceInfo = serviceInfo;
@@ -97,7 +99,12 @@ public class RequestExecutor
         Set<Var> visibleServiceSubOpVars = serviceInfo.getVisibleSubOpVarsScoped();
         this.globalIdxVar = VarUtilsExtra.freshVar("__idx__", visibleServiceSubOpVars);
         this.execCxt = opExector.getExecCxt();
+
+        // Set up an empty iterator as the active one
+        // and ensure it is closed properly
         this.activeIter = QueryIterPeek.create(QueryIterPlainWrapper.create(Collections.<Binding>emptyList().iterator(), execCxt), execCxt);
+        inputToClose.add(currentInputId);
+        inputToOutputIt.put(currentInputId, activeIter);
     }
 
     @Override
@@ -111,6 +118,11 @@ public class RequestExecutor
         while (true) {
             if (activeIter.hasNext()) {
                 Binding peek = activeIter.peek();
+                // The iterator returns null if it was aborted
+                if (peek == null) {
+                    break;
+                }
+
                 long peekOutputId = BindingUtils.getNumber(peek, globalIdxVar).longValue();
 
                 boolean matchesCurrentPartition = peekOutputId == currentInputId;
