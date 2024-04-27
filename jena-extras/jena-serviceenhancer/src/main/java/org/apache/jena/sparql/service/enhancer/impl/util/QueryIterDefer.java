@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.apache.jena.atlas.io.IndentedWriter;
+import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.iterator.QueryIteratorWrapper;
@@ -29,11 +30,49 @@ import org.apache.jena.sparql.serializer.SerializationContext;
 
 /** Deferred (lazy) iterator which initializes a delegate from a supplier only when needed */
 public class QueryIterDefer
+    extends QueryIterSlottedBase
+{
+    protected Supplier<QueryIterator> supplier;
+    protected QueryIterator iterator;
+
+    public QueryIterDefer(ExecutionContext execCxt, Supplier<QueryIterator> supplier) {
+        super(execCxt);
+        this.supplier = supplier;
+    }
+
+    protected void ensureInitialized() {
+        if (iterator == null) {
+            iterator = Objects.requireNonNull(supplier.get(), "Deferred iterator supplier yeld null");
+        }
+    }
+
+    @Override
+    protected Binding moveToNext() {
+        ensureInitialized();
+        return iterator.hasNext() ? iterator.next() : null;
+    }
+
+    @Override
+    protected void requestCancel() {
+        if (iterator != null) {
+            iterator.cancel();
+        }
+    }
+
+    @Override
+    protected void closeIterator() {
+        if (iterator != null) {
+            iterator.close();
+        }
+    }
+}
+
+class QueryIterDeferOld
     extends QueryIteratorWrapper
 {
     protected Supplier<QueryIterator> supplier;
 
-    public QueryIterDefer(Supplier<QueryIterator> supplier) {
+    public QueryIterDeferOld(Supplier<QueryIterator> supplier) {
         super(null);
         this.supplier = supplier;
     }

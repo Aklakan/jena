@@ -198,7 +198,7 @@ public class Batcher<G, I> {
                 Batch<Long, I> resultBatchTmp = nextBatchesIt.next();
                 nextBatchesIt.remove();
 
-                result = new GroupedBatchImpl<>(resultGroupKey, resultBatchTmp);
+                result = new GroupedBatch<>(resultGroupKey, resultBatchTmp);
             } else {
                 result = endOfData();
             }
