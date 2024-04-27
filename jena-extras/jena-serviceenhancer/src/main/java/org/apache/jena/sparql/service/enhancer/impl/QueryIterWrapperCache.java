@@ -26,12 +26,9 @@ import java.util.List;
 import java.util.NavigableMap;
 
 import org.apache.jena.atlas.logging.Log;
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Table.Cell;
-import com.google.common.math.LongMath;
 import org.apache.jena.graph.Node;
 import org.apache.jena.sparql.core.Var;
+import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
@@ -41,6 +38,11 @@ import org.apache.jena.sparql.service.enhancer.impl.util.IteratorUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.QueryIterSlottedBase;
 import org.apache.jena.sparql.service.enhancer.slice.api.Slice;
 import org.apache.jena.sparql.service.enhancer.slice.api.SliceAccessor;
+
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Table.Cell;
+import com.google.common.math.LongMath;
 
 public class QueryIterWrapperCache
     extends QueryIterSlottedBase
@@ -72,6 +74,7 @@ public class QueryIterWrapperCache
     protected AbstractIterator<Long> batchOutputIdIt;
 
     public QueryIterWrapperCache(
+            ExecutionContext execCxt,
             QueryIterator qIter,
             int batchSize,
             ServiceResponseCache cache,
@@ -82,6 +85,7 @@ public class QueryIterWrapperCache
             Var idxVar,
             Node serviceNode
             ) {
+        super(execCxt);
         this.inputIter = qIter;
         this.batchSize = batchSize;
         this.cache = cache;

@@ -18,37 +18,102 @@
 
 package org.apache.jena.sparql.service.enhancer.impl.util;
 
+import java.util.NoSuchElementException;
+
 import org.apache.jena.atlas.io.IndentedWriter;
 import org.apache.jena.atlas.io.Printable;
 import org.apache.jena.atlas.iterator.IteratorSlotted;
 import org.apache.jena.atlas.lib.Lib;
 import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.Plan;
 import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.binding.Binding;
+import org.apache.jena.sparql.engine.iterator.QueryIter;
 import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.util.QueryOutputUtils;
+
+
+public abstract class QueryIterSlottedBase
+    extends QueryIter
+{
+    private boolean slotIsSet = false;
+    private Binding slot = null;
+
+    public QueryIterSlottedBase(ExecutionContext execCxt) {
+        super(execCxt);
+    }
+
+    @Override
+    protected boolean hasNextBinding() {
+        if ( slotIsSet )
+            return true;
+
+//        boolean r = hasMore();
+//        if ( !r ) {
+//            close();
+//            return false;
+//        }
+
+        slot = moveToNext();
+        if ( slot == null ) {
+            close();
+            return false;
+        }
+
+        slotIsSet = true;
+        return true;
+    }
+
+    @Override
+    public Binding moveToNextBinding() {
+        if ( !hasNext() )
+            throw new NoSuchElementException(Lib.className(this));
+
+        Binding obj = slot;
+        slot = null;
+        slotIsSet = false;
+        return obj;
+    }
+
+    @Override
+    protected void closeIterator() {
+        // super.closeI();
+        slotIsSet = false;
+        slot = null;
+    }
+
+    @Override
+    protected void requestCancel() {
+        System.err.println("CANCEL REQUESTED");
+    }
+
+    protected abstract Binding moveToNext();
+}
 
 /**
  * QueryIterator implementation based on IteratorSlotted.
  * Its purpose is to ease wrapping a non-QueryIterator as one based
  * on a {@link #moveToNext()} method analogous to guava's AbstractIterator.
  */
-public abstract class QueryIterSlottedBase
+abstract class QueryIterSlottedBaseOld
     extends IteratorSlotted<Binding>
     implements QueryIterator
 {
+    protected boolean aborted;
+
     @Override
     public Binding nextBinding() {
-        Binding result = isFinished()
-                ? null
-                : next();
-        return result;
+        return next();
+//        Binding result = isFinished()
+//                ? null
+//                : next();
+//        return result;
     }
 
     @Override
     protected boolean hasMore() {
-        return !isFinished();
+        return !aborted && !isFinished();
     }
 
     @Override
@@ -71,7 +136,11 @@ public abstract class QueryIterSlottedBase
 
     @Override
     public void cancel() {
-        close();
+        this.aborted = true;
+    }
+
+    public boolean isAborted() {
+        return aborted;
     }
 
     @Override
