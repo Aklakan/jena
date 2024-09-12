@@ -21,12 +21,9 @@ package org.apache.jena.sparql.service.enhancer.impl.util;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import org.apache.jena.atlas.io.IndentedWriter;
 import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.binding.Binding;
-import org.apache.jena.sparql.engine.iterator.QueryIteratorWrapper;
-import org.apache.jena.sparql.serializer.SerializationContext;
 
 /** Deferred (lazy) iterator which initializes a delegate from a supplier only when needed */
 public class QueryIterDefer
@@ -64,51 +61,5 @@ public class QueryIterDefer
         if (iterator != null) {
             iterator.close();
         }
-    }
-}
-
-class QueryIterDeferOld
-    extends QueryIteratorWrapper
-{
-    protected Supplier<QueryIterator> supplier;
-
-    public QueryIterDeferOld(Supplier<QueryIterator> supplier) {
-        super(null);
-        this.supplier = supplier;
-    }
-
-    protected void ensureInitialized() {
-        if (iterator == null) {
-            iterator = Objects.requireNonNull(supplier.get(), "Deferred iterator supplier yeld null");
-        }
-    }
-
-    @Override
-    protected boolean hasNextBinding() {
-        ensureInitialized();
-        return super.hasNextBinding();
-    }
-
-    @Override
-    protected Binding moveToNextBinding() {
-        ensureInitialized();
-        return super.moveToNextBinding();
-    }
-
-    @Override
-    public void output(IndentedWriter out) {
-        ensureInitialized();
-        super.output(out);
-    }
-
-    @Override
-    protected void closeIterator() {
-        super.closeIterator();
-    }
-
-    @Override
-    public void output(IndentedWriter out, SerializationContext sCxt) {
-        ensureInitialized();
-        super.output(out, sCxt);
     }
 }

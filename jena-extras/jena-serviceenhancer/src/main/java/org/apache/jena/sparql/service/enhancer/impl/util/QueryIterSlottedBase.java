@@ -20,20 +20,14 @@ package org.apache.jena.sparql.service.enhancer.impl.util;
 
 import java.util.NoSuchElementException;
 
-import org.apache.jena.atlas.io.IndentedWriter;
-import org.apache.jena.atlas.io.Printable;
-import org.apache.jena.atlas.iterator.IteratorSlotted;
 import org.apache.jena.atlas.lib.Lib;
-import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.engine.ExecutionContext;
-import org.apache.jena.sparql.engine.Plan;
-import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.iterator.QueryIter;
-import org.apache.jena.sparql.serializer.SerializationContext;
-import org.apache.jena.sparql.util.QueryOutputUtils;
 
-
+/**
+ * Abstract implementation of {@link QueryIter} that delegates computation of the next element to {@link QueryIterSlottedBase#moveToNext()}.
+ */
 public abstract class QueryIterSlottedBase
     extends QueryIter
 {
@@ -78,78 +72,19 @@ public abstract class QueryIterSlottedBase
 
     @Override
     protected void closeIterator() {
-        // super.closeI();
+        // Called by QueryIterBase.close()
         slotIsSet = false;
         slot = null;
     }
 
     @Override
     protected void requestCancel() {
-        System.err.println("CANCEL REQUESTED");
     }
 
+    /**
+     * Method that must return the next non-null element.
+     * A return value of null indicates that the iterator's end has been reached.
+     */
     protected abstract Binding moveToNext();
-}
 
-/**
- * QueryIterator implementation based on IteratorSlotted.
- * Its purpose is to ease wrapping a non-QueryIterator as one based
- * on a {@link #moveToNext()} method analogous to guava's AbstractIterator.
- */
-abstract class QueryIterSlottedBaseOld
-    extends IteratorSlotted<Binding>
-    implements QueryIterator
-{
-    protected boolean aborted;
-
-    @Override
-    public Binding nextBinding() {
-        return next();
-//        Binding result = isFinished()
-//                ? null
-//                : next();
-//        return result;
-    }
-
-    @Override
-    protected boolean hasMore() {
-        return !aborted && !isFinished();
-    }
-
-    @Override
-    public String toString(PrefixMapping pmap)
-    { return QueryOutputUtils.toString(this, pmap); }
-
-    // final stops it being overridden and missing the output() route.
-    @Override
-    public final String toString()
-    { return Printable.toString(this); }
-
-    /** Normally overridden for better information */
-    @Override
-    public void output(IndentedWriter out)
-    {
-        out.print(Plan.startMarker);
-        out.print(Lib.className(this));
-        out.print(Plan.finishMarker);
-    }
-
-    @Override
-    public void cancel() {
-        this.aborted = true;
-    }
-
-    public boolean isAborted() {
-        return aborted;
-    }
-
-    @Override
-    public void output(IndentedWriter out, SerializationContext sCxt) {
-        output(out);
-//	        out.println(Lib.className(this) + "/" + Lib.className(iterator));
-//	        out.incIndent();
-//	        // iterator.output(out, sCxt);
-//	        out.decIndent();
-//	        // out.println(Utils.className(this)+"/"+Utils.className(iterator));
-    }
 }

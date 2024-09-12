@@ -202,7 +202,10 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                                 unclaimListener.accept(key, v);
                             }
 
-                            // FIXME This looks odd - are we adding a cancelled future to level2?
+                            // If the future has not completed yet then cancel it (nothing is done for completed futures)
+                            // Then the future is added to level2.
+                            // If the future fails then the cache entry is removed according to the cache API contract;
+                            // otherwise the value will be readily available.
                             RefFutureImpl.cancelFutureOrCloseValue(future, null);
                             level1.remove(key);
                             if (logger.isTraceEnabled()) {
