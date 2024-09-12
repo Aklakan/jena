@@ -36,22 +36,22 @@ public class SynchronizerMap<K> {
     {
         private SynchronizerMap<K> map;
 
-        /** The id. This is the value of the counter when the key was acquired acquisition. */
+        /** The id. This is the value of the counter when the key was acquired. */
         private final int id;
         private final K key;
-        private final VolatileCounter latch;
+        private final VolatileCounter counter;
 
-        public SynchronizerImpl(SynchronizerMap<K> map, K key, VolatileCounter latch, int id) {
+        public SynchronizerImpl(SynchronizerMap<K> map, K key, VolatileCounter counter, int id) {
             super();
             this.map = map;
             this.key = key;
-            this.latch = latch;
+            this.counter = counter;
             this.id = id;
         }
 
         @Override
         public void accept(Runnable action) {
-            synchronized (latch) {
+            synchronized (counter) {
                 action.run();
             }
         }
@@ -61,13 +61,13 @@ public class SynchronizerMap<K> {
         }
 
         private void dec() {
-            latch.dec();
+            counter.dec();
         }
 
         @Override
         public String toString() {
             return "Synchronizer on " +  System.identityHashCode(map) + ", "
-                    + String.join(", ", "id: " + id, "key: " + key, "current count: " + latch.get());
+                    + String.join(", ", "id: " + id, "key: " + key, "current count: " + counter.get());
         }
     }
 
