@@ -52,9 +52,14 @@ public class ChainingServiceExecutorBulkServiceEnhancer
         int bulkSize = 1;
         CacheMode requestedCacheMode = null;
 
+        int concurrentSlots = 0;
+        long readaheadOfBindingsPerSlot = ChainingServiceExecutorBulkCache.DFT_CONCURRENT_READAHEAD;
+
         Context cxt = execCxt.getContext();
         int n = opts.size();
         int i = 0;
+
+        String v;
         outer: for (; i < n; ++i) {
             Entry<String, String> opt = opts.get(i);
             String key = opt.getKey();
@@ -66,21 +71,42 @@ public class ChainingServiceExecutorBulkServiceEnhancer
                 // nothing to do here except for suppressing forward to
                 // to the remainder of the chain
                 break;
+
             case ServiceOptsSE.SO_CACHE: // Enables caching
-                String v = val == null ? "" : val.toLowerCase();
+                v = val == null ? "" : val.toLowerCase();
 
                 switch (v) {
                 case "off": requestedCacheMode = CacheMode.OFF; break;
                 case "clear": requestedCacheMode = CacheMode.CLEAR; break;
                 default: requestedCacheMode = CacheMode.DEFAULT; break;
                 }
-
                 break;
+
+            case ServiceOptsSE.SO_CONCURRENT:
+                int maxConcurrentSlotCount = cxt.get(ServiceEnhancerConstants.serviceConcurrentMaxSlotCount, ChainingServiceExecutorBulkCache.DFT_MAX_CONCURRENT_SLOTS);
+                // Value pattern is: [concurrentSlots][-maxReadaheadOfBindingsPerSlot]
+                v = val == null ? "" : val.toLowerCase().trim();
+                if (!v.isEmpty()) {
+                    String[] parts = v.split("-", 2);
+                    if (parts.length > 0) {
+                        concurrentSlots = Integer.parseInt(parts[0]);
+                        if (parts.length > 1) {
+                            int maxReadaheadOfBindingsPerSlot = cxt.get(ServiceEnhancerConstants.serviceConcurrentMaxReadaheadCount, ChainingServiceExecutorBulkCache.DFT_MAX_CONCURRENT_READAHEAD);
+                            readaheadOfBindingsPerSlot = Integer.parseInt(parts[1]);
+                            readaheadOfBindingsPerSlot = Math.max(Math.min(readaheadOfBindingsPerSlot, maxReadaheadOfBindingsPerSlot), 0);
+                        }
+                    }
+                } else {
+                    concurrentSlots = Runtime.getRuntime().availableProcessors();
+                }
+                concurrentSlots = Math.max(Math.min(concurrentSlots, maxConcurrentSlotCount), 0);
+                break;
+
             case ServiceOptsSE.SO_BULK: // Enables bulk requests
                 enableBulk = true;
 
                 int maxBulkSize = cxt.get(ServiceEnhancerConstants.serviceBulkMaxBindingCount, ChainingServiceExecutorBulkCache.DFT_MAX_BULK_SIZE);
-                bulkSize = cxt.get(ServiceEnhancerConstants.serviceBulkBindingCount, ChainingServiceExecutorBulkCache.DFT_BULK_SIZE);
+                bulkSize = cxt.get(ServiceEnhancerConstants.serviceBulkBindingCount, ChainingServiceExecutorBulkCache.DFT_CONCURRENT_READAHEAD);
                 try {
                     if (val == null || val.isBlank()) {
                         // Ignored
@@ -92,8 +118,10 @@ public class ChainingServiceExecutorBulkServiceEnhancer
                 }
                 bulkSize = Math.max(Math.min(bulkSize, maxBulkSize), 1);
                 break;
+
             case "": // Skip over separator entries
                 break;
+
             default:
                 break outer;
             }
@@ -118,9 +146,10 @@ public class ChainingServiceExecutorBulkServiceEnhancer
 
         QueryIterator result;
         CacheMode finalCacheMode = CacheMode.effectiveMode(requestedCacheMode);
-        boolean enableSpecial = finalCacheMode != CacheMode.OFF || enableBulk; // || enableLoopJoin; // || !overrides.isEmpty();
+        boolean enableConcurrent = concurrentSlots > 0;
+        boolean enableSpecial = finalCacheMode != CacheMode.OFF || enableBulk || enableConcurrent; // || enableLoopJoin; // || !overrides.isEmpty();
         if (enableSpecial) {
-            ChainingServiceExecutorBulkCache exec = new ChainingServiceExecutorBulkCache(bulkSize, finalCacheMode);
+            ChainingServiceExecutorBulkCache exec = new ChainingServiceExecutorBulkCache(bulkSize, finalCacheMode, concurrentSlots, readaheadOfBindingsPerSlot);
             result = exec.createExecution(newOp, input, execCxt, chain);
         } else {
             result = chain.createExecution(newOp, input, execCxt);

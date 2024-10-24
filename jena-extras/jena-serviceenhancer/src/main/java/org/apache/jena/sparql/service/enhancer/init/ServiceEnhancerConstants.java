@@ -33,7 +33,7 @@ public class ServiceEnhancerConstants {
 
     public static String getURI() { return NS; }
 
-    /** Maximum number of bindings to group into a single bulk request; restricts serviceBulkRequestItemCount */
+    /** Maximum number of bindings to group into a single bulk request; upper limit for serviceBulkRequestBindingCount */
     public static final Symbol serviceBulkMaxBindingCount = SystemARQ.allocSymbol(NS, "serviceBulkMaxBindingCount") ;
 
     /** Maximum number of out-of-band bindings that can be skipped over when forming an individual bulk request */
@@ -41,6 +41,10 @@ public class ServiceEnhancerConstants {
 
     /** Number of bindings to group into a single bulk request */
     public static final Symbol serviceBulkBindingCount = SystemARQ.allocSymbol(NS, "serviceBulkBindingCount") ;
+
+    public static final Symbol serviceConcurrentMaxSlotCount = SystemARQ.allocSymbol(NS, "serviceConcurrentMaxSlotCount") ;
+
+    public static final Symbol serviceConcurrentMaxReadaheadCount = SystemARQ.allocSymbol(NS, "serviceConcurrentMaxReadaheadCount") ;
 
     /** Symbol for the cache of services' result sets */
     public static final Symbol serviceCache = SystemARQ.allocSymbol(NS, "serviceCache") ;

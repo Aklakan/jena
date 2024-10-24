@@ -721,7 +721,7 @@ public class QueryIterServiceBulk
             // (1) we can merge it with other backend and cache requests in the right order
             // (2) responses are written to the cache
             Supplier<QueryIterator> qIterSupplier = () -> {
-                QueryIterator r = opExecutor.exec(substitutedOp);
+                QueryIterator r = opExecutor.exec(substitutedOp, execCxt);
                 return r;
             };
 

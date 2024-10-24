@@ -151,7 +151,6 @@ public class TestServiceEnhancerCachedVsUncached {
             String strA = strBase
                     .replaceAll(Pattern.quote("${mode}"), "cache:loop:bulk+" + bulkSizeA + ":");
 
-
             String strB = strBase
                     .replaceAll(Pattern.quote("${mode}"), "loop:bulk+" + bulkSizeB + ":");
 
@@ -167,5 +166,4 @@ public class TestServiceEnhancerCachedVsUncached {
 
         return pool;
     }
-
 }
