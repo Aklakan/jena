@@ -30,6 +30,7 @@ import com.google.common.collect.DiscreteDomain;
 public class BatchImpl<K extends Comparable<K>, T>
     implements Batch<K, T>
 {
+    /** The first key of the batch. Tracked separately because {@link #items} may be empty. */
     protected K firstKey;
     protected DiscreteDomain<K> discreteDomain;
     protected NavigableMap<K, T> items;
