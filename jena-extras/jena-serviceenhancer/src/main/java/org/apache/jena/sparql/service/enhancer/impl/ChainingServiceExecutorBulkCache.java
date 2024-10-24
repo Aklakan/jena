@@ -40,13 +40,23 @@ public class ChainingServiceExecutorBulkCache
     public static final int DFT_MAX_BULK_SIZE = 100;
     public static final int DFT_MAX_OUT_OUF_BAND_SIZE = 30;
 
+    public static final int DFT_MAX_CONCURRENT_SLOTS = 10;
+
+    public static final int DFT_CONCURRENT_READAHEAD = 10000;
+    public static final int DFT_MAX_CONCURRENT_READAHEAD = 10000;
+
     protected int bulkSize;
     protected CacheMode cacheMode;
 
-    public ChainingServiceExecutorBulkCache(int bulkSize, CacheMode cacheMode) {
+    protected int concurrentSlotCount;
+    protected long concurrentSlotReadaheadCount;
+
+    public ChainingServiceExecutorBulkCache(int bulkSize, CacheMode cacheMode, int concurrentSlotCount, long concurrentSlotReadAheadCount) {
         super();
         this.cacheMode = cacheMode;
         this.bulkSize = bulkSize;
+        this.concurrentSlotCount = concurrentSlotCount;
+        this.concurrentSlotReadaheadCount = concurrentSlotReadAheadCount;
     }
 
     @Override
@@ -63,13 +73,15 @@ public class ChainingServiceExecutorBulkCache
                 get(ServiceEnhancerConstants.serviceResultSizeCache))
                 .orElseGet(ServiceResultSizeCache::new);
 
-        OpServiceExecutorImpl opExecutor = new OpServiceExecutorImpl(serviceInfo.getOpService(), execCxt, chain);
+        OpServiceExecutorImpl opExecutor = new OpServiceExecutorImpl(serviceInfo.getOpService(), chain);
 
         int maxOutOfBandItemCount = cxt.getInt(ServiceEnhancerConstants.serviceBulkMaxOutOfBandBindingCount, DFT_MAX_OUT_OUF_BAND_SIZE);
         Batcher<Node, Binding> scheduler = new Batcher<>(serviceInfo::getSubstServiceNode, bulkSize, maxOutOfBandItemCount);
         IteratorCloseable<GroupedBatch<Node, Long, Binding>> inputBatchIterator = scheduler.batch(input);
 
-        RequestExecutor exec = new RequestExecutor(opExecutor, serviceInfo, resultSizeCache, serviceCache, cacheMode, inputBatchIterator);
+        // int concurrentReadahead = cxt.getInt(ServiceEnhancerConstants.serviceConcurrentMaxReadaheadCount, DFT_CONCURRENT_READAHEAD);
+
+        RequestExecutor exec = new RequestExecutor(execCxt, opExecutor, serviceInfo, resultSizeCache, serviceCache, cacheMode, inputBatchIterator, concurrentSlotCount, concurrentSlotReadaheadCount);
         return exec;
     }
 }
