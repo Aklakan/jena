@@ -67,8 +67,19 @@ public class TransformSE_JoinStrategy extends TransformCopy
             ServiceOpts opts = ServiceOptsSE.getEffectiveService(op);
             canDoLinear = opts.containsKey(ServiceOptsSE.SO_LOOP);
             if (canDoLinear) {
-                NodeTransform joinVarRename = renameForImplicitJoinVars(left);
-                effectiveRight = NodeTransformLib.transform(joinVarRename, right);
+                String loopMode = opts.getFirstValue(ServiceOptsSE.SO_LOOP, "", null);
+                switch (loopMode) {
+                case "":
+                    NodeTransform joinVarRename = renameForImplicitJoinVars(left);
+                    effectiveRight = NodeTransformLib.transform(joinVarRename, right);
+                    break;
+                case ServiceOptsSE.SO_LOOP_MODE_SCOPED:
+                    // Nothing to do
+                    effectiveRight = right;
+                    break;
+                default:
+                    throw new RuntimeException("Unsupported loop mode: " + loopMode);
+                }
             }
         }
 
@@ -93,8 +104,18 @@ public class TransformSE_JoinStrategy extends TransformCopy
                 ServiceOpts opts = ServiceOptsSE.getEffectiveService(op);
                 boolean isLoop = opts.containsKey(ServiceOptsSE.SO_LOOP);
                 if (isLoop) {
-                    NodeTransform joinVarRename = renameForImplicitJoinVars(visibleVarsLeft);
-                    newOp = NodeTransformLib.transform(joinVarRename, right);
+                    String loopMode = opts.getFirstValue(ServiceOptsSE.SO_LOOP, "", null);
+                    switch (loopMode) {
+                    case "":
+                        NodeTransform joinVarRename = renameForImplicitJoinVars(visibleVarsLeft);
+                        newOp = NodeTransformLib.transform(joinVarRename, right);
+                        break;
+                    case ServiceOptsSE.SO_LOOP_MODE_SCOPED:
+                        // Nothing to do
+                        break;
+                    default:
+                        throw new RuntimeException("Unsupported loop mode: " + loopMode);
+                    }
                 }
             }
 
@@ -108,33 +129,44 @@ public class TransformSE_JoinStrategy extends TransformCopy
         return result;
     }
 
-    @Override
-    public Op transform(OpDisjunction opSequence, List<Op> elts) {
-        // Accumulated visible vars
-        Set<Var> visibleVarsLeft = new LinkedHashSet<>();
-
-        OpDisjunction result = OpDisjunction.create();
-        for (Op right : elts) {
-            Op newOp = right;
-            if (right instanceof OpService) {
-                OpService op = (OpService)right;
-                ServiceOpts opts = ServiceOptsSE.getEffectiveService(op);
-                boolean isLoop = opts.containsKey(ServiceOptsSE.SO_LOOP);
-                if (isLoop) {
-                    NodeTransform joinVarRename = renameForImplicitJoinVars(visibleVarsLeft);
-                    newOp = NodeTransformLib.transform(joinVarRename, right);
-                }
-            }
-
-            // Add the now visible vars as new ones
-            Set<Var> visibleVarsRight = OpVars.visibleVars(newOp);
-            visibleVarsLeft.addAll(visibleVarsRight);
-
-            result.add(newOp);
-        }
-
-        return result;
-    }
+//    @Override
+//    public Op transform(OpDisjunction opSequence, List<Op> elts) {
+//        // Accumulated visible vars
+//        Set<Var> visibleVarsLeft = new LinkedHashSet<>();
+//
+//        OpDisjunction result = OpDisjunction.create();
+//        for (Op right : elts) {
+//            Op newOp = right;
+//            if (right instanceof OpService) {
+//                OpService op = (OpService)right;
+//                ServiceOpts opts = ServiceOptsSE.getEffectiveService(op);
+//                boolean isLoop = opts.containsKey(ServiceOptsSE.SO_LOOP);
+//                if (isLoop) {
+//                    String loopMode = opts.getFirstValue(ServiceOptsSE.SO_LOOP, "", null);
+//                    switch (loopMode) {
+//                    case "":
+//                        NodeTransform joinVarRename = renameForImplicitJoinVars(visibleVarsLeft);
+//                        newOp = NodeTransformLib.transform(joinVarRename, right);
+//                        break;
+//                    case ServiceOptsSE.SO_LOOP_MODE_SCOPED:
+//                        // Nothing to do
+//                        newOp = right;
+//                        break;
+//                    default:
+//                        throw new RuntimeException("Unsupported loop mode: " + loopMode);
+//                    }
+//                }
+//            }
+//
+//            // Add the now visible vars as new ones
+//            Set<Var> visibleVarsRight = OpVars.visibleVars(newOp);
+//            visibleVarsLeft.addAll(visibleVarsRight);
+//
+//            result.add(newOp);
+//        }
+//
+//        return result;
+//    }
 
     @Override
     public Op transform(OpLeftJoin opLeftJoin, Op left, Op right)
@@ -146,13 +178,23 @@ public class TransformSE_JoinStrategy extends TransformCopy
             ServiceOpts opts = ServiceOptsSE.getEffectiveService(op);
             canDoLinear = opts.containsKey(ServiceOptsSE.SO_LOOP);
             if (canDoLinear) {
-                NodeTransform joinVarRename = renameForImplicitJoinVars(left);
-                effectiveRight = NodeTransformLib.transform(joinVarRename, right);
+                String loopMode = opts.getFirstValue(ServiceOptsSE.SO_LOOP, "", null);
+                switch (loopMode) {
+                case "":
+                    NodeTransform joinVarRename = renameForImplicitJoinVars(left);
+                    effectiveRight = NodeTransformLib.transform(joinVarRename, right);
 
-                ExprList joinExprs = opLeftJoin.getExprs();
-                if (joinExprs != null) {
-                    ExprList effectiveExprs = NodeTransformLib.transform(joinVarRename, joinExprs);
-                    effectiveRight = OpFilter.filterBy(effectiveExprs, effectiveRight);
+                    ExprList joinExprs = opLeftJoin.getExprs();
+                    if (joinExprs != null) {
+                        ExprList effectiveExprs = NodeTransformLib.transform(joinVarRename, joinExprs);
+                        effectiveRight = OpFilter.filterBy(effectiveExprs, effectiveRight);
+                    }
+                    break;
+                case ServiceOptsSE.SO_LOOP_MODE_SCOPED:
+                    // Nothing to do
+                    break;
+                default:
+                    throw new RuntimeException("Unsupported loop mode: " + loopMode);
                 }
             }
         }

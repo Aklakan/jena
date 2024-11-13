@@ -70,7 +70,7 @@ public class ServiceEnhancerVocab {
      *   <tr><td>se</td><td>{@value #NS}</td></tr>
      * </table>
      */
-    public PrefixMap addPrefixes(PrefixMap pm) {
+    public static PrefixMap addPrefixes(PrefixMap pm) {
         pm.add("ja", JA.getURI());
         pm.add("se", ServiceEnhancerVocab.getURI());
         return pm;
@@ -83,7 +83,7 @@ public class ServiceEnhancerVocab {
      *   <tr><td>se</td><td>{@value #NS}</td></tr>
      * </table>
      */
-    public PrefixMapping addPrefixes(PrefixMapping pm) {
+    public static PrefixMapping addPrefixes(PrefixMapping pm) {
         pm.setNsPrefix("ja", JA.getURI());
         pm.setNsPrefix("se", ServiceEnhancerVocab.getURI());
         return pm;

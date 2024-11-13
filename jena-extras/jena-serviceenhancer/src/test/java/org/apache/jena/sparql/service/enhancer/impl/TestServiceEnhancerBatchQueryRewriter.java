@@ -36,7 +36,7 @@ import org.apache.jena.sparql.algebra.op.OpService;
 import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
-import org.apache.jena.sparql.syntax.syntaxtransform.QueryTransformOps;
+import org.apache.jena.sparql.service.enhancer.impl.BatchQueryRewriter.SubstitutionStrategy;
 import org.junit.Assert;
 import org.junit.Test;
 

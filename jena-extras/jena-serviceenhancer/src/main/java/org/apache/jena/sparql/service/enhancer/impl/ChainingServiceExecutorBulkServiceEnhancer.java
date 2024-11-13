@@ -147,8 +147,12 @@ public class ChainingServiceExecutorBulkServiceEnhancer
         QueryIterator result;
         CacheMode finalCacheMode = CacheMode.effectiveMode(requestedCacheMode);
         boolean enableConcurrent = concurrentSlots > 0;
-        boolean enableSpecial = finalCacheMode != CacheMode.OFF || enableBulk || enableConcurrent; // || enableLoopJoin; // || !overrides.isEmpty();
-        if (enableSpecial) {
+        boolean applySpecialProcessing =
+            finalCacheMode != CacheMode.OFF ||
+            enableBulk ||
+            enableConcurrent;
+
+        if (applySpecialProcessing) {
             ChainingServiceExecutorBulkCache exec = new ChainingServiceExecutorBulkCache(bulkSize, finalCacheMode, concurrentSlots, readaheadOfBindingsPerSlot);
             result = exec.createExecution(newOp, input, execCxt, chain);
         } else {

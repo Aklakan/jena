@@ -34,7 +34,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import org.apache.jena.atlas.iterator.Iter;
@@ -512,18 +511,18 @@ public class RequestExecutor
         }
     }
 
-    protected <T extends Transactional> InstanceLifeCycle<T> txnLifeCycle(Supplier<T> txnCreator, TxnType txnType) {
-        return InstanceLifeCycles.of(() -> {
-            T txn = txnCreator.get();
-            boolean b = txn.isInTransaction();
-            if ( b )
-                TxnOp.compatibleWithPromote(txnType, txn);
-            else
-                txn.begin(txnType);
-            return txn;
-        }, txn -> {
-        });
-    }
+//    protected <T extends Transactional> InstanceLifeCycle<T> txnLifeCycle(Supplier<T> txnCreator, TxnType txnType) {
+//        return InstanceLifeCycles.of(() -> {
+//            T txn = txnCreator.get();
+//            boolean b = txn.isInTransaction();
+//            if ( b )
+//                TxnOp.compatibleWithPromote(txnType, txn);
+//            else
+//                txn.begin(txnType);
+//            return txn;
+//        }, txn -> {
+//        });
+//    }
 
     private static void txnBegin(Transactional txn, TxnType txnType) {
         boolean b = txn.isInTransaction();
@@ -612,7 +611,7 @@ public class RequestExecutor
                     return r;
                 }, batchExecCxt);
 
-                // XXX Only copy when needed!
+                // XXX Ideally we'd only copy bindings when needed!
                 PrefetchTaskForBinding task = new PrefetchTaskForBinding(tmp, concurrentSlotReadAheadCount, reverseMap, BindingFactory::copy);
                 return task;
             }, task -> {

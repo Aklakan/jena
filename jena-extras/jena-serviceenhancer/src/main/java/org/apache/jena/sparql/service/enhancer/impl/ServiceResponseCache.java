@@ -28,6 +28,7 @@ import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCache;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCacheImplCaffeine;
 import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
+import org.apache.jena.sparql.service.enhancer.impl.util.Lazy;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
 import org.apache.jena.sparql.service.enhancer.slice.api.ArrayOps;
 import org.apache.jena.sparql.service.enhancer.slice.api.Slice;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.google.common.base.Preconditions;
 
 public class ServiceResponseCache {
     private static final Logger logger = LoggerFactory.getLogger(ServiceResponseCache.class);
@@ -54,8 +56,14 @@ public class ServiceResponseCache {
     /** Secondary index over cache keys */
     protected Map<Long, ServiceCacheKey> idToKey = new ConcurrentHashMap<>();
 
+    public record SimpleConfig(int maxCacheSize, int pageSize, int maxPageCount) {}
+
     public ServiceResponseCache() {
         this(DFT_MAX_ENTRY_COUNT, DFT_PAGE_SIZE, DFT_MAX_PAGE_COUNT);
+    }
+
+    public ServiceResponseCache(SimpleConfig config) {
+        this(config.maxCacheSize(), config.pageSize(), config.maxPageCount());
     }
 
     public ServiceResponseCache(int maxCacheSize, int pageSize, int maxPageCount) {
@@ -95,7 +103,6 @@ public class ServiceResponseCache {
         cache = builder.build();
     }
 
-
     public AsyncClaimingCache<ServiceCacheKey, ServiceCacheValue> getCache() {
         return cache;
     }
@@ -118,10 +125,27 @@ public class ServiceResponseCache {
     }
 
     public static ServiceResponseCache get(Context cxt) {
-        return cxt.get(ServiceEnhancerConstants.serviceCache);
+        Lazy<ServiceResponseCache> tmp = cxt.get(ServiceEnhancerConstants.serviceCache);
+        return tmp == null ? null : tmp.get();
     }
 
     public static void set(Context cxt, ServiceResponseCache cache) {
+        cxt.put(ServiceEnhancerConstants.serviceCache, Lazy.of(cache));
+    }
+
+    public static void set(Context cxt, Lazy<ServiceResponseCache> cache) {
         cxt.put(ServiceEnhancerConstants.serviceCache, cache);
+    }
+
+    public static ServiceResponseCache.SimpleConfig buildConfig(Context cxt) {
+        int maxEntryCount = cxt.getInt(ServiceEnhancerConstants.serviceCacheMaxEntryCount, ServiceResponseCache.DFT_MAX_ENTRY_COUNT);
+        int pageSize = cxt.getInt(ServiceEnhancerConstants.serviceCachePageSize, ServiceResponseCache.DFT_PAGE_SIZE);
+        int maxPageCount = cxt.getInt(ServiceEnhancerConstants.serviceCacheMaxPageCount, ServiceResponseCache.DFT_MAX_PAGE_COUNT);
+
+        Preconditions.checkArgument(maxEntryCount > 0, ServiceEnhancerConstants.serviceCacheMaxEntryCount + " requires a value greater than 0");
+        Preconditions.checkArgument(pageSize > 0, ServiceEnhancerConstants.serviceCachePageSize + " requires a value greater than 0");
+        Preconditions.checkArgument(maxPageCount > 0, ServiceEnhancerConstants.serviceCacheMaxPageCount + " requires a value greater than 0");
+
+        return new ServiceResponseCache.SimpleConfig(maxEntryCount, pageSize, maxPageCount);
     }
 }
