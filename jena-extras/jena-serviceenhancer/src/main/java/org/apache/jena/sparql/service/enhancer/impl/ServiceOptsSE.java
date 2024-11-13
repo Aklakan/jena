@@ -11,9 +11,13 @@ public class ServiceOptsSE {
     public static final String SO_BULK = "bulk";
     public static final String SO_CACHE = "cache";
 
-    // Reserved;currently not implemented
+    /** Reserved; currently not implemented */
     public static final String SO_LATERAL = "lateral";
+
     public static final String SO_LOOP = "loop";
+
+    /** Modifies loop to substitute only in-scope variables on the rhs. Original behavior is to substitute variables regardless of scope. Usage: SERVICE <loop+scoped> {}. */
+    public static final String SO_LOOP_MODE_SCOPED = "scoped";
 
     public static final String SO_CONCURRENT = "concurrent";
     public static final String SO_OPTIMIZE = "optimize";

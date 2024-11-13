@@ -37,6 +37,7 @@ import org.apache.jena.sparql.core.assembler.DatasetAssemblerVocab;
 import org.apache.jena.sparql.service.enhancer.impl.ChainingServiceExecutorBulkCache;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceResponseCache;
 import org.apache.jena.sparql.service.enhancer.impl.util.GraphUtilsExtra;
+import org.apache.jena.sparql.service.enhancer.impl.util.Lazy;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerInit;
 import org.apache.jena.sparql.util.Context;
@@ -108,7 +109,7 @@ public class DatasetAssemblerServiceEnhancer
                 Preconditions.checkArgument(maxPageCount > 0, ServiceEnhancerVocab.cacheMaxPageCount.getURI() + " requires a value greater than 0");
 
                 ServiceResponseCache cache = new ServiceResponseCache(maxEntryCount, pageSize, maxPageCount);
-                ServiceResponseCache.set(cxt, cache);
+                ServiceResponseCache.set(cxt, Lazy.of(cache));
             }
 
             // Transfer values from the RDF model to the context

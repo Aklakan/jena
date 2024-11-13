@@ -35,15 +35,18 @@ import org.apache.jena.query.SortCondition;
 import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.algebra.OpAsQuery;
 import org.apache.jena.sparql.algebra.OpLib;
+import org.apache.jena.sparql.algebra.Transformer;
 import org.apache.jena.sparql.algebra.op.OpExtend;
 import org.apache.jena.sparql.algebra.op.OpOrder;
 import org.apache.jena.sparql.algebra.op.OpSlice;
 import org.apache.jena.sparql.algebra.op.OpUnion;
+import org.apache.jena.sparql.core.Substitute;
 import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.main.QC;
 import org.apache.jena.sparql.expr.ExprVar;
 import org.apache.jena.sparql.expr.NodeValue;
+import org.apache.jena.sparql.service.enhancer.algebra.TransformAssignToExtend;
 import org.apache.jena.sparql.service.enhancer.impl.util.AssertionUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
 import org.slf4j.Logger;
@@ -64,6 +67,15 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 public class BatchQueryRewriter {
+
+    public enum SubstitutionStrategy {
+        /** Legacy approach (before LATERAL was introduced) based on {@link QC#substitute(Op, Binding)}. */
+        SUBSTITUTE,
+
+        /** Modern approach using {@link Substitute#substitute(Op, Binding). */
+        INJECT
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(BatchQueryRewriter.class);
 
     protected OpServiceInfo serviceInfo;
@@ -80,9 +92,10 @@ public class BatchQueryRewriter {
      */
     protected boolean orderRetainingUnion;
 
-
     /** Whether to omit the end marker */
     protected boolean omitEndMarker;
+
+    protected SubstitutionStrategy substitutionStrategy;
 
     /** Constant to mark end of a batch (could also be dynamically set to one higher then the idx in a batch) */
     static int REMOTE_END_MARKER = 1000000000;
@@ -98,13 +111,15 @@ public class BatchQueryRewriter {
 
     public BatchQueryRewriter(OpServiceInfo serviceInfo, Var idxVar,
             boolean sequentialUnion, boolean orderRetainingUnion,
-            boolean omitEndMarker) {
+            boolean omitEndMarker, SubstitutionStrategy substitutionStrategy) {
         super();
         this.serviceInfo = serviceInfo;
         this.idxVar = idxVar;
         this.sequentialUnion = sequentialUnion;
         this.orderRetainingUnion = orderRetainingUnion;
         this.omitEndMarker = omitEndMarker;
+
+        this.substitutionStrategy = Objects.requireNonNull(substitutionStrategy);
     }
 
     /** The index var used by this rewriter */
@@ -167,8 +182,10 @@ public class BatchQueryRewriter {
 
             // Note: QC.substitute does not remove variables being substituted from projections
             //   This may cause unbound variables to be projected
-
-            op = QC.substitute(op, normedBinding);
+            op = switch (substitutionStrategy) {
+                case SUBSTITUTE -> QC.substitute(op, normedBinding);
+                case INJECT -> Transformer.transform(TransformAssignToExtend.get(), Substitute.inject(op, normedBinding));
+            };
 
             // Relabel any blank nodes
             op = NodeTransformLib.transform(node -> relabelBnode(node, idx), op);

@@ -42,12 +42,29 @@ public class ServiceEnhancerConstants {
     /** Number of bindings to group into a single bulk request */
     public static final Symbol serviceBulkBindingCount = SystemARQ.allocSymbol(NS, "serviceBulkBindingCount") ;
 
+    /** Default number of slots when no explicit number is given.
+     *  Subject to capping by {@link #serviceConcurrentMaxSlotCount}. */
+    public static final Symbol serviceConcurrentDtfSlotCount = SystemARQ.allocSymbol(NS, "serviceConcurrentDftSlotCount") ;
+
     public static final Symbol serviceConcurrentMaxSlotCount = SystemARQ.allocSymbol(NS, "serviceConcurrentMaxSlotCount") ;
+
+    /** Default number of slots when no explicit number is given.
+     *  Subject to capping by {@link #serviceConcurrentDftReadaheadCount}. */
+    public static final Symbol serviceConcurrentDftReadaheadCount = SystemARQ.allocSymbol(NS, "serviceConcurrentDftReadaheadCount") ;
 
     public static final Symbol serviceConcurrentMaxReadaheadCount = SystemARQ.allocSymbol(NS, "serviceConcurrentMaxReadaheadCount") ;
 
     /** Symbol for the cache of services' result sets */
     public static final Symbol serviceCache = SystemARQ.allocSymbol(NS, "serviceCache") ;
+
+    /** Factory for on-demand initialization of a serviceCache instance */
+    // public static final Symbol serviceCacheFactory = SystemARQ.allocSymbol(NS, "serviceCacheFactory") ;
+
+    // The following serviceCache* context symbols can be used to configure on-demand serviceCache instance creation.
+
+    public static final Symbol serviceCacheMaxEntryCount = SystemARQ.allocSymbol(NS, "serviceCacheMaxEntryCount") ;
+    public static final Symbol serviceCachePageSize = SystemARQ.allocSymbol(NS, "serviceCachePageSize") ;
+    public static final Symbol serviceCacheMaxPageCount = SystemARQ.allocSymbol(NS, "serviceCacheMaxPageCount") ;
 
     /** Symbol for the cache of services' result set sizes */
     public static final Symbol serviceResultSizeCache = SystemARQ.allocSymbol(NS, "serviceResultSizeCache") ;

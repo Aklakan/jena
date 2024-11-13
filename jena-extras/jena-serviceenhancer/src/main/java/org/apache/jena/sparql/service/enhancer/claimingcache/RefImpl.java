@@ -152,10 +152,7 @@ public class RefImpl<T>
     }
 
     /**
-     *
-     * @param comment
-     * @param isUnsafe Run the acquire action without synchronization. Use only when already synchronized.
-     * @return
+     * @param comment A comment to attach to the acquired reference.
      */
     @Override
     public Ref<T> acquire(Object comment) {

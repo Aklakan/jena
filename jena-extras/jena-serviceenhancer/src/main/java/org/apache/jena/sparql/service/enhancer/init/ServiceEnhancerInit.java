@@ -57,26 +57,34 @@ import org.apache.jena.sparql.engine.main.QC;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.apache.jena.sparql.service.ServiceExecutorRegistry;
+import org.apache.jena.sparql.service.bulk.ServiceExecutorBulk;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_EffectiveOptions;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_JoinStrategy;
 import org.apache.jena.sparql.service.enhancer.assembler.DatasetAssemblerServiceEnhancer;
 import org.apache.jena.sparql.service.enhancer.assembler.ServiceEnhancerVocab;
 import org.apache.jena.sparql.service.enhancer.function.cacheRm;
 import org.apache.jena.sparql.service.enhancer.impl.ChainingServiceExecutorBulkServiceEnhancer;
+import org.apache.jena.sparql.service.enhancer.impl.QueryIteratorCollect;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceOpts;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceOptsSE;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceResponseCache;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceResultSizeCache;
 import org.apache.jena.sparql.service.enhancer.impl.util.DynamicDatasetUtils;
+import org.apache.jena.sparql.service.enhancer.impl.util.Lazy;
 import org.apache.jena.sparql.service.enhancer.impl.util.VarScopeUtils;
 import org.apache.jena.sparql.service.enhancer.pfunction.cacheLs;
 import org.apache.jena.sparql.service.single.ChainingServiceExecutor;
 import org.apache.jena.sparql.util.Context;
+import org.apache.jena.sparql.util.MappingRegistry;
 import org.apache.jena.sys.JenaSubsystemLifecycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServiceEnhancerInit
     implements JenaSubsystemLifecycle
 {
+    private static final Logger logger = LoggerFactory.getLogger(ServiceEnhancerInit.class);
+
     @Override
     public void start() {
         init();
@@ -87,12 +95,51 @@ public class ServiceEnhancerInit
         // Nothing to do
     }
 
+    public static void initMappingRegistry() {
+        // Register the "se" prefix for use with cli options, such as ./arq --set 'se:serviceCacheMaxEntryCount=1000'
+        MappingRegistry.addPrefixMapping("se", ServiceEnhancerVocab.getURI());
+    }
+
+    /** Initialize the SERVICE <collect:> { }. This collects all bindings of the graph pattern into a list and serves them
+     * from the list. */
+    // TODO Finish doc: Needed for SERVICE <concurrent:> { }
+    public static void initFeatureCollect() {
+        ServiceExecutorRegistry.get().addBulkLink((opService, input, execCxt, chain) -> {
+            QueryIterator r;
+            ServiceOpts opts = ServiceOpts.getEffectiveService(opService, ServiceEnhancerConstants.SELF.getURI(), key -> key.equals("collect"));
+            if (opts.containsKey("collect")) {
+                opts.removeKey("collect");
+                OpService newOp = opts.toService();
+                QueryIterator tmp  = chain.createExecution(newOp, input, execCxt);
+                r = new QueryIteratorCollect(tmp, execCxt);
+            } else {
+                r = chain.createExecution(opService, input, execCxt);
+            }
+            return r;
+        });
+    }
+
     public static void init() {
-        ServiceResponseCache cache = new ServiceResponseCache();
-        ARQ.getContext().put(ServiceEnhancerConstants.serviceCache, cache);
+        initMappingRegistry();
+
+        Context cxt = ARQ.getContext();
+
+        initFeatureCollect();
+
+        // Creation of the cache is deferred until first use.
+        // This allows for the cache creation to read settings from the context.
+        Lazy<ServiceResponseCache> cache = Lazy.of(() -> {
+            ServiceResponseCache.SimpleConfig conf = ServiceResponseCache.buildConfig(cxt);
+            ServiceResponseCache r = new ServiceResponseCache(conf);
+            if (logger.isInfoEnabled()) {
+                logger.info("Initialized Service Enhancer Cache with config {}", conf);
+            }
+            return r;
+        });
+        cxt.put(ServiceEnhancerConstants.serviceCache, cache);
 
         ServiceResultSizeCache resultSizeCache = new ServiceResultSizeCache();
-        ServiceResultSizeCache.set(ARQ.getContext(), resultSizeCache);
+        ServiceResultSizeCache.set(cxt, resultSizeCache);
 
         ServiceExecutorRegistry.get().addBulkLink(new ChainingServiceExecutorBulkServiceEnhancer());
 
@@ -167,7 +214,8 @@ public class ServiceEnhancerInit
             // Set up the map that allows for mapping the query's result set variables's
             // to the appropriately scoped ones
             Set<Var> visibleVars = OpVars.visibleVars(op);
-            Map<Var, Var> normedToScoped = VarScopeUtils.normalizeVarScopes(visibleVars).inverse();
+            Set<String> visiblePlainNames = VarScopeUtils.getPlainNames(visibleVars);
+            Map<Var, Var> normedToScoped = VarScopeUtils.normalizeVarScopes(visibleVars, visiblePlainNames).inverse();
 
             Op opRestored = Rename.reverseVarRename(op, true);
             Query baseQuery = OpAsQuery.asQuery(opRestored);

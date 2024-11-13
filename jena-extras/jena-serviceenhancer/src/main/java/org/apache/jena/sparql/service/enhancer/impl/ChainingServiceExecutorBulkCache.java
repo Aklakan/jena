@@ -40,7 +40,7 @@ public class ChainingServiceExecutorBulkCache
     public static final int DFT_MAX_BULK_SIZE = 100;
     public static final int DFT_MAX_OUT_OUF_BAND_SIZE = 30;
 
-    public static final int DFT_MAX_CONCURRENT_SLOTS = 10;
+    public static final int DFT_MAX_CONCURRENT_SLOTS = 100;
 
     public static final int DFT_CONCURRENT_READAHEAD = 10000;
     public static final int DFT_MAX_CONCURRENT_READAHEAD = 10000;
