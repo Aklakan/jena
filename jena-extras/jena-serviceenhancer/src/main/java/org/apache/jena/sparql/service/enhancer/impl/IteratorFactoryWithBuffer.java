@@ -24,11 +24,13 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.stream.IntStream;
 
+import org.apache.jena.query.QueryCancelledException;
+import org.apache.jena.sparql.service.enhancer.impl.util.SinglePrefetchIterator;
+
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.SetMultimap;
-
-import org.apache.jena.sparql.service.enhancer.impl.util.SinglePrefetchIterator;
+import com.google.common.primitives.Ints;
 
 /**
  * Buffering iterator. Can buffer an arbitrary amount ahead.
@@ -218,6 +220,15 @@ public class IteratorFactoryWithBuffer<T, I extends Iterator<T>>
             }
 
             return result;
+        }
+
+        @Override
+        protected void handleException(Throwable e) {
+            if (e instanceof QueryCancelledException) {
+                e.addSuppressed(new RuntimeException("Prefetching data failed."));
+                throw (QueryCancelledException)e;
+            }
+            super.handleException(e);
         }
 
         @Override

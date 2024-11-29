@@ -178,6 +178,18 @@ public class QueryIterServiceBulk
 
     @Override
     protected synchronized Binding moveToNext() {
+        Binding result;
+        try {
+            result = moveToNextActual();
+        } catch (Exception e) {
+            freeResources();
+            e.addSuppressed(new RuntimeException("Problem encountered moving to next item."));
+            throw e;
+        }
+        return result;
+    }
+
+    protected synchronized Binding moveToNextActual() {
         Binding mergedBindingWithIdx = null;
 
         // One time init
@@ -380,7 +392,7 @@ public class QueryIterServiceBulk
             SliceKey sliceKey = new SliceKey(currentInputId, currentRangeId);
 
             if (sliceKeyToClose.contains(sliceKey)) {
-                // System.out.println("Closing part key " + pk);
+                // System.out.println("Closing slice key " + pk);
                 Closeable closeable = sliceKeyToIter.get(sliceKey);
                 closeable.close();
                 sliceKeyToClose.remove(sliceKey);

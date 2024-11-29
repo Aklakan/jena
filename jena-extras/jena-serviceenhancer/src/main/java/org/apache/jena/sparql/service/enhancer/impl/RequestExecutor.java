@@ -26,13 +26,10 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 
@@ -58,6 +55,7 @@ import org.apache.jena.sparql.engine.iterator.QueryIterPlainWrapper;
 import org.apache.jena.sparql.engine.iterator.QueryIteratorWrapper;
 import org.apache.jena.sparql.expr.NodeValue;
 import org.apache.jena.sparql.graph.NodeTransform;
+import org.apache.jena.sparql.service.enhancer.concurrent.ExecutorServicePool;
 import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.InstanceLifeCycle;
 import org.apache.jena.sparql.service.enhancer.impl.util.InstanceLifeCycles;
@@ -67,6 +65,16 @@ import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerInit;
 import org.apache.jena.system.TxnOp;
 
+// FIXME This class has been generalized from forming bulk requests from a batch of input items
+//       into one that can execute formed batches concurrently.
+//       At the core, this is a flatMap operation.
+//       The action to perform on a batch used to be hard coded, and now needs to go into an abstract method,
+//       such as QueryIterator processBatch(List<Binding> batch).
+//
+// FIXME Add support for execution pooling - when a task completes than the thread that executed it needs to be
+//       handed back to the pool.
+//       The pool can be a global instance.
+
 /**
  * Prepare and execute bulk requests.
  * Also allows prefetching of data using a number of concurrent slots.
@@ -74,49 +82,6 @@ import org.apache.jena.system.TxnOp;
 public class RequestExecutor
     extends QueryIterSlottedBase
 {
-    static class ExecutorServiceWrapperSync {
-        protected ExecutorService executorService;
-
-        public ExecutorServiceWrapperSync() {
-            this(null);
-        }
-
-        public ExecutorServiceWrapperSync(ExecutorService es) {
-            super();
-            this.executorService = es;
-        }
-
-        public ExecutorService getExecutorService() {
-            return executorService;
-        }
-
-        public void submit(Runnable runnable) {
-            submit(() -> { runnable.run(); return null; });
-        }
-
-        public <T> T submit(Callable<T> callable) {
-            if (executorService == null) {
-                synchronized (this) {
-                    if (executorService == null) {
-                        executorService = Executors.newSingleThreadExecutor();
-                    }
-                }
-            }
-
-            T result = submit(executorService, callable);
-            return result;
-        }
-
-        public static <T> T submit(ExecutorService executorService, Callable<T> callable) {
-            try {
-                return executorService.submit(callable).get();
-            // } catch (InterruptedException | ExecutionException e) {
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
     static class IteratorDelegateWithWorkerThread<T, I extends Iterator<T>>
         extends IteratorSlotted<T>
     {
@@ -190,12 +155,17 @@ public class RequestExecutor
          */
         @Override
         public final void closeIterator() {
-            executorServiceSync.submit(this::closeActual);
+            executorServiceSync.submit(this::inThreadCloseAction);
+            outThreadCloseAction();
         }
 
-        protected void closeActual() {
+        /** Close action that is submitted to the executor service. */
+        protected void inThreadCloseAction() {
             Iter.close(getDelegate());
         }
+
+        /** Close action that is run by the calling thread. */
+        protected void outThreadCloseAction() {}
     }
 
     static class PrefetchTaskForBinding
@@ -240,19 +210,22 @@ public class RequestExecutor
     static class TaskEntry {
         // protected LifeCycle<PrefetchTaskForBinding> taskLifeCycle;
         protected PrefetchTaskForBinding task;
-        protected Closeable closeAction;
+        protected Closeable inThreadCloseAction;
 
         protected ExecutorService executorService;
+        protected Closeable outThreadCloseAction;
+
         protected Future<?> future;
         protected ExecutionContext execCxt;
 
         protected volatile QueryIterPeek peekIter;
 
-        public TaskEntry(PrefetchTaskForBinding task, Closeable closeAction, ExecutorService executorService, Future<?> future, ExecutionContext execCxt) {
+        public TaskEntry(PrefetchTaskForBinding task, Closeable inThreadCloseAction, ExecutorService executorService, Closeable outThreadCloseAction, Future<?> future, ExecutionContext execCxt) {
             super();
             this.task = task;
-            this.closeAction = closeAction;
+            this.inThreadCloseAction = inThreadCloseAction;
             this.executorService = executorService;
+            this.outThreadCloseAction = outThreadCloseAction;
             this.future = future;
             this.execCxt = execCxt;
         }
@@ -291,19 +264,26 @@ public class RequestExecutor
                     IteratorCloseable<Binding> threadIt = new IteratorDelegateWithWorkerThread<>(tmp, executorService, task.getCopyFn()) {
                         /** The close action runs inside of the executor service. */
                         @Override
-                        protected void closeActual() {
+                        protected void inThreadCloseAction() {
                             try {
-                                super.closeActual();
+                                super.inThreadCloseAction();
                             } finally {
-                                if (closeAction != null) {
-                                    closeAction.close();
+                                if (inThreadCloseAction != null) {
+                                    inThreadCloseAction.close();
                                 }
+                            }
+                        }
+
+                        @Override
+                        protected void outThreadCloseAction() {
+                            if (outThreadCloseAction != null) {
+                                outThreadCloseAction.close();
                             }
                         }
                     };
                     tmp = QueryIterPlainWrapper.create(threadIt, execCxt);
                 } else {
-                    tmp = onClose(tmp, closeAction);
+                    tmp = onClose(tmp, inThreadCloseAction);
                 }
 
                 // If there are buffered items then prepend them to 'tmp'
@@ -323,6 +303,7 @@ public class RequestExecutor
             return new TaskEntry(
                 task,
                 closeAction,
+                null,
                 null,
                 CompletableFuture.completedFuture(null),
                 execCxt
@@ -357,7 +338,9 @@ public class RequestExecutor
 
     /* State for tracking concurrent prefetch ----------------------------- */
 
-    private ExecutorService executorService = null;
+    // private ExecutorService executorService = null;
+    protected ExecutorServicePool executorServicePool;
+
     private final int maxConcurrentTasks;
     private final long concurrentSlotReadAheadCount;
     private final Map<Long, TaskEntry> openConcurrentTaskEntries = new LinkedHashMap<>();
@@ -399,6 +382,8 @@ public class RequestExecutor
         this.activeIter = activeTaskEntry.stopAndGet();
         this.maxConcurrentTasks = maxConcurrentTasks;
         this.concurrentSlotReadAheadCount = concurrentSlotReadAheadCount;
+
+        this.executorServicePool = new ExecutorServicePool();
     }
 
     @Override
@@ -497,7 +482,7 @@ public class RequestExecutor
             ExecutionContext isolatedExecCxt = new ExecutionContext(execCxt.getContext(), execCxt.getActiveGraph(), execCxt.getDataset(), execCxt.getExecutor());
 
             InstanceLifeCycle<PrefetchTaskForBinding> taskLifeCycle = prepareNextBatchExec(isolatedExecCxt, txnType);
-            ExecutorService threadService = Executors.newSingleThreadExecutor();
+            ExecutorService threadService = executorServicePool.acquireExecutor(); //.acquireExecutor(); // Executors.newSingleThreadExecutor();
 
             // Create the task through the execution thread such that thread locals (e.g. for transactions)
             // are initialized on the correct thread
@@ -505,7 +490,7 @@ public class RequestExecutor
 
             // Submit the task to the same thread
             Future<?> future = threadService.submit(task);
-            TaskEntry taskEntry = new TaskEntry(task, () -> taskLifeCycle.closeInstance(task), threadService, future, isolatedExecCxt);
+            TaskEntry taskEntry = new TaskEntry(task, () -> taskLifeCycle.closeInstance(task), threadService, () -> threadService.shutdown(), future, isolatedExecCxt);
             registerTaskEntry(taskEntry);
             openConcurrentTaskEntries.put(taskEntry.task().getCloseInputId(), taskEntry);
         }
@@ -642,18 +627,22 @@ public class RequestExecutor
         //    closable.close();
         // }
 
-        if (executorService != null) {
-            executorService.shutdown();
-            boolean isShutdown = false;
-            try {
-                isShutdown = executorService.awaitTermination(60, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+//        if (executorService != null) {
+//            executorService.shutdown();
+//            boolean isShutdown = false;
+//            try {
+//                isShutdown = executorService.awaitTermination(60, TimeUnit.SECONDS);
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
+//
+//            if (!isShutdown) {
+//                throw new IllegalStateException("Timeout waiting for executor service to shut down. This indicates a hanging task.");
+//            }
+//        }
 
-            if (!isShutdown) {
-                throw new IllegalStateException("Timeout waiting for executor service to shut down. This indicates a hanging task.");
-            }
+        if (executorServicePool != null) {
+            executorServicePool.shutdownAll();
         }
 
         batchIterator.close();
@@ -670,7 +659,8 @@ public class RequestExecutor
         return ab == null ? false : ab.get();
     }
 
-    // XXX This method could be moved to QueryIter
+    /** Wrap a given {@link QueryIterator} with an additional close action. */
+    // XXX This static util method could be moved to QueryIter
     private static QueryIterator onClose(QueryIterator qIter, Closeable action) {
         Objects.requireNonNull(qIter);
         QueryIterator result = action == null
@@ -688,4 +678,3 @@ public class RequestExecutor
         return result;
     }
 }
-

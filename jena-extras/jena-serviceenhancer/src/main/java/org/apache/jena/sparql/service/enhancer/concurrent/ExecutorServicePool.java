@@ -1,0 +1,293 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.jena.sparql.service.enhancer.concurrent;
+
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.apache.jena.sparql.service.enhancer.concurrent.LinkedList.LinkedListNode;
+
+import com.google.common.util.concurrent.ForwardingExecutorService;
+
+/**
+ * A factory for single thread executors.
+ * The returned executor services are wrappers.
+ * Calling {@link ExecutorService#shutdown()} or {@link ExecutorService#shutdownNow()}
+ * on the wrapper returns its underlying executor service back to the pool.
+ *
+ */
+public class ExecutorServicePool {
+
+    private class ExecutorServiceWithKey
+        extends ForwardingExecutorService
+    {
+        private final LinkedListNode<Action> node;
+        private ExecutorService delegate;
+
+        public ExecutorServiceWithKey(ExecutorService delegate, LinkedListNode<Action> node) {
+            super();
+            this.delegate = delegate;
+            this.node = node;
+            // TODO executorId could be copied because its final
+        }
+
+        @Override
+        protected ExecutorService delegate() {
+            return delegate;
+        }
+
+        public LinkedListNode<Action> getNode() {
+            return node;
+        }
+    }
+
+    /** This is the view implementation handed out to clients. */
+    private class ExecutorServiceInternal
+        extends CloseShieldExecutorService<ExecutorServiceWithKey>
+    {
+        public ExecutorServiceInternal(ExecutorServiceWithKey delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public void shutdown() {
+            super.shutdown();
+            giveBack(delegate);
+        }
+
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            super.shutdownNow();
+            giveBack(delegate);
+            return List.of();
+        }
+    }
+
+    // Shutting down the pool also shuts down all executors.
+    private final ConcurrentHashMap<Integer, ExecutorServiceWithKey> executorMap = new ConcurrentHashMap<>();
+
+    private final AtomicBoolean isShutdown = new AtomicBoolean();
+    private final IdPool idPool = new IdPool();
+    private final long idleTimeout;
+    private final int maxIdleExecutors;
+
+    private final boolean isDaemon = false; //true;
+
+    // private ScheduledExecutorService cleaner;
+    private Timer timer;
+
+    private volatile boolean isCleanupScheduled = false;
+
+    private void scheduleCleanup() {
+        synchronized (actions) {
+            System.out.println("Cleanup scheduled.");
+            if (!isCleanupScheduled) {
+                if (timer == null) {
+                    timer = new Timer(isDaemon);
+                }
+
+                isCleanupScheduled = true;
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        doCleanup();
+                    }
+                }, idleTimeout);
+                // If a task has been scheduled AND not yet executed then do nothing; otherwise schedule a new task
+            }
+        }
+    }
+
+
+    private class Action {
+        int executorId;
+        ExecutorServiceWithKey executorService;
+
+        /** When the executor has become idle. Only needs to be set before insert into the idleList. */
+        long idleTimestamp;
+    }
+
+    private LinkedList<Action> actions = new LinkedList<>();
+
+    public ExecutorServicePool() {
+        this(0, 0);
+    }
+
+    public ExecutorServicePool(long idleTimeout, int maxIdleExecutors) {
+        super();
+        this.idleTimeout = idleTimeout;
+        this.maxIdleExecutors = maxIdleExecutors;
+    }
+
+    private void checkOpen() {
+        if (isShutdown.get()) {
+            throw new IllegalStateException("Executor pool has been shut down.");
+        }
+    }
+
+    /** Request an executor (creates new if none is available). */
+    public ExecutorService acquireExecutor() {
+        checkOpen();
+
+        // Attempt to get an executor from the idle list
+        ExecutorServiceWithKey backend = null;
+        synchronized (actions) {
+            LinkedListNode<Action> node;
+            node = actions.getFirst();
+            if (node != null) {
+                // Synchronized unlinking of the node prevents accidental concurrent cleanup
+                node.unlink();
+                backend = node.getValue().executorService;
+            }
+        }
+
+        // If there was no idle executor then allocate a fresh one
+        if (backend == null) {
+            int executorId = idPool.acquire();
+            // FIXME Make sure that the executor with the next free id is not shutting down while we try to claim it
+            backend = executorMap.computeIfAbsent(executorId, this::newBackend);
+        }
+
+        ExecutorServiceInternal result = new ExecutorServiceInternal(backend);
+        System.out.println("Acquired executor " + backend.getNode().getValue().executorId);
+        return result;
+    }
+
+    protected ExecutorServiceWithKey newBackend(int executorId) {
+        ExecutorService core = createSingleThreadExecutor(executorId);
+        LinkedListNode<Action> node = actions.newNode();
+        ExecutorServiceWithKey result = new ExecutorServiceWithKey(core, node);
+        Action action = new Action();
+        action.executorId = executorId;
+        action.executorService = result;
+        node.setValue(action);
+        return result;
+    }
+
+    protected ExecutorService createSingleThreadExecutor(int executorId) {
+        ThreadFactory namingThreadFactory = runnable -> {
+            Thread thread = new Thread(runnable);
+            thread.setName("single-thread-executor-" + executorId);
+            thread.setDaemon(isDaemon); // Daemon threads auto-shutdown with JVM
+            return thread;
+        };
+
+        ExecutorService executor = Executors.newSingleThreadExecutor(namingThreadFactory);
+
+        return executor;
+        // Use MoreExecutors to ensure the executor auto-shuts down after idleTimeout
+//        ExecutorService result = idleTimeout >= 0
+//            ? MoreExecutors.getExitingExecutorService((ThreadPoolExecutor)executor, idleTimeout, timeUnit)
+//            : MoreExecutors.getExitingExecutorService((ThreadPoolExecutor)executor);
+
+//        return result;
+    }
+
+    private void giveBack(ExecutorServiceWithKey executor) {
+        LinkedListNode<Action> node = executor.getNode();
+        node.getValue().idleTimestamp = System.currentTimeMillis();
+        // Note: Even if there are more than maxIdleExecutors executors right now then
+        // we still only clean them up after the idle delay.
+        node.moveToEnd();
+        scheduleCleanup();
+    }
+
+    /** Releases the executor (allows custom behavior if needed). Called from the cleanupTask. */
+    private void releaseExecutor(ExecutorServiceWithKey executor, boolean updateExecutorMap) {
+        LinkedListNode<Action> node = executor.getNode();
+        int executorId = node.getValue().executorId;
+        node.unlink();
+        if (updateExecutorMap) {
+            executorMap.remove(executorId);
+        }
+        executor.shutdown();
+        idPool.giveBack(executorId);
+        System.out.println("Shut down executor " + executorId);
+    }
+
+    /** Shutdown all executors in the pool; pool should no longer be used then anymore. */
+    public void shutdownAll() {
+        if (isShutdown.compareAndSet(false, true)) {
+            synchronized (actions) {
+                if (timer != null) {
+                    timer.cancel();
+                }
+                for (ExecutorServiceWithKey executor : executorMap.values()) {
+                    releaseExecutor(executor, false);
+                }
+                executorMap.clear();
+            }
+        }
+    }
+
+    private void doCleanup() {
+        synchronized (actions) {
+            isCleanupScheduled = false;
+            System.out.println("Cleanup starting.");
+            LinkedListNode<Action> node = actions.getFirst();
+            long delta = -1;
+            if (node != null) {
+                long currentTime = System.currentTimeMillis();
+                while(node != null) {
+                    Action action = node.getValue();
+                    long timestamp = action.idleTimestamp;
+                    delta = currentTime - timestamp;
+                    if (delta >= idleTimeout || actions.size() > maxIdleExecutors) {
+                        releaseExecutor(action.executorService, true);
+                        delta = -1;
+                    } else {
+                        break;
+                    }
+                    node = node.getNext();
+                }
+            }
+
+            System.out.println("Cleanup done.");
+
+            if (delta >= 0) {
+                // timer.schedule(this, delta);
+                scheduleCleanup();
+            }
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        ExecutorServicePool pool = new ExecutorServicePool();
+
+        ExecutorService es0 = pool.acquireExecutor();
+        es0.submit(() -> System.out.println(Thread.currentThread().getName() + " says hi!"));
+
+        // Thread.sleep(5000);
+
+        ExecutorService es1 = pool.acquireExecutor();
+        es1.submit(() -> System.out.println(Thread.currentThread().getName() + " says hello!"));
+        es1.shutdown();
+
+        es0.shutdown();
+
+        pool.shutdownAll();
+    }
+}
