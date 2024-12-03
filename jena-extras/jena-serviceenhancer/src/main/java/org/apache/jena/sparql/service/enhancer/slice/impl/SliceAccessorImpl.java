@@ -19,8 +19,12 @@
 package org.apache.jena.sparql.service.enhancer.slice.impl;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.Lock;
@@ -40,20 +44,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
+import com.google.common.collect.ContiguousSet;
+import com.google.common.collect.DiscreteDomain;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeMap;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeMap;
 import com.google.common.primitives.Ints;
-
-import org.apache.jena.sparql.service.enhancer.claimingcache.Ref;
-import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
-import org.apache.jena.sparql.service.enhancer.impl.util.AutoCloseableWithLeakDetectionBase;
-import org.apache.jena.sparql.service.enhancer.impl.util.FinallyRunAll;
-import org.apache.jena.sparql.service.enhancer.impl.util.PageUtils;
-import org.apache.jena.sparql.service.enhancer.slice.api.Disposable;
-import org.apache.jena.sparql.service.enhancer.slice.api.Slice;
-import org.apache.jena.sparql.service.enhancer.slice.api.SliceAccessor;
-import org.apache.jena.sparql.service.enhancer.slice.api.SliceWithPages;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A sequence of claimed ranges within a certain range, whereas the range

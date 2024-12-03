@@ -21,11 +21,12 @@ package org.apache.jena.sparql.service.enhancer.slice.impl;
 import java.io.Serializable;
 import java.util.List;
 
+import org.apache.jena.sparql.service.enhancer.slice.api.SliceMetaDataBasic;
+
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeMap;
 import com.google.common.collect.TreeRangeSet;
-import org.apache.jena.sparql.service.enhancer.slice.api.SliceMetaDataBasic;
 
 public class SliceMetaDataImpl
     implements SliceMetaDataBasic, Serializable
