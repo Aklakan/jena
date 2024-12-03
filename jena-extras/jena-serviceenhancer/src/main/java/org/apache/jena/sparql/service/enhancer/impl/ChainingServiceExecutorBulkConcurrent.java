@@ -107,7 +107,7 @@ public class ChainingServiceExecutorBulkConcurrent
 //                    Set<Var> inputVarsMentioned = BindingUtils.varsMentioned(inputs);
 
                     Iterator<Binding> indexedBindings = IntStream.range(0, inputs.size()).mapToObj(i ->
-                        BindingFactory.binding(inputs.get(0), globalIdxVar, NodeValue.makeInteger(reverseMap.get(0)).asNode()))
+                        BindingFactory.binding(inputs.get(i), globalIdxVar, NodeValue.makeInteger(reverseMap.get(i)).asNode()))
                         .iterator();
 
                     QueryIterator tmp = chain.createExecution(newOp, QueryIterPlainWrapper.create(indexedBindings, execCxt), execCxt);
