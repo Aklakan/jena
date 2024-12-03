@@ -18,14 +18,20 @@
 
 package org.apache.jena.sparql.service.enhancer.impl;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.Function;
 
-import com.google.common.collect.AbstractIterator;
-
-import org.apache.jena.atlas.iterator.Iter;
-import org.apache.jena.atlas.iterator.IteratorCloseable;
+import org.apache.jena.atlas.io.IndentedWriter;
+import org.apache.jena.sparql.serializer.SerializationContext;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterator;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbstractAbortableIterator;
 
 /**
  * The batcher transform an iterator of input items into an iterator of batches.
@@ -63,14 +69,14 @@ public class Batcher<G, I> {
         this.maxOutOfBandItemCount = maxOutOfBandItemCount;
     }
 
-    public IteratorCloseable<GroupedBatch<G, Long, I>> batch(IteratorCloseable<I> inputIterator) {
+    public AbortableIterator<GroupedBatch<G, Long, I>> batch(AbortableIterator<I> inputIterator) {
         return new IteratorGroupedBatch(inputIterator);
     }
 
     class IteratorGroupedBatch
-        extends AbstractIterator<GroupedBatch<G, Long, I>> implements IteratorCloseable<GroupedBatch<G, Long, I>>
+        extends AbstractAbortableIterator<GroupedBatch<G, Long, I>>
     {
-        protected IteratorCloseable<I> inputIterator;
+        protected AbortableIterator<I> inputIterator;
 
         /** The position of the inputIterator */
         protected long inputIteratorOffset;
@@ -81,18 +87,18 @@ public class Batcher<G, I> {
         // The outer navigable map has to lowest offset among all the group key's related batches
         protected Map<G, NavigableMap<Long, Batch<Long, I>>> groupToBatches = new HashMap<>();
 
-        public IteratorGroupedBatch(IteratorCloseable<I> inputIterator) {
+        public IteratorGroupedBatch(AbortableIterator<I> inputIterator) {
             this(inputIterator, 0);
         }
 
-        public IteratorGroupedBatch(IteratorCloseable<I> inputIterator, int inputIteratorOffset) {
+        public IteratorGroupedBatch(AbortableIterator<I> inputIterator, int inputIteratorOffset) {
             super();
             this.inputIterator = inputIterator;
             this.inputIteratorOffset = inputIteratorOffset;
         }
 
         @Override
-        protected GroupedBatch<G, Long, I> computeNext() {
+        protected GroupedBatch<G, Long, I> moveToNext() {
             // For the current result group key and corresponding batch determine how many out-of-band
             // items we have already consumed from the input iterator
             // Any item that does not contribute to the current result batch counts as out-of-band
@@ -200,14 +206,19 @@ public class Batcher<G, I> {
 
                 result = new GroupedBatch<>(resultGroupKey, resultBatchTmp);
             } else {
-                result = endOfData();
+                result = null; //endOfData();
             }
             return result;
         }
 
         @Override
-        public void close() {
-            Iter.close(inputIterator);
+        public void closeActual() {
+            inputIterator.close();
+        }
+
+        @Override
+        public void output(IndentedWriter out, SerializationContext sCxt) {
+            // FIXME Implement this - probably we need a AbortableIterator1 base class
         }
     }
 }

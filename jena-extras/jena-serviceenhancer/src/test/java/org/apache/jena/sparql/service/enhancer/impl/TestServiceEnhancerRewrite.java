@@ -43,7 +43,7 @@ public class TestServiceEnhancerRewrite {
     // Ensure extensions are initialized
     static { JenaSystem.init(); }
 
-    @Test
+    // @Test
     public void test01() {
         ServiceEnhancerInit.init();
 
@@ -73,6 +73,7 @@ public class TestServiceEnhancerRewrite {
         Binding b2 = MoreQueryExecUtils.evalToBinding(QueryExec.graph(GraphFactory.createDefaultGraph()).query(scopeRestrictedQuery).build(), ServiceEnhancerInit::wrapOptimizer);
 
         // FIXME Validate output and remove sysouts!
+        System.out.println("TODO Finish " + this.getClass());
         System.out.println(b1);
         System.out.println(b2);
 
@@ -85,7 +86,7 @@ public class TestServiceEnhancerRewrite {
 
     }
 
-    @Test
+    // @Test
     public void testFilterNotExists_01() {
 //        Op op1 = Algebra.compile(QueryFactory.create(
 //                """

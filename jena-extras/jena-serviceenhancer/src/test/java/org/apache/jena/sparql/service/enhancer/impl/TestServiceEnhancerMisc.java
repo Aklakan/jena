@@ -180,7 +180,22 @@ public class TestServiceEnhancerMisc {
     }
 
     @Test
-    public void testCacheRefresh() {
+    public void testCacheRefresh_01a() {
+        String queryStr = String.join("\n",
+                "SELECT * {",
+                "  SERVICE <cache+clear:> { SELECT ?s { ?s a <urn:Department> } ORDER BY ?s OFFSET 7 LIMIT 2 }",
+                "}");
+
+        Model model = AbstractTestServiceEnhancerResultSetLimits.createModel(9);
+        int referenceRowCount = AbstractTestServiceEnhancerResultSetLimits.testWithCleanCaches(model, queryStr, 1000);
+        int actualRowCount = AbstractTestServiceEnhancerResultSetLimits.testCore(model, queryStr, 1000);
+
+        Assert.assertEquals(2, referenceRowCount);
+        Assert.assertEquals(referenceRowCount, actualRowCount);
+    }
+
+    @Test
+    public void testCacheRefresh_01b() {
         String queryStr = String.join("\n",
                 "SELECT * {",
                 "  SERVICE <cache+clear:> {",

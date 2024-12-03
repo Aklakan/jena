@@ -1,0 +1,134 @@
+package org.apache.jena.sparql.service.enhancer.impl;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.apache.jena.atlas.io.IndentedWriter;
+import org.apache.jena.graph.Node;
+import org.apache.jena.query.ReadWrite;
+import org.apache.jena.query.TxnType;
+import org.apache.jena.sparql.core.DatasetGraph;
+import org.apache.jena.sparql.core.Transactional;
+import org.apache.jena.sparql.engine.ExecutionContext;
+import org.apache.jena.sparql.engine.binding.Binding;
+import org.apache.jena.sparql.engine.binding.BindingFactory;
+import org.apache.jena.sparql.serializer.SerializationContext;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterator;
+import org.apache.jena.system.TxnOp;
+
+/** Adaption of the generic {@link RequestExecutorBase} base class to Jena's QueryIterator machinery. */
+public abstract class RequestExecutorJenaBase
+    extends RequestExecutorBase<Node, Binding, Binding>
+{
+    protected ExecutionContext execCxt;
+
+    public RequestExecutorJenaBase(
+            AbortableIterator<GroupedBatch<Node, Long, Binding>> batchIterator,
+            int maxConcurrentTasks,
+            long concurrentSlotReadAheadCount,
+            ExecutionContext execCxt
+    ) {
+        // super(execCxt);
+        super(execCxt.getCancelSignal(), batchIterator, maxConcurrentTasks, concurrentSlotReadAheadCount);
+        this.execCxt = Objects.requireNonNull(execCxt);
+    }
+
+    @Override
+    protected void checkCanExecInNewThread() {
+        DatasetGraph dataset = execCxt.getDataset();
+        if (dataset.supportsTransactions()) {
+            if (dataset.isInTransaction()) {
+                ReadWrite txnMode = dataset.transactionMode();
+                if (ReadWrite.WRITE.equals(txnMode)) {
+                    throw new IllegalStateException("Cannot create concurrent tasks when in a write transaction.");
+                }
+            }
+        }
+    }
+
+    @Override
+    public void output(IndentedWriter out, SerializationContext sCxt) {
+        // FIXME
+    }
+
+    @Override
+    protected boolean isCancelled() {
+        AtomicBoolean cancelSignal = execCxt.getCancelSignal();
+        return (cancelSignal != null && cancelSignal.get()) || Thread.interrupted();
+    }
+
+    @Override
+    protected Binding copy(Binding item) {
+        return BindingFactory.copy(item);
+    }
+
+    /** Factory method for iterators. May be invoked from different threads. */
+    protected abstract AbortableIterator<Binding> buildIterator(boolean runsOnNewThread, Node groupKey, List<Binding> inputs, List<Long> reverseMap, ExecutionContext batchExecCxt);
+
+    @Override
+    protected IteratorCreator<Binding> processBatch(boolean runsOnNewThread, Node groupKey, List<Binding> inputs, List<Long> reverseMap) {
+        IteratorCreator<Binding> result;
+        if (!runsOnNewThread) {
+            result = new IteratorCreator<>() {
+                @Override
+                public AbortableIterator<Binding> createIterator() {
+                    return buildIterator(runsOnNewThread, groupKey, inputs, reverseMap, execCxt);
+                }
+            };
+        } else {
+            ExecutionContext isolatedExecCxt = new ExecutionContext(execCxt.getContext(), execCxt.getActiveGraph(), execCxt.getDataset(), execCxt.getExecutor());
+            result = new IteratorCreatorWithTxn<>(isolatedExecCxt, TxnType.READ) {
+                @Override
+                public AbortableIterator<Binding> createIterator() {
+                    // Note: execCxt in here is assigned to isolatedExecCxt!
+                    return buildIterator(runsOnNewThread, groupKey, inputs, reverseMap, execCxt);
+                }
+            };
+        }
+        return result;
+    }
+
+    static abstract class IteratorCreatorWithTxn<T>
+        implements IteratorCreator<T>
+    {
+        protected ExecutionContext execCxt;
+        protected TxnType txnType;
+
+        public IteratorCreatorWithTxn(ExecutionContext execCxt, TxnType txnType) {
+            super();
+            this.execCxt = execCxt;
+            this.txnType = txnType;
+        }
+
+        @Override
+        public void begin() {
+            DatasetGraph dsg = execCxt.getDataset();
+            txnBegin(dsg, txnType);
+        }
+
+        @Override
+        public void end() {
+            DatasetGraph dsg = execCxt.getDataset();
+            txnEnd(dsg);
+        }
+    }
+
+    protected static void txnBegin(Transactional txn, TxnType txnType) {
+        boolean b = txn.isInTransaction();
+        if ( b )
+            TxnOp.compatibleWithPromote(txnType, txn);
+        else
+            txn.begin(txnType);
+    }
+
+    protected static void txnEnd(Transactional txn) {
+        boolean b = txn.isInTransaction();
+        if ( !b ) {
+            if ( txn.isInTransaction() )
+                // May have been explicit commit or abort.
+                txn.commit();
+            txn.end();
+        }
+    }
+}

@@ -1,17 +1,15 @@
-package org.apache.jena.sparql.service.enhancer.impl;
+package org.apache.jena.sparql.service.enhancer.impl.util.iterator;
 
 import org.apache.jena.atlas.io.IndentedWriter;
 import org.apache.jena.atlas.lib.Lib;
-import org.apache.jena.sparql.engine.QueryIterator;
-import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.serializer.SerializationContext;
 
-public class AbortableIteratorOverQueryIterator
-    extends AbortableIteratorBase<Binding>
+public class AbortableIteratorWrapper<T>
+    extends AbortableIteratorBase<T>
 {
-    protected QueryIterator iterator;
+    protected AbortableIterator<T> iterator;
 
-    public AbortableIteratorOverQueryIterator(QueryIterator qIter) {
+    public AbortableIteratorWrapper(AbortableIterator<T> qIter) {
         iterator = qIter;
     }
 
@@ -21,7 +19,7 @@ public class AbortableIteratorOverQueryIterator
     }
 
     @Override
-    protected Binding moveToNextBinding() {
+    protected T moveToNextBinding() {
         return iterator.nextBinding();
     }
 

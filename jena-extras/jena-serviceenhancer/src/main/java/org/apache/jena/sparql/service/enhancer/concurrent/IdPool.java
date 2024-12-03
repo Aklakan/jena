@@ -5,12 +5,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
 
+/** A pool of integer ids. Acquired ids must be eventually free'd using {@link #giveBack(int)}. */
 public class IdPool {
     private volatile int i = 0;
     private final TreeSet<Integer> ids = new TreeSet<>();
 
     /** Return a free id. */
-    public synchronized Integer acquire() {
+    public synchronized int acquire() {
         int result;
         if (!ids.isEmpty()) {
             Iterator<Integer> it = ids.iterator();
@@ -31,7 +32,7 @@ public class IdPool {
      */
     public synchronized void giveBack(int v) {
         if (v >= i) {
-            throw new IllegalArgumentException("Attempt to give back a value " + v + " which greater than the largest generated one " + i);
+            throw new IllegalArgumentException("Attempt to give back a value " + v + " which is greater than the largest generated one " + i + ".");
         }
 
         if (v + 1 == i) {
@@ -56,6 +57,7 @@ public class IdPool {
         }
     }
 
+    // FIXME Turn into a test
     public static void main(String[] args) {
         IdPool pool = new IdPool();
         List<Integer> ids = new LinkedList<>();

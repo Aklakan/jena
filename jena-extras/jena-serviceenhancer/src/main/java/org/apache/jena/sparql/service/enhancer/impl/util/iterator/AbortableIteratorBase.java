@@ -1,19 +1,23 @@
-package org.apache.jena.sparql.service.enhancer.impl;
+package org.apache.jena.sparql.service.enhancer.impl.util.iterator;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.jena.atlas.io.IndentedWriter;
+import org.apache.jena.atlas.io.Printable;
 import org.apache.jena.atlas.lib.Lib;
 import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.query.QueryCancelledException;
 import org.apache.jena.query.QueryException;
 import org.apache.jena.query.QueryFatalException;
-import org.apache.jena.sparql.engine.QueryIterator;
-import org.apache.jena.sparql.util.PrintSerializableBase;
+import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.sparql.engine.Plan;
+import org.apache.jena.sparql.service.enhancer.impl.util.AutoCloseableWithLeakDetectionBase;
+import org.apache.jena.sparql.util.QueryOutputUtils;
 
-/** Bridge between query iterator and its generalization */
+/** This is a generalization of QueryIterator to a generic type T. */
 public abstract class AbortableIteratorBase<T>
-    extends PrintSerializableBase
+    extends AutoCloseableWithLeakDetectionBase
     implements AbortableIterator<T>
 {
     private boolean finished = false;
@@ -35,6 +39,7 @@ public abstract class AbortableIteratorBase<T>
 
     /** Argument : shared flag for cancellation. */
     protected AbortableIteratorBase(AtomicBoolean cancelSignal) {
+        super(true);
         if ( cancelSignal == null )
             // Allows for direct cancel (not timeout).
             cancelSignal = new AtomicBoolean(false);
@@ -156,7 +161,7 @@ public abstract class AbortableIteratorBase<T>
     }
 
     @Override
-    public void close() {
+    public void closeActual() {
         if ( finished )
             return;
         try {
@@ -187,16 +192,35 @@ public abstract class AbortableIteratorBase<T>
     }
 
     /** close an iterator */
-    protected static void performClose(QueryIterator iter) {
+    protected static void performClose(AbortableIterator<?> iter) {
         if ( iter == null )
             return;
         iter.close();
     }
 
     /** cancel an iterator */
-    protected static void performRequestCancel(QueryIterator iter) {
+    protected static void performRequestCancel(AbortableIterator<?> iter) {
         if ( iter == null )
             return;
         iter.cancel();
+    }
+
+    // --- PrintSerializableBase ---
+
+    @Override
+    public String toString(PrefixMapping pmap)
+    { return QueryOutputUtils.toString(this, pmap) ; }
+
+    // final stops it being overridden and missing the output() route.
+    @Override
+    public final String toString()
+    { return Printable.toString(this) ; }
+
+    /** Normally overridden for better information */
+    @Override
+    public void output(IndentedWriter out) {
+        out.print(Plan.startMarker);
+        out.print(Lib.className(this));
+        out.print(Plan.finishMarker);
     }
 }

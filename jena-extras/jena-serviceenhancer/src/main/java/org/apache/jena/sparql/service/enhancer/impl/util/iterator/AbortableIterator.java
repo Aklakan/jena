@@ -1,4 +1,4 @@
-package org.apache.jena.sparql.service.enhancer.impl;
+package org.apache.jena.sparql.service.enhancer.impl.util.iterator;
 
 import org.apache.jena.atlas.iterator.IteratorCloseable;
 import org.apache.jena.sparql.util.PrintSerializable;
@@ -17,5 +17,5 @@ public interface AbortableIterator<T> extends IteratorCloseable<T>, PrintSeriali
      * Indicate whether this iterator is known to be an iterator of the join identity (one row, no columns).
      * Returns true if definitely a join identity; false for not or don't know.
      */
-    public default boolean isJoinIdentity() { return false; }
+    // public default boolean isJoinIdentity() { return false; }
 }

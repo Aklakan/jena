@@ -37,7 +37,7 @@ public class ServiceOptsSE {
     /** Modifies loop to substitute only in-scope variables on the rhs. Original behavior is to substitute variables regardless of scope. Usage: SERVICE <loop+scoped> {}. */
     public static final String SO_LOOP_MODE_SCOPED = "scoped";
 
-    public static final String SO_CONCURRENT = "concurrent";
+    // public static final String SO_CONCURRENT = "concurrent";
     public static final String SO_OPTIMIZE = "optimize";
 
     private static Set<String> knownOptions = Set.of(
@@ -45,7 +45,7 @@ public class ServiceOptsSE {
         SO_CACHE,
         SO_LATERAL,
         SO_LOOP,
-        SO_CONCURRENT,
+        // SO_CONCURRENT,
         SO_OPTIMIZE);
 
     public Set<String> getKnownOptions() {

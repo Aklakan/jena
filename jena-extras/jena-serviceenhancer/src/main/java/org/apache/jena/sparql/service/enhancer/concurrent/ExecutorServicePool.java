@@ -28,6 +28,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.jena.sparql.service.enhancer.concurrent.LinkedList.LinkedListNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.ForwardingExecutorService;
 
@@ -39,6 +41,8 @@ import com.google.common.util.concurrent.ForwardingExecutorService;
  *
  */
 public class ExecutorServicePool {
+
+    private static final Logger logger = LoggerFactory.getLogger(ExecutorServicePool.class);
 
     private class ExecutorServiceWithKey
         extends ForwardingExecutorService
@@ -103,8 +107,11 @@ public class ExecutorServicePool {
 
     private void scheduleCleanup() {
         synchronized (actions) {
-            System.out.println("Cleanup scheduled.");
             if (!isCleanupScheduled) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Cleanup of idle executors scheduled in {} ms", idleTimeout);
+                }
+
                 if (timer == null) {
                     timer = new Timer(isDaemon);
                 }
@@ -117,10 +124,13 @@ public class ExecutorServicePool {
                     }
                 }, idleTimeout);
                 // If a task has been scheduled AND not yet executed then do nothing; otherwise schedule a new task
+            } else {
+                // if (logger.isWarnEnabled()) {
+                //     logger.warn("Request for cleanup of idle executors ignored because a pending action was already scheduled.");
+                // }
             }
         }
     }
-
 
     private class Action {
         int executorId;
@@ -172,7 +182,9 @@ public class ExecutorServicePool {
         }
 
         ExecutorServiceInternal result = new ExecutorServiceInternal(backend);
-        System.out.println("Acquired executor " + backend.getNode().getValue().executorId);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Acquired executor #{}.", backend.getNode().getValue().executorId);
+        }
         return result;
     }
 
@@ -225,7 +237,9 @@ public class ExecutorServicePool {
         }
         executor.shutdown();
         idPool.giveBack(executorId);
-        System.out.println("Shut down executor " + executorId);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Releasing executor #{}.", executorId);
+        }
     }
 
     /** Shutdown all executors in the pool; pool should no longer be used then anymore. */
@@ -246,7 +260,10 @@ public class ExecutorServicePool {
     private void doCleanup() {
         synchronized (actions) {
             isCleanupScheduled = false;
-            System.out.println("Cleanup starting.");
+            if (logger.isDebugEnabled()) {
+                logger.debug("Cleanup of idle service executors starting.");
+            }
+            int cleanupCount = 0;
             LinkedListNode<Action> node = actions.getFirst();
             long delta = -1;
             if (node != null) {
@@ -256,6 +273,7 @@ public class ExecutorServicePool {
                     long timestamp = action.idleTimestamp;
                     delta = currentTime - timestamp;
                     if (delta >= idleTimeout || actions.size() > maxIdleExecutors) {
+                        ++cleanupCount;
                         releaseExecutor(action.executorService, true);
                         delta = -1;
                     } else {
@@ -265,7 +283,9 @@ public class ExecutorServicePool {
                 }
             }
 
-            System.out.println("Cleanup done.");
+            if (logger.isDebugEnabled()) {
+                logger.debug("Cleanup done - {} idle executors released.", cleanupCount);
+            }
 
             if (delta >= 0) {
                 // timer.schedule(this, delta);

@@ -52,9 +52,6 @@ public class ChainingServiceExecutorBulkServiceEnhancer
         int bulkSize = 1;
         CacheMode requestedCacheMode = null;
 
-        int concurrentSlots = 0;
-        long readaheadOfBindingsPerSlot = ChainingServiceExecutorBulkCache.DFT_CONCURRENT_READAHEAD;
-
         Context cxt = execCxt.getContext();
         int n = opts.size();
         int i = 0;
@@ -82,6 +79,7 @@ public class ChainingServiceExecutorBulkServiceEnhancer
                 }
                 break;
 
+            /*
             case ServiceOptsSE.SO_CONCURRENT:
                 int maxConcurrentSlotCount = cxt.get(ServiceEnhancerConstants.serviceConcurrentMaxSlotCount, ChainingServiceExecutorBulkCache.DFT_MAX_CONCURRENT_SLOTS);
                 // Value pattern is: [concurrentSlots][-maxReadaheadOfBindingsPerSlot]
@@ -101,7 +99,7 @@ public class ChainingServiceExecutorBulkServiceEnhancer
                 }
                 concurrentSlots = Math.max(Math.min(concurrentSlots, maxConcurrentSlotCount), 0);
                 break;
-
+            */
             case ServiceOptsSE.SO_BULK: // Enables bulk requests
                 enableBulk = true;
 
@@ -128,24 +126,29 @@ public class ChainingServiceExecutorBulkServiceEnhancer
         }
 
         List<Entry<String, String>> subList = opts.subList(i, n);
-        String serviceStr = ServiceOpts.unparseEntries(subList);
-        OpService newOp = null;
-        if (serviceStr.isEmpty()) {
-            Op subOp = opService.getSubOp();
-            if (subOp instanceof OpService) {
-                newOp = (OpService)subOp;
-            } else {
-                serviceStr = ServiceEnhancerConstants.SELF.getURI();
-            }
-        }
-
-        if (newOp == null) {
-            node = NodeFactory.createURI(serviceStr);
-            newOp = new OpService(node, opService.getSubOp(), opService.getSilent());
-        }
+//        String serviceStr = ServiceOpts.unparseEntries(subList);
+//        OpService newOp = null;
+//        if (serviceStr.isEmpty()) {
+//            Op subOp = opService.getSubOp();
+//            if (subOp instanceof OpService) {
+//                newOp = (OpService)subOp;
+//            } else {
+//                serviceStr = ServiceEnhancerConstants.SELF.getURI();
+//            }
+//        }
+//
+//        if (newOp == null) {
+//            node = NodeFactory.createURI(serviceStr);
+//            newOp = new OpService(node, opService.getSubOp(), opService.getSilent());
+//        }
+        OpService newOp = toOpService(subList, opService);
 
         QueryIterator result;
         CacheMode finalCacheMode = CacheMode.effectiveMode(requestedCacheMode);
+
+        int concurrentSlots = 0; // FIXME Remove because concurrent is always disabled now; was factored out from here
+        long readaheadOfBindingsPerSlot = ChainingServiceExecutorBulkCache.DFT_CONCURRENT_READAHEAD;
+
         boolean enableConcurrent = concurrentSlots > 0;
         boolean applySpecialProcessing =
             finalCacheMode != CacheMode.OFF ||
@@ -159,5 +162,25 @@ public class ChainingServiceExecutorBulkServiceEnhancer
             result = chain.createExecution(newOp, input, execCxt);
         }
         return result;
+    }
+
+    public static OpService toOpService(List<Entry<String, String>> list, OpService originalOpService) {
+        String serviceStr = ServiceOpts.unparseEntries(list);
+        OpService newOp = null;
+        if (serviceStr.isEmpty()) {
+            Op subOp = originalOpService.getSubOp();
+            if (subOp instanceof OpService subService) {
+                newOp = subService;
+            } else {
+                serviceStr = ServiceEnhancerConstants.SELF.getURI();
+            }
+        }
+
+        if (newOp == null) {
+            Node node = NodeFactory.createURI(serviceStr);
+            newOp = new OpService(node, originalOpService.getSubOp(), originalOpService.getSilent());
+        }
+
+        return newOp;
     }
 }

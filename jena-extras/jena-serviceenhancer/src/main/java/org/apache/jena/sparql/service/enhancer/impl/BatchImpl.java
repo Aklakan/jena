@@ -47,11 +47,19 @@ public class BatchImpl<K extends Comparable<K>, T>
     }
 
     public static <T> Batch<Integer, T> forInteger() {
-        return new BatchImpl<>(0, DiscreteDomain.integers());
+        return forInteger(0);
+    }
+
+    public static <T> Batch<Integer, T> forInteger(int startIndex) {
+        return new BatchImpl<>(startIndex, DiscreteDomain.integers());
     }
 
     public static <T> Batch<Long, T> forLong() {
-        return new BatchImpl<>(0l, DiscreteDomain.longs());
+        return forLong(0l);
+    }
+
+    public static <T> Batch<Long, T> forLong(long startIndex) {
+        return new BatchImpl<>(startIndex, DiscreteDomain.longs());
     }
 
     /**

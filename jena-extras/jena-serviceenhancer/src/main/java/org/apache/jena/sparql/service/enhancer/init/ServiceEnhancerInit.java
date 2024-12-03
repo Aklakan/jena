@@ -57,14 +57,13 @@ import org.apache.jena.sparql.engine.main.QC;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.apache.jena.sparql.service.ServiceExecutorRegistry;
-import org.apache.jena.sparql.service.bulk.ServiceExecutorBulk;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_EffectiveOptions;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_JoinStrategy;
 import org.apache.jena.sparql.service.enhancer.assembler.DatasetAssemblerServiceEnhancer;
 import org.apache.jena.sparql.service.enhancer.assembler.ServiceEnhancerVocab;
 import org.apache.jena.sparql.service.enhancer.function.cacheRm;
+import org.apache.jena.sparql.service.enhancer.impl.ChainingServiceExecutorBulkConcurrent;
 import org.apache.jena.sparql.service.enhancer.impl.ChainingServiceExecutorBulkServiceEnhancer;
-import org.apache.jena.sparql.service.enhancer.impl.QueryIteratorCollect;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceOpts;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceOptsSE;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceResponseCache;
@@ -72,6 +71,7 @@ import org.apache.jena.sparql.service.enhancer.impl.ServiceResultSizeCache;
 import org.apache.jena.sparql.service.enhancer.impl.util.DynamicDatasetUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.Lazy;
 import org.apache.jena.sparql.service.enhancer.impl.util.VarScopeUtils;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.QueryIteratorCollect;
 import org.apache.jena.sparql.service.enhancer.pfunction.cacheLs;
 import org.apache.jena.sparql.service.single.ChainingServiceExecutor;
 import org.apache.jena.sparql.util.Context;
@@ -103,12 +103,14 @@ public class ServiceEnhancerInit
     /** Initialize the SERVICE <collect:> { }. This collects all bindings of the graph pattern into a list and serves them
      * from the list. */
     // TODO Finish doc: Needed for SERVICE <concurrent:> { }
+    // FIXME Go with SERVICE <collect:> or SERVICE <defer:> ?!
     public static void initFeatureCollect() {
+        String collectOptName = "collect";
         ServiceExecutorRegistry.get().addBulkLink((opService, input, execCxt, chain) -> {
             QueryIterator r;
             ServiceOpts opts = ServiceOpts.getEffectiveService(opService, ServiceEnhancerConstants.SELF.getURI(), key -> key.equals("collect"));
-            if (opts.containsKey("collect")) {
-                opts.removeKey("collect");
+            if (opts.containsKey(collectOptName)) {
+                opts.removeKey(collectOptName);
                 OpService newOp = opts.toService();
                 QueryIterator tmp  = chain.createExecution(newOp, input, execCxt);
                 r = new QueryIteratorCollect(tmp, execCxt);
@@ -119,11 +121,17 @@ public class ServiceEnhancerInit
         });
     }
 
+    public static void initFeatureConcurrent() {
+        ServiceExecutorRegistry.get().addBulkLink(new ChainingServiceExecutorBulkConcurrent("concurrent"));
+    }
+
+
     public static void init() {
         initMappingRegistry();
 
         Context cxt = ARQ.getContext();
 
+        initFeatureConcurrent();
         initFeatureCollect();
 
         // Creation of the cache is deferred until first use.

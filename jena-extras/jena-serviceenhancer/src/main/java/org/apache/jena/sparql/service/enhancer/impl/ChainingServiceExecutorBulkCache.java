@@ -20,7 +20,6 @@ package org.apache.jena.sparql.service.enhancer.impl;
 
 import java.util.Optional;
 
-import org.apache.jena.atlas.iterator.IteratorCloseable;
 import org.apache.jena.graph.Node;
 import org.apache.jena.sparql.algebra.op.OpService;
 import org.apache.jena.sparql.engine.ExecutionContext;
@@ -28,6 +27,9 @@ import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.service.bulk.ChainingServiceExecutorBulk;
 import org.apache.jena.sparql.service.bulk.ServiceExecutorBulk;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterator;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterators;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.QueryIterOverAbortableIterator;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
 import org.apache.jena.sparql.util.Context;
 
@@ -77,11 +79,11 @@ public class ChainingServiceExecutorBulkCache
 
         int maxOutOfBandItemCount = cxt.getInt(ServiceEnhancerConstants.serviceBulkMaxOutOfBandBindingCount, DFT_MAX_OUT_OUF_BAND_SIZE);
         Batcher<Node, Binding> scheduler = new Batcher<>(serviceInfo::getSubstServiceNode, bulkSize, maxOutOfBandItemCount);
-        IteratorCloseable<GroupedBatch<Node, Long, Binding>> inputBatchIterator = scheduler.batch(input);
+        AbortableIterator<GroupedBatch<Node, Long, Binding>> inputBatchIterator = scheduler.batch(AbortableIterators.adapt(input));
 
         // int concurrentReadahead = cxt.getInt(ServiceEnhancerConstants.serviceConcurrentMaxReadaheadCount, DFT_CONCURRENT_READAHEAD);
 
-        RequestExecutor exec = new RequestExecutor(execCxt, opExecutor, serviceInfo, resultSizeCache, serviceCache, cacheMode, inputBatchIterator, concurrentSlotCount, concurrentSlotReadaheadCount);
-        return exec;
+        RequestExecutorBulkAndCache exec = new RequestExecutorBulkAndCache(inputBatchIterator, concurrentSlotCount, concurrentSlotReadaheadCount, execCxt, opExecutor, serviceInfo, resultSizeCache, serviceCache, cacheMode);
+        return new QueryIterOverAbortableIterator(execCxt, exec);
     }
 }
