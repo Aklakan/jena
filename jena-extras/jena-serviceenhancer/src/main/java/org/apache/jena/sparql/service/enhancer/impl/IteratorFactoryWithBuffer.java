@@ -30,7 +30,6 @@ import org.apache.jena.sparql.service.enhancer.impl.util.SinglePrefetchIterator;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.SetMultimap;
-import com.google.common.primitives.Ints;
 
 /**
  * Buffering iterator. Can buffer an arbitrary amount ahead.

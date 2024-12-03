@@ -23,11 +23,12 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.google.common.collect.RangeMap;
-import com.google.common.collect.RangeSet;
 import org.apache.jena.sparql.service.enhancer.slice.api.ArrayOps;
 import org.apache.jena.sparql.service.enhancer.slice.api.Slice;
 import org.apache.jena.sparql.service.enhancer.slice.api.SliceMetaDataBasic;
+
+import com.google.common.collect.RangeMap;
+import com.google.common.collect.RangeSet;
 
 public abstract class SliceBase<A>
     implements Slice<A>

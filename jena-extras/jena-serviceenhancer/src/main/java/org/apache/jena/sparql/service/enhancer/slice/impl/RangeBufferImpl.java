@@ -20,12 +20,12 @@ package org.apache.jena.sparql.service.enhancer.slice.impl;
 
 import java.io.IOException;
 
+import org.apache.jena.sparql.service.enhancer.impl.util.RangeUtils;
+import org.apache.jena.sparql.service.enhancer.slice.api.ArrayOps;
+
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
-
-import org.apache.jena.sparql.service.enhancer.impl.util.RangeUtils;
-import org.apache.jena.sparql.service.enhancer.slice.api.ArrayOps;
 
 
 public class RangeBufferImpl<A>
