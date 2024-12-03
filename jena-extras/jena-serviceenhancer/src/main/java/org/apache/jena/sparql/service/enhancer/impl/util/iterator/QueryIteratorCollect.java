@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.jena.sparql.service.enhancer.impl;
+package org.apache.jena.sparql.service.enhancer.impl.util.iterator;
 
 import java.util.ArrayList;
 import java.util.List;

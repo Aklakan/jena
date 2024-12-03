@@ -27,7 +27,7 @@ import java.util.function.UnaryOperator;
  * A simple runnable which consumes items from an iterator upon calling {@link #run()}
  * and does so until {@link #stop()} is called or the thread is interrupted.
  */
-public class PrefetchTask<T, I extends Iterator<T>>
+public class PrefetchTask<T, X extends Iterator<T>>
     implements Runnable
 {
     public enum State {
@@ -37,7 +37,7 @@ public class PrefetchTask<T, I extends Iterator<T>>
         TERMINATED
     }
 
-    protected volatile I iterator;
+    protected volatile X iterator;
     protected UnaryOperator<T> itemCopyFn;
     protected volatile List<T> bufferedItems;
     protected long maxBufferedItemsCount;
@@ -46,7 +46,7 @@ public class PrefetchTask<T, I extends Iterator<T>>
 
     protected volatile State state = State.CREATED;
 
-    public PrefetchTask(I iterator, long maxBufferedItemsCount, UnaryOperator<T> copyFn) {
+    public PrefetchTask(X iterator, long maxBufferedItemsCount, UnaryOperator<T> copyFn) {
         this(iterator, new ArrayList<>(1024), maxBufferedItemsCount, copyFn);
     }
 
@@ -59,7 +59,7 @@ public class PrefetchTask<T, I extends Iterator<T>>
      *               Can be used to detach items from resources.
      *               The copyFn be null.
      */
-    public PrefetchTask(I iterator, List<T> bufferedItems, long maxBufferedItemsCount, UnaryOperator<T> copyFn) {
+    public PrefetchTask(X iterator, List<T> bufferedItems, long maxBufferedItemsCount, UnaryOperator<T> copyFn) {
         super();
         this.maxBufferedItemsCount = maxBufferedItemsCount;
         this.iterator = iterator;
@@ -71,7 +71,7 @@ public class PrefetchTask<T, I extends Iterator<T>>
         return bufferedItems;
     }
 
-    public I getIterator() {
+    public X getIterator() {
         return iterator;
     }
 

@@ -27,6 +27,8 @@ import java.util.stream.Stream;
 
 import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.atlas.iterator.IteratorCloseable;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterators;
+
 import com.google.common.collect.Streams;
 import org.junit.Assert;
 import org.junit.Test;
@@ -94,7 +96,7 @@ public class TestServiceEnhancerBatcher {
             int maxOutOfBandItemCount,
             List<List<Integer>> expectedBatchIds) {
         IteratorCloseable<GroupedBatch<String, Long, Entry<String, Integer>>> it = new Batcher<String, Entry<String, Integer>>
-            (Entry::getKey, maxBatchSize, maxOutOfBandItemCount).batch(Iter.iter(input.iterator()));
+            (Entry::getKey, maxBatchSize, maxOutOfBandItemCount).batch(AbortableIterators.wrap(input.iterator()));
         // it.forEachRemaining(System.err::println);
 
         // For each obtained batch extract the list of values
@@ -126,7 +128,7 @@ public class TestServiceEnhancerBatcher {
         }
 
         Stream<GroupedBatch<String, Long, Entry<String, Integer>>> stream = Streams.stream(
-                new Batcher<String, Entry<String, Integer>>(Entry::getKey, 4, 4).batch(Iter.iter(testData.iterator())));
+                new Batcher<String, Entry<String, Integer>>(Entry::getKey, 4, 4).batch(AbortableIterators.wrap(testData.iterator())));
 
         int actualItemCount = stream.mapToInt(groupedBatch -> {
             int r = groupedBatch.getBatch().getItems().size();

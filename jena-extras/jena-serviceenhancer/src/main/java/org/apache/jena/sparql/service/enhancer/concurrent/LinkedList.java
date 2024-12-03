@@ -1,5 +1,18 @@
 package org.apache.jena.sparql.service.enhancer.concurrent;
 
+/**
+ * A doubly linked list to keep track of idle executors in the ExecutorServicePool.
+ * Each executor keeps a reference to a single node of this list.
+ *
+ * If the executor becomes busy then it unlinks itself from the list.
+ * If the executor becomes idle then it appends itself to the end of this list with its idle timestamp.
+ *
+ * Consequently, the executors that have been idle longest are at the beginning of the list.
+ * The cleanup task only has to release the idle executors at the beginning of the list.
+ * The cleanup task can stop when encountering an executor whose idle time is too recent.
+ *
+ * This is not a fully fledged linked list implementation, e.g. it does not implement Collection.
+ */
 public class LinkedList<T> {
     public static class LinkedListNode<T> {
         private volatile T value;
