@@ -98,7 +98,7 @@ public class ExecutorServicePool {
     private final long idleTimeout;
     private final int maxIdleExecutors;
 
-    private final boolean isDaemon = false; //true;
+    private final boolean isDaemon = true; // false; //true;
 
     // private ScheduledExecutorService cleaner;
     private Timer timer;
