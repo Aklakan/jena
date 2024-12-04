@@ -28,6 +28,7 @@ import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.algebra.op.OpService;
 import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.QueryIterator;
+import org.apache.jena.sparql.service.ServiceExec;
 import org.apache.jena.sparql.service.bulk.ChainingServiceExecutorBulk;
 import org.apache.jena.sparql.service.bulk.ServiceExecutorBulk;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
@@ -48,6 +49,8 @@ public class ChainingServiceExecutorBulkServiceEnhancer
         List<Entry<String, String>> opts = ServiceOpts.parseEntries(node);
 
         // The following variables will be updated based on the options
+        boolean useLoop = false;
+
         boolean enableBulk = false;
         int bulkSize = 1;
         CacheMode requestedCacheMode = null;
@@ -67,6 +70,7 @@ public class ChainingServiceExecutorBulkServiceEnhancer
                 // Loop (lateral join) is handled on the algebra level
                 // nothing to do here except for suppressing forward to
                 // to the remainder of the chain
+                useLoop = true;
                 break;
 
             case ServiceOptsSE.SO_CACHE: // Enables caching
@@ -157,7 +161,13 @@ public class ChainingServiceExecutorBulkServiceEnhancer
 
         if (applySpecialProcessing) {
             ChainingServiceExecutorBulkCache exec = new ChainingServiceExecutorBulkCache(bulkSize, finalCacheMode, concurrentSlots, readaheadOfBindingsPerSlot);
-            result = exec.createExecution(newOp, input, execCxt, chain);
+            ServiceExecutorBulk restartChain = (o, ii, e) -> ServiceExec.exec(ii, o, e);
+            // result = exec.createExecution(newOp, input, execCxt, chain);
+            result = exec.createExecution(newOp, input, execCxt, restartChain);
+        } else if (useLoop) {
+            // We don't need special bulk/cache processing, but we removed loop from the serviceIRI
+            // So restart the chain
+            result = ServiceExec.exec(input, newOp, execCxt);
         } else {
             result = chain.createExecution(newOp, input, execCxt);
         }
