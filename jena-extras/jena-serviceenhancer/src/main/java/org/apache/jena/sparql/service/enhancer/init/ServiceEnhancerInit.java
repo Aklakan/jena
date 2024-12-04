@@ -18,6 +18,8 @@
 
 package org.apache.jena.sparql.service.enhancer.init;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,6 +30,8 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.query.ARQ;
 import org.apache.jena.query.Query;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFFormat;
 import org.apache.jena.sparql.ARQConstants;
 import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.algebra.OpAsQuery;
@@ -52,11 +56,13 @@ import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.engine.iterator.QueryIter;
 import org.apache.jena.sparql.engine.iterator.QueryIterCommonParent;
+import org.apache.jena.sparql.engine.iterator.QueryIterPlainWrapper;
 import org.apache.jena.sparql.engine.iterator.QueryIteratorMapped;
 import org.apache.jena.sparql.engine.main.QC;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.apache.jena.sparql.service.ServiceExecutorRegistry;
+import org.apache.jena.sparql.service.bulk.ChainingServiceExecutorBulk;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_EffectiveOptions;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_JoinStrategy;
 import org.apache.jena.sparql.service.enhancer.assembler.DatasetAssemblerServiceEnhancer;
@@ -152,6 +158,7 @@ public class ServiceEnhancerInit
         ServiceExecutorRegistry.get().addBulkLink(new ChainingServiceExecutorBulkServiceEnhancer());
 
         // Register SELF extension
+        registerServiceExecutorBulkSelf(ServiceExecutorRegistry.get());
         registerServiceExecutorSelf(ServiceExecutorRegistry.get());
 
         registerWith(Assembler.general());
@@ -169,6 +176,53 @@ public class ServiceEnhancerInit
 
     public static void registerPFunctions(PropertyFunctionRegistry reg) {
         reg.put(cacheLs.DEFAULT_IRI, cacheLs.class);
+    }
+
+    public static void registerServiceExecutorBulkSelf(ServiceExecutorRegistry registry) {
+        ChainingServiceExecutorBulk selfExec = (opExec, input, execCxt, chain) -> {
+            QueryIterator r;
+            ServiceOpts so = ServiceOptsSE.getEffectiveService(opExec);
+            OpService target = so.getTargetService();
+            DatasetGraph dataset = execCxt.getDataset();
+
+            // It seems that we always need to run the optimizer here
+            // in order to have property functions recognized properly
+            if (ServiceEnhancerConstants.SELF_BULK.equals(target.getService())) {
+//                List<Binding> tmp = new ArrayList<>();
+//                input.forEachRemaining(tmp::add);
+//                input = QueryIterPlainWrapper.create(tmp.iterator(), execCxt);
+//                System.out.println(tmp);
+//                RDFDataMgr.write(System.out, execCxt.getDataset(), RDFFormat.TRIG);
+
+                String optimizerMode = so.getFirstValue(ServiceOptsSE.SO_OPTIMIZE, "on", "on");
+                Op op = opExec.getSubOp();
+
+                boolean useQc = true;
+                if (useQc) {
+                    // Run the optimizer unless disabled
+                    if (!"off".equals(optimizerMode)) {
+                        Context cxt = execCxt.getContext();
+                        RewriteFactory rf = decideOptimizer(cxt);
+                        Rewrite rw = rf.create(cxt);
+                        op = rw.rewrite(op);
+                    }
+                    // Using QC with e.g. TDB2 breaks unionDefaultGraph mode.
+                    //   Issue seems to be mitigated going through QueryEngineRegistry.
+                    r = QC.execute(op, input, execCxt);
+                } else {
+                    // A context copy is needed in order to isolate changes from further executions;
+                    //   without a copy query engines may e.g. overwrite the context value for the NOW() function.
+//                    Context cxtCopy = execCxt.getContext().copy();
+//                    r = execute(op, dataset, input, cxtCopy);
+                    throw new RuntimeException("Cannot go through query engine factory for bulk requests.");
+                }
+            } else {
+                r = chain.createExecution(opExec, input, execCxt);
+            }
+            return r;
+        };
+        // registry.addBulkLink(selfExec);
+        registry.getBulkChain().add(selfExec);
     }
 
     public static void registerServiceExecutorSelf(ServiceExecutorRegistry registry) {

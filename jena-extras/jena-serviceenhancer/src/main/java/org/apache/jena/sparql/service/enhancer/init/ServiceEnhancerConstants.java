@@ -28,6 +28,12 @@ public class ServiceEnhancerConstants {
     /** An IRI constant for referencing the active dataset within a SERVICE clause */
     public static final Node SELF = NodeFactory.createURI("urn:x-arq:self");
 
+    /** An IRI constant for referencing the active dataset within a SERVICE clause */
+    // FIXME SERVICE <urn:x-arq-self+bulk> is handled by the the bulk chain of the service executor which receives an iterator of the input bindings.
+    //   In constrast SERVICE <urn:x-arq-self> is handled by the single chain which is fed each binding individually.
+    //   Self bulk can thus perform more powerful bulk requests.
+    public static final Node SELF_BULK = NodeFactory.createURI("urn:x-arq:self+bulk");
+
     /** Namespace for context symbols. Same as the assembler vocabulary. */
     public static final String NS = ServiceEnhancerVocab.NS;
 

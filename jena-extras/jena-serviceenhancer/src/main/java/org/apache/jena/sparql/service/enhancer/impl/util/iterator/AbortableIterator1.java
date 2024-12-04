@@ -4,6 +4,7 @@ import org.apache.jena.atlas.io.IndentedWriter;
 import org.apache.jena.atlas.lib.Lib;
 import org.apache.jena.sparql.serializer.SerializationContext;
 
+/** Base class for abortable iterators that are based on an input one. */
 public abstract class AbortableIterator1<I, O>
     extends AbortableIteratorBase<O>
 {

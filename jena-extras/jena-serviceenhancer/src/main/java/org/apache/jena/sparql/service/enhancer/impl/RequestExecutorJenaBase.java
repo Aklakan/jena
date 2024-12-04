@@ -24,13 +24,13 @@ public abstract class RequestExecutorJenaBase
     protected ExecutionContext execCxt;
 
     public RequestExecutorJenaBase(
+            Granularity granularity,
             AbortableIterator<GroupedBatch<Node, Long, Binding>> batchIterator,
             int maxConcurrentTasks,
             long concurrentSlotReadAheadCount,
             ExecutionContext execCxt
     ) {
-        // super(execCxt);
-        super(execCxt.getCancelSignal(), batchIterator, maxConcurrentTasks, concurrentSlotReadAheadCount);
+        super(execCxt.getCancelSignal(), granularity, batchIterator, maxConcurrentTasks, concurrentSlotReadAheadCount);
         this.execCxt = Objects.requireNonNull(execCxt);
     }
 

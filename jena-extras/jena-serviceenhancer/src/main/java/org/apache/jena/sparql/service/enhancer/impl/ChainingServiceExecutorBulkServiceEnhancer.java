@@ -141,7 +141,7 @@ public class ChainingServiceExecutorBulkServiceEnhancer
 //            node = NodeFactory.createURI(serviceStr);
 //            newOp = new OpService(node, opService.getSubOp(), opService.getSilent());
 //        }
-        OpService newOp = toOpService(subList, opService);
+        OpService newOp = toOpService(subList, opService, ServiceEnhancerConstants.SELF);
 
         QueryIterator result;
         CacheMode finalCacheMode = CacheMode.effectiveMode(requestedCacheMode);
@@ -164,7 +164,7 @@ public class ChainingServiceExecutorBulkServiceEnhancer
         return result;
     }
 
-    public static OpService toOpService(List<Entry<String, String>> list, OpService originalOpService) {
+    public static OpService toOpService(List<Entry<String, String>> list, OpService originalOpService, Node fallbackServiceIri) {
         String serviceStr = ServiceOpts.unparseEntries(list);
         OpService newOp = null;
         if (serviceStr.isEmpty()) {
@@ -172,7 +172,7 @@ public class ChainingServiceExecutorBulkServiceEnhancer
             if (subOp instanceof OpService subService) {
                 newOp = subService;
             } else {
-                serviceStr = ServiceEnhancerConstants.SELF.getURI();
+                serviceStr = fallbackServiceIri.getURI(); // ServiceEnhancerConstants.SELF.getURI();
             }
         }
 
