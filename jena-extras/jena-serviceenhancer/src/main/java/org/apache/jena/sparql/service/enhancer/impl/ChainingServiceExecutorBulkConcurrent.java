@@ -1,11 +1,8 @@
 package org.apache.jena.sparql.service.enhancer.impl;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 
 import org.apache.jena.graph.Node;
 import org.apache.jena.sparql.algebra.op.OpService;
@@ -13,13 +10,11 @@ import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.binding.Binding;
-import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.engine.iterator.QueryIterPlainWrapper;
-import org.apache.jena.sparql.expr.NodeValue;
+import org.apache.jena.sparql.service.ServiceExec;
 import org.apache.jena.sparql.service.bulk.ChainingServiceExecutorBulk;
 import org.apache.jena.sparql.service.bulk.ServiceExecutorBulk;
-import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
-import org.apache.jena.sparql.service.enhancer.impl.util.VarUtilsExtra;
+import org.apache.jena.sparql.service.enhancer.impl.RequestExecutorBase.Granularity;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterator;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterators;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
@@ -28,7 +23,13 @@ import org.apache.jena.sparql.util.Context;
 public class ChainingServiceExecutorBulkConcurrent
     implements ChainingServiceExecutorBulk
 {
+    public static final String FEATURE_NAME = "concurrent";
+
     private final String name;
+
+    public ChainingServiceExecutorBulkConcurrent() {
+        this(FEATURE_NAME);
+    }
 
     public ChainingServiceExecutorBulkConcurrent(String name) {
         super();
@@ -43,7 +44,7 @@ public class ChainingServiceExecutorBulkConcurrent
 
         QueryIterator result;
         Entry<String, String> opt = list.isEmpty() ? null : list.get(0);
-        if (opt != null && opt.getKey().equals("concurrent")) {
+        if (opt != null && opt.getKey().equals(name)) {
             list = list.subList(1, list.size());
             // Remove a trailing colon separator
             // FIXME: This should be handled more elegantly
@@ -51,7 +52,7 @@ public class ChainingServiceExecutorBulkConcurrent
                 list = list.subList(1, list.size());
             }
 
-            OpService newOp = ChainingServiceExecutorBulkServiceEnhancer.toOpService(list, opService);
+            OpService newOp = ChainingServiceExecutorBulkServiceEnhancer.toOpService(list, opService, ServiceEnhancerConstants.SELF_BULK);
 
             int concurrentSlots = 0;
             long readaheadOfBindingsPerSlot = ChainingServiceExecutorBulkCache.DFT_CONCURRENT_READAHEAD;
@@ -87,46 +88,32 @@ public class ChainingServiceExecutorBulkConcurrent
             concurrentSlots = Math.max(Math.min(concurrentSlots, maxConcurrentSlotCount), 0);
 
             // OpServiceInfo serviceInfo = new OpServiceInfo(opService);
-            // Node serviceNode = opService.getService();
-            OpServiceInfo serviceInfo = new OpServiceInfo(newOp);
-            // Function<Binding, Node> groupKeyFn = binding -> Var.lookup(binding, serviceNode);
-            Function<Binding, Node> groupKeyFn = serviceInfo::getSubstServiceNode;
+            Node serviceNode = opService.getService();
+            // OpServiceInfo serviceInfo = new OpServiceInfo(newOp);
+            Function<Binding, Node> groupKeyFn = binding -> Var.lookup(binding, serviceNode);
+            // Function<Binding, Node> groupKeyFn = serviceInfo::getSubstServiceNode;
 
             Batcher<Node, Binding> scheduler = new Batcher<>(groupKeyFn, bindingsPerSlot, 0);
             AbortableIterator<GroupedBatch<Node, Long, Binding>> inputBatchIterator = scheduler.batch(AbortableIterators.adapt(input));
 
-            Set<Var> visibleServiceSubOpVars = serviceInfo.getVisibleSubOpVarsScoped();
-            Var globalIdxVar = VarUtilsExtra.freshVar("__idx__", visibleServiceSubOpVars);
-
-            RequestExecutorJenaBase exec = new RequestExecutorJenaBase(inputBatchIterator, concurrentSlots, readaheadOfBindingsPerSlot, execCxt) {
+            RequestExecutorJenaBase exec = new RequestExecutorJenaBase(Granularity.BATCH, inputBatchIterator, concurrentSlots, readaheadOfBindingsPerSlot, execCxt) {
                 @Override
                 protected AbortableIterator<Binding> buildIterator(boolean runsOnNewThread, Node groupKey, List<Binding> inputs, List<Long> reverseMap, ExecutionContext batchExecCxt) {
-//                    ServiceOpts so = ServiceOptsSE.getEffectiveService(serviceInfo.getOpService());
-//                    Node targetServiceNode = so.getTargetService().getService();
-//                    NodeTransform serviceNodeRemapper = node -> ServiceEnhancerInit.resolveServiceNode(node, batchExecCxt);
-//                    Set<Var> inputVarsMentioned = BindingUtils.varsMentioned(inputs);
+//                    Iterator<Binding> indexedBindings = IntStream.range(0, inputs.size()).mapToObj(i ->
+//                        BindingFactory.binding(inputs.get(i), globalIdxVar, NodeValue.makeInteger(reverseMap.get(i)).asNode()))
+//                        .iterator();
 
-                    Iterator<Binding> indexedBindings = IntStream.range(0, inputs.size()).mapToObj(i ->
-                        BindingFactory.binding(inputs.get(i), globalIdxVar, NodeValue.makeInteger(reverseMap.get(i)).asNode()))
-                        .iterator();
+                    QueryIterator subIter = QueryIterPlainWrapper.create(inputs.iterator(), execCxt);
 
-                    QueryIterator tmp = chain.createExecution(newOp, QueryIterPlainWrapper.create(indexedBindings, execCxt), execCxt);
+                    // QueryIterator tmp = chain.createExecution(newOp, QueryIterPlainWrapper.create(indexedBindings, execCxt), execCxt);
+                    // Pass the adapted request through the whole service executor chain again.
+                    QueryIterator tmp = ServiceExec.exec(subIter, newOp, execCxt);
                     return AbortableIterators.adapt(tmp);
                 }
 
                 @Override
                 protected long extractLocalInputId(Binding input) {
-                    // Even if the binding is otherwise empty the ID for globalIdxVar must never be null!
-                    long result = BindingUtils.getNumber(input, globalIdxVar).longValue();
-                    return result;
-                }
-
-                /** Extend super.moveToNext to exclude the internal globalIdxVar from the bindings. */
-                @Override
-                protected Binding moveToNext() {
-                    Binding tmp = super.moveToNext();
-                    Binding result = tmp == null ? null : BindingUtils.project(tmp, tmp.vars(), globalIdxVar);
-                    return result;
+                    throw new IllegalStateException("Should never be called.");
                 }
             };
             result = AbortableIterators.asQueryIterator(exec);

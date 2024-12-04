@@ -1,6 +1,7 @@
 package org.apache.jena.sparql.service.enhancer.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +33,12 @@ import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbstractAborta
 public abstract class RequestExecutorBase<G, I, O>
     extends AbstractAbortableIterator<O>
 {
+    /** Whether to order output across all batches by the individual items (ITEM) or whether each batch is processed as one consecutive unit (BATCH). */
+    public enum Granularity {
+        ITEM,
+        BATCH
+    }
+
     /**
      * Interface for the customizing iterator creation.
      * Each method is only invoked once and all methods are always invoked on the same thread.
@@ -133,39 +140,45 @@ public abstract class RequestExecutorBase<G, I, O>
     static class PrefetchTaskForBinding<T, X extends AbortableIterator<T>>
         extends PrefetchTask<T, X> {
 
+        protected long batchId;
+
         /** The input ids in ascending order served by this task. Never empty. */
         protected List<Long> servedInputIds;
 
-        /** The list item in {@link #servedInputIds}. */
-        protected long closeInputId;
-
-        public PrefetchTaskForBinding(X iterator, long maxBufferedItemsCount, List<Long> servedInputIds, UnaryOperator<T> copyFn) {
+        public PrefetchTaskForBinding(X iterator, long maxBufferedItemsCount, long batchId, List<Long> servedInputIds, UnaryOperator<T> copyFn) {
             super(iterator, maxBufferedItemsCount, copyFn);
-
+            this.batchId = batchId;
             this.servedInputIds = Objects.requireNonNull(servedInputIds);
-            this.closeInputId = servedInputIds.get(servedInputIds.size() - 1);
 
             if (servedInputIds.isEmpty()) {
                 throw new IllegalArgumentException("Input ids must be neither null nor empty");
             }
         }
 
+        long getBatchId() {
+            return batchId;
+        }
+
         public List<Long> getServedInputIds() {
             return servedInputIds;
         }
 
-        public long getCloseInputId() {
-            return closeInputId;
-        }
-
         @Override
         public String toString() {
-            return "TaskId for inputIds " + servedInputIds + " [" + state + (isStopRequested ? "aborted" : "") + "]: " + bufferedItems.size() + " items buffered.";
+            return "TaskId for batchId " + batchId + " with inputIds " + servedInputIds + " [" + state + (isStopRequested ? "aborted" : "") + "]: " + bufferedItems.size() + " items buffered.";
         }
 
         public static <T> PrefetchTaskForBinding<T, AbortableIterator<T>> empty(long closeInputId) {
-            return new PrefetchTaskForBinding<>(AbortableIterators.empty(), 0, List.of(closeInputId), UnaryOperator.identity());
+            return new PrefetchTaskForBinding<>(AbortableIterators.empty(), 0, closeInputId, List.of(closeInputId), UnaryOperator.identity());
         }
+    }
+
+    protected static long getCloseId(Granularity granularity, PrefetchTaskForBinding<?, ?> task) {
+        long result = switch (granularity) {
+            case ITEM -> task.getServedInputIds().get(task.getServedInputIds().size() - 1);
+            case BATCH -> task.getBatchId();
+        };
+        return result;
     }
 
     /** Helper record for tracking running prefetch tasks. */
@@ -189,12 +202,7 @@ public abstract class RequestExecutorBase<G, I, O>
             this.executorService = executorService;
             this.outThreadCloseAction = outThreadCloseAction;
             this.future = future;
-            // this.execCxt = execCxt;
         }
-
-//      public ExecutionContext getExecCxt() {
-//          return execCxt;
-//      }
 
         public PrefetchTaskForBinding<T, X> task() {
             return task;
@@ -281,7 +289,11 @@ public abstract class RequestExecutorBase<G, I, O>
     protected int fetchAhead = 5;
     protected int maxRequestSize = 2000;
 
+    /** If batch granularity is true then output is ordered according to the obtained batches.
+     *  Otherwise, output is ordered according to the individual member ids of the batches (assumes ids are unique across batches). */
+    protected Granularity granularity;
     protected AbortableIterator<GroupedBatch<G, Long, I>> batchIterator;
+    protected long nextBatchId = 0; // Counter of items taken from batchIterator
 
     // Input iteration
     protected long currentInputId = -1;
@@ -306,16 +318,13 @@ public abstract class RequestExecutorBase<G, I, O>
 
     public RequestExecutorBase(
             AtomicBoolean cancelSignal,
+            Granularity granularity,
             AbortableIterator<GroupedBatch<G, Long, I>> batchIterator,
             int maxConcurrentTasks,
             long concurrentSlotReadAheadCount) {
         super(cancelSignal);
-        // super(execCxt);
-        // this.useLoopJoin = useLoopJoin;
+        this.granularity = Objects.requireNonNull(granularity);
         this.batchIterator = Objects.requireNonNull(batchIterator);
-
-//      Set<Var> visibleServiceSubOpVars = serviceInfo.getVisibleSubOpVarsScoped();
-//      this.globalIdxVar = VarUtilsExtra.freshVar("__idx__", visibleServiceSubOpVars);
 
         // Set up a dummy task with an empty iterator as the active one and ensure it is properly closed
         activeTaskEntry = TaskEntry.empty(currentInputId);
@@ -330,7 +339,6 @@ public abstract class RequestExecutorBase<G, I, O>
 
     @Override
     protected O moveToNext() {
-        // I parentBinding = null;
         O result = null;
 
         // Peek the next binding on the active iterator and verify that it maps to the current
@@ -344,7 +352,12 @@ public abstract class RequestExecutorBase<G, I, O>
                     break;
                 }
 
-                long peekOutputId = extractLocalInputId(peek);
+                // On batch granularity always take the lowest input id served by a task
+                long peekOutputId = switch(granularity) {
+                    case ITEM -> extractLocalInputId(peek);
+                    case BATCH -> activeTaskEntry.task().getBatchId();
+                };
+
                 // long peekOutputId = BindingUtils.getNumber(peek, globalIdxVar).longValue();
 
                 boolean inputIdMatches = peekOutputId == currentInputId;
@@ -356,7 +369,8 @@ public abstract class RequestExecutorBase<G, I, O>
             }
 
             // Cleanup of no longer needed resources
-            boolean isClosePoint = currentInputId == activeTaskEntry.task().getCloseInputId();
+            long closeId = getCloseId(granularity, activeTaskEntry.task());
+            boolean isClosePoint = currentInputId == closeId;
             if (isClosePoint) {
                 activeIter.close();
                 inputToOutputIt.remove(currentInputId);
@@ -382,9 +396,19 @@ public abstract class RequestExecutorBase<G, I, O>
     }
 
     protected void registerTaskEntry(TaskEntry<O, AbortableIterator<O>> taskEntry) {
-        List<Long> servedInputIds = taskEntry.task().getServedInputIds();
-        for (Long e : servedInputIds) {
-            inputToOutputIt.put(e, taskEntry);
+        switch (granularity) {
+        case ITEM:
+            List<Long> servedInputIds = taskEntry.task().getServedInputIds();
+            for (Long e : servedInputIds) {
+                inputToOutputIt.put(e, taskEntry);
+            }
+            break;
+        case BATCH:
+            long batchId = taskEntry.task().getBatchId();
+            inputToOutputIt.put(batchId, taskEntry);
+            break;
+        default:
+            throw new IllegalStateException("Should never come here.");
         }
     }
 
@@ -426,7 +450,8 @@ public abstract class RequestExecutorBase<G, I, O>
                     future);
 
             registerTaskEntry(taskEntry);
-            openConcurrentTaskEntries.put(taskEntry.task().getCloseInputId(), taskEntry);
+            long closeId = getCloseId(granularity, task);
+            openConcurrentTaskEntries.put(closeId, taskEntry);
         }
     }
 
@@ -446,6 +471,7 @@ public abstract class RequestExecutorBase<G, I, O>
     // partitionKey = (inputId, rangeId)
     protected InstanceLifeCycle<PrefetchTaskForBinding<O, AbortableIterator<O>>> prepareNextBatchExec(boolean isInNewThread) {
         GroupedBatch<G, Long, I> batchRequest = batchIterator.next();
+        long batchId = nextBatchId++;
         Batch<Long, I> batch = batchRequest.getBatch();
         NavigableMap<Long, I> batchItems = batch.getItems();
 
@@ -458,7 +484,7 @@ public abstract class RequestExecutorBase<G, I, O>
         InstanceLifeCycle<PrefetchTaskForBinding<O, AbortableIterator<O>>> result = InstanceLifeCycles.of(() -> {
             creator.begin();
             AbortableIterator<O> tmp = creator.createIterator();
-            PrefetchTaskForBinding<O, AbortableIterator<O>> task = new PrefetchTaskForBinding<>(tmp, concurrentSlotReadAheadCount, reverseMap, this::copy);
+            PrefetchTaskForBinding<O, AbortableIterator<O>> task = new PrefetchTaskForBinding<>(tmp, concurrentSlotReadAheadCount, batchId, reverseMap, this::copy);
             return task;
         }, task -> {
             try {
@@ -468,6 +494,26 @@ public abstract class RequestExecutorBase<G, I, O>
             }
         });
 
+        return result;
+    }
+
+    /** Check whether the values in the given collection are consecutive. */
+    public static boolean isConsecutive(Collection<Long> ids) {
+        boolean result = true;
+        Iterator<Long> it = ids.iterator();
+        if (it.hasNext()) {
+            long start = it.next();
+            long expected = start + 1;
+            while (it.hasNext()) {
+                long actual = it.next();
+                if (actual != expected) {
+                    // throw new RuntimeException("Concurrent processor must receive input ids in consecutive order. Adjust the batching strategy accordingly.");
+                    result = false;
+                    break;
+                }
+                ++expected;
+            }
+        }
         return result;
     }
 

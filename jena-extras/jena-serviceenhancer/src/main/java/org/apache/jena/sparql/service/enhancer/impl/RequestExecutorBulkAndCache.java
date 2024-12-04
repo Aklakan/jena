@@ -41,7 +41,7 @@ public class RequestExecutorBulkAndCache
             ServiceResultSizeCache resultSizeCache,
             ServiceResponseCache cache,
             CacheMode cacheMode) {
-        super(batchIterator, maxConcurrentTasks, concurrentSlotReadAheadCount, execCxt);
+        super(Granularity.ITEM, batchIterator, maxConcurrentTasks, concurrentSlotReadAheadCount, execCxt);
         this.opExecutor = opExector;
         this.serviceInfo = serviceInfo;
         this.resultSizeCache = resultSizeCache;
