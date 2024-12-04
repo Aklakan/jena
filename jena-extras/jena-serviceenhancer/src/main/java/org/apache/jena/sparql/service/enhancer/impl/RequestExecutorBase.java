@@ -354,7 +354,7 @@ public abstract class RequestExecutorBase<G, I, O>
 
                 // On batch granularity always take the lowest input id served by a task
                 long peekOutputId = switch(granularity) {
-                    case ITEM -> extractLocalInputId(peek);
+                    case ITEM -> extractInputOrdinal(peek);
                     case BATCH -> activeTaskEntry.task().getBatchId();
                 };
 
@@ -459,7 +459,7 @@ public abstract class RequestExecutorBase<G, I, O>
 
     protected abstract IteratorCreator<O> processBatch(boolean isInNewThread, G groupKey, List<I> batch, List<Long> reverseMap);
 
-    protected abstract long extractLocalInputId(O input);
+    protected abstract long extractInputOrdinal(O input);
     protected abstract void checkCanExecInNewThread();
 
     protected O copy(O item) { return item; }
