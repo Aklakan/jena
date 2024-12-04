@@ -96,7 +96,7 @@ public class RequestExecutorBulkAndCache
     }
 
     @Override
-    protected long extractLocalInputId(Binding input) {
+    protected long extractInputOrdinal(Binding input) {
         // Even if the binding is otherwise empty the ID for globalIdxVar must never be null!
         long result = BindingUtils.getNumber(input, globalIdxVar).longValue();
         return result;

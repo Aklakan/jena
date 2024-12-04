@@ -23,17 +23,21 @@ import org.apache.jena.sparql.util.Context;
 public class ChainingServiceExecutorBulkConcurrent
     implements ChainingServiceExecutorBulk
 {
-    public static final String FEATURE_NAME = "concurrent";
+    public static final String OPTION_NAME = "concurrent";
+
+    public record Config(int concurrentSlots, int bindingsPerSlot, long readAhead) {}
 
     private final String name;
 
+    /** Create a service executor that performs concurrent execution, configurable via the option {@value #OPTION_NAME}.
+     *  For example SERVICE &lt;concurrent:&gt; { }.*/
     public ChainingServiceExecutorBulkConcurrent() {
-        this(FEATURE_NAME);
+        this(OPTION_NAME);
     }
 
-    public ChainingServiceExecutorBulkConcurrent(String name) {
+    public ChainingServiceExecutorBulkConcurrent(String optionName) {
         super();
-        this.name = name;
+        this.name = optionName;
     }
 
     @Override
@@ -52,40 +56,12 @@ public class ChainingServiceExecutorBulkConcurrent
                 list = list.subList(1, list.size());
             }
 
-            OpService newOp = ChainingServiceExecutorBulkServiceEnhancer.toOpService(list, opService, ServiceEnhancerConstants.SELF_BULK);
-
-            int concurrentSlots = 0;
-            long readaheadOfBindingsPerSlot = ChainingServiceExecutorBulkCache.DFT_CONCURRENT_READAHEAD;
-
             Context cxt = execCxt.getContext();
             // String key = opt.getKey();
             String val = opt.getValue();
+            Config config = parseConfig(val, cxt);
 
-            int maxConcurrentSlotCount = cxt.get(ServiceEnhancerConstants.serviceConcurrentMaxSlotCount, ChainingServiceExecutorBulkCache.DFT_MAX_CONCURRENT_SLOTS);
-            // Value pattern is: [concurrentSlots][-maxReadaheadOfBindingsPerSlot]
-            String v = val == null ? "" : val.toLowerCase().trim();
-            int bindingsPerSlot = 1;
-
-            // [{concurrentSlotCount}[-{bindingsPerSlotCount}[-{readAheadPerSlotCount}]]]
-            if (!v.isEmpty()) {
-                String[] parts = v.split("-", 3);
-                if (parts.length > 0) {
-                    concurrentSlots = parseInt(parts[0], 0);
-                    if (parts.length > 1) {
-                        bindingsPerSlot = parseInt(parts[1], 0);
-                        // There must be at least 1 binding per slot
-                        bindingsPerSlot = Math.max(1, bindingsPerSlot);
-                        if (parts.length > 2) {
-                            int maxReadaheadOfBindingsPerSlot = cxt.get(ServiceEnhancerConstants.serviceConcurrentMaxReadaheadCount, ChainingServiceExecutorBulkCache.DFT_MAX_CONCURRENT_READAHEAD);
-                            readaheadOfBindingsPerSlot = parseInt(parts[2], 0);
-                            readaheadOfBindingsPerSlot = Math.max(Math.min(readaheadOfBindingsPerSlot, maxReadaheadOfBindingsPerSlot), 0);
-                        }
-                    }
-                }
-            } else {
-                concurrentSlots = Runtime.getRuntime().availableProcessors();
-            }
-            concurrentSlots = Math.max(Math.min(concurrentSlots, maxConcurrentSlotCount), 0);
+            OpService newOp = ChainingServiceExecutorBulkServiceEnhancer.toOpService(list, opService, ServiceEnhancerConstants.SELF_BULK);
 
             // OpServiceInfo serviceInfo = new OpServiceInfo(opService);
             Node serviceNode = opService.getService();
@@ -93,10 +69,10 @@ public class ChainingServiceExecutorBulkConcurrent
             Function<Binding, Node> groupKeyFn = binding -> Var.lookup(binding, serviceNode);
             // Function<Binding, Node> groupKeyFn = serviceInfo::getSubstServiceNode;
 
-            Batcher<Node, Binding> scheduler = new Batcher<>(groupKeyFn, bindingsPerSlot, 0);
+            Batcher<Node, Binding> scheduler = new Batcher<>(groupKeyFn, config.bindingsPerSlot(), 0);
             AbortableIterator<GroupedBatch<Node, Long, Binding>> inputBatchIterator = scheduler.batch(AbortableIterators.adapt(input));
 
-            RequestExecutorJenaBase exec = new RequestExecutorJenaBase(Granularity.BATCH, inputBatchIterator, concurrentSlots, readaheadOfBindingsPerSlot, execCxt) {
+            RequestExecutorJenaBase exec = new RequestExecutorJenaBase(Granularity.BATCH, inputBatchIterator, config.concurrentSlots(), config.readAhead(), execCxt) {
                 @Override
                 protected AbortableIterator<Binding> buildIterator(boolean runsOnNewThread, Node groupKey, List<Binding> inputs, List<Long> reverseMap, ExecutionContext batchExecCxt) {
 //                    Iterator<Binding> indexedBindings = IntStream.range(0, inputs.size()).mapToObj(i ->
@@ -107,12 +83,14 @@ public class ChainingServiceExecutorBulkConcurrent
 
                     // QueryIterator tmp = chain.createExecution(newOp, QueryIterPlainWrapper.create(indexedBindings, execCxt), execCxt);
                     // Pass the adapted request through the whole service executor chain again.
-                    QueryIterator tmp = ServiceExec.exec(subIter, newOp, execCxt);
+                    QueryIterator tmp = ServiceExec.exec(newOp, subIter, execCxt);
                     return AbortableIterators.adapt(tmp);
                 }
 
                 @Override
-                protected long extractLocalInputId(Binding input) {
+                protected long extractInputOrdinal(Binding targetItem) {
+                    // This iterator operates on batch granularity
+                    // No need to relate individual bindings to their ordinal.
                     throw new IllegalStateException("Should never be called.");
                 }
             };
@@ -123,7 +101,41 @@ public class ChainingServiceExecutorBulkConcurrent
         return result;
     }
 
-    private int parseInt(String str, int fallbackValue) {
+    /** Parse the settings of format [concurrentSlots[-maxBindingsPerSlot[-maxReadaheadOfBindingsPerSlot]]]. */
+    public static Config parseConfig(String val, Context cxt) {
+        int concurrentSlots = 0;
+        long readaheadOfBindingsPerSlot = ChainingServiceExecutorBulkCache.DFT_CONCURRENT_READAHEAD;
+
+        int maxConcurrentSlotCount = cxt.get(ServiceEnhancerConstants.serviceConcurrentMaxSlotCount, ChainingServiceExecutorBulkCache.DFT_MAX_CONCURRENT_SLOTS);
+
+        String v = val == null ? "" : val.toLowerCase().trim();
+        int bindingsPerSlot = 1;
+
+        // [{concurrentSlotCount}[-{bindingsPerSlotCount}[-{readAheadPerSlotCount}]]]
+        if (!v.isEmpty()) {
+            String[] parts = v.split("-", 3);
+            if (parts.length > 0) {
+                concurrentSlots = parseInt(parts[0], 0);
+                if (parts.length > 1) {
+                    bindingsPerSlot = parseInt(parts[1], 0);
+                    // There must be at least 1 binding per slot
+                    bindingsPerSlot = Math.max(1, bindingsPerSlot);
+                    if (parts.length > 2) {
+                        int maxReadaheadOfBindingsPerSlot = cxt.get(ServiceEnhancerConstants.serviceConcurrentMaxReadaheadCount, ChainingServiceExecutorBulkCache.DFT_MAX_CONCURRENT_READAHEAD);
+                        readaheadOfBindingsPerSlot = parseInt(parts[2], 0);
+                        readaheadOfBindingsPerSlot = Math.max(Math.min(readaheadOfBindingsPerSlot, maxReadaheadOfBindingsPerSlot), 0);
+                    }
+                }
+            }
+        } else {
+            concurrentSlots = Runtime.getRuntime().availableProcessors();
+        }
+        concurrentSlots = Math.max(Math.min(concurrentSlots, maxConcurrentSlotCount), 0);
+
+        return new Config(concurrentSlots, bindingsPerSlot, readaheadOfBindingsPerSlot);
+    }
+
+    private static int parseInt(String str, int fallbackValue) {
         return str.isEmpty() ? fallbackValue : Integer.parseInt(str);
     }
 }
