@@ -32,6 +32,7 @@ public abstract class QueryIterSlottedBase
     extends QueryIter
 {
     private boolean slotIsSet = false;
+    private boolean hasMore = true;
     private Binding slot = null;
 
     public QueryIterSlottedBase(ExecutionContext execCxt) {
@@ -39,18 +40,22 @@ public abstract class QueryIterSlottedBase
     }
 
     @Override
-    protected boolean hasNextBinding() {
+    protected final boolean hasNextBinding() {
         if ( slotIsSet )
             return true;
 
-//        boolean r = hasMore();
-//        if ( !r ) {
-//            close();
-//            return false;
-//        }
+        if (!hasMore) {
+            return false;
+        }
+    //    boolean r = hasMore();
+    //    if ( !r ) {
+    //        close();
+    //        return false;
+    //    }
 
         slot = moveToNext();
-        if ( slot == null ) {
+        // if ( slot == null ) {
+        if (!hasMore) {
             close();
             return false;
         }
@@ -59,8 +64,13 @@ public abstract class QueryIterSlottedBase
         return true;
     }
 
+    protected final Binding endOfData() {
+        hasMore = false;
+        return null;
+    }
+
     @Override
-    public Binding moveToNextBinding() {
+    public final Binding moveToNextBinding() {
         if ( !hasNext() )
             throw new NoSuchElementException(Lib.className(this));
 
@@ -71,15 +81,15 @@ public abstract class QueryIterSlottedBase
     }
 
     @Override
-    protected void closeIterator() {
+    protected final void closeIterator() {
         // Called by QueryIterBase.close()
         slotIsSet = false;
         slot = null;
+
+        closeIteratorActual();
     }
 
-    @Override
-    protected void requestCancel() {
-    }
+    protected abstract void closeIteratorActual();
 
     /**
      * Method that must return the next non-null element.

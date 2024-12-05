@@ -24,10 +24,11 @@ import java.util.function.Supplier;
 import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.binding.Binding;
+import org.apache.jena.sparql.engine.iterator.QueryIter;
 
 /** Deferred (lazy) iterator which initializes a delegate from a supplier only when needed */
 public class QueryIterDefer
-    extends QueryIterSlottedBase
+    extends QueryIter
 {
     protected Supplier<QueryIterator> supplier;
     protected QueryIterator iterator;
@@ -44,7 +45,13 @@ public class QueryIterDefer
     }
 
     @Override
-    protected Binding moveToNext() {
+    protected boolean hasNextBinding() {
+        ensureInitialized();
+        return iterator.hasNext();
+    }
+
+    @Override
+    protected Binding moveToNextBinding() {
         ensureInitialized();
         return iterator.hasNext() ? iterator.next() : null;
     }

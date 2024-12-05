@@ -65,6 +65,8 @@ import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerInit;
 import org.apache.jena.system.TxnOp;
 
+// FIXME This class is superseded by RequestExecutorBase/RequestExecutorBulkAndCache. It can be removed.
+
 // FIXME This class has been generalized from forming bulk requests from a batch of input items
 //       into one that can execute formed batches concurrently.
 //       At the core, this is a flatMap operation.
@@ -169,7 +171,7 @@ public class RequestExecutor
     }
 
     static class PrefetchTaskForBinding
-        extends PrefetchTask<Binding, QueryIterator> {
+        extends PrefetchTaskBase<Binding, QueryIterator> {
 
         /** The input ids in ascending order served by this task. Never empty. */
         protected List<Long> servedInputIds;
@@ -649,9 +651,13 @@ public class RequestExecutor
     }
 
     @Override
-    protected void closeIterator() {
+    protected void closeIteratorActual() {
         freeResources();
-        super.closeIterator();
+        // super.closeIterator();
+    }
+
+    @Override
+    protected void requestCancel() {
     }
 
     private static boolean isCancelled(ExecutionContext execCxt) {
