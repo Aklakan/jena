@@ -27,7 +27,7 @@ import java.util.function.UnaryOperator;
  * A simple runnable which consumes items from an iterator upon calling {@link #run()}
  * and does so until {@link #stop()} is called or the thread is interrupted.
  */
-public class PrefetchTask<T, X extends Iterator<T>>
+public class PrefetchTaskBase<T, X extends Iterator<T>>
     implements Runnable
 {
     public enum State {
@@ -46,7 +46,11 @@ public class PrefetchTask<T, X extends Iterator<T>>
 
     protected volatile State state = State.CREATED;
 
-    public PrefetchTask(X iterator, long maxBufferedItemsCount, UnaryOperator<T> copyFn) {
+    /** When a tasks terminates in failure then this field is set.
+     *  Consequently, {@link #run()} will never fail with an exception. */
+    protected volatile Throwable throwable = null;
+
+    public PrefetchTaskBase(X iterator, long maxBufferedItemsCount, UnaryOperator<T> copyFn) {
         this(iterator, new ArrayList<>(1024), maxBufferedItemsCount, copyFn);
     }
 
@@ -59,7 +63,7 @@ public class PrefetchTask<T, X extends Iterator<T>>
      *               Can be used to detach items from resources.
      *               The copyFn be null.
      */
-    public PrefetchTask(X iterator, List<T> bufferedItems, long maxBufferedItemsCount, UnaryOperator<T> copyFn) {
+    public PrefetchTaskBase(X iterator, List<T> bufferedItems, long maxBufferedItemsCount, UnaryOperator<T> copyFn) {
         super();
         this.maxBufferedItemsCount = maxBufferedItemsCount;
         this.iterator = iterator;
@@ -84,23 +88,36 @@ public class PrefetchTask<T, X extends Iterator<T>>
     }
 
     @Override
-    public void run() {
-        // Before the first item has been processed the state remainins in STARTING
+    public final void run() {
+        // Before the first item has been processed the state remains in STARTING.
         state = State.STARTING;
+        try {
+            runActual();
+        } catch (Throwable t) {
+            this.throwable = t;
+        } finally {
+            state = State.TERMINATED;
+        }
+    }
+
+    protected void runActual() {
         while (!isStopRequested && !Thread.interrupted() && iterator.hasNext() && bufferedItems.size() < maxBufferedItemsCount) {
             state = State.RUNNING;
             T item = iterator.next();
             T copy = itemCopyFn == null ? item : itemCopyFn.apply(item);
             bufferedItems.add(copy);
         }
-        state = State.TERMINATED;
+    }
+
+    public Throwable getThrowable() {
+        return throwable;
     }
 
     public void stop() {
         isStopRequested = true;
     }
 
-    public static <T, I extends Iterator<T>> PrefetchTask<T, I> of(I iterator, long maxBufferedItemsCount, UnaryOperator<T> copyFn) {
-        return new PrefetchTask<>(iterator, maxBufferedItemsCount, copyFn);
+    public static <T, I extends Iterator<T>> PrefetchTaskBase<T, I> of(I iterator, long maxBufferedItemsCount, UnaryOperator<T> copyFn) {
+        return new PrefetchTaskBase<>(iterator, maxBufferedItemsCount, copyFn);
     }
 }

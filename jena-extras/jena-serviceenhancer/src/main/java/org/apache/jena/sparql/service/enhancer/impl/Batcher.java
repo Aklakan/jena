@@ -206,15 +206,21 @@ public class Batcher<G, I> {
 
                 result = new GroupedBatch<>(resultGroupKey, resultBatchTmp);
             } else {
-                result = null; //endOfData();
+                result = endOfData();
             }
             return result;
         }
 
         @Override
-        public void closeActual() {
+        protected void closeIteratorActual() {
             inputIterator.close();
         }
+
+        @Override
+        protected void requestCancel() {
+            inputIterator.cancel();
+        }
+
 
         @Override
         public void output(IndentedWriter out, SerializationContext sCxt) {

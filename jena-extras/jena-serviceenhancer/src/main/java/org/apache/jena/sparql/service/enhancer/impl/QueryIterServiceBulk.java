@@ -55,6 +55,7 @@ import org.apache.jena.sparql.service.enhancer.impl.IteratorFactoryWithBuffer.Su
 import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.QueryIterDefer;
 import org.apache.jena.sparql.service.enhancer.impl.util.QueryIterSlottedBase;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterators;
 import org.apache.jena.sparql.service.enhancer.slice.api.IteratorOverReadableChannel;
 import org.apache.jena.sparql.service.enhancer.slice.api.ReadableChannel;
 import org.apache.jena.sparql.service.enhancer.slice.api.ReadableChannelOverSliceAccessor;
@@ -82,6 +83,7 @@ import com.google.common.math.LongMath;
  */
 public class QueryIterServiceBulk
     extends QueryIterSlottedBase
+    // extends AbstractAbortableIterator<Binding>
 {
     private static final Logger logger = LoggerFactory.getLogger(QueryIterServiceBulk.class);
 
@@ -176,20 +178,21 @@ public class QueryIterServiceBulk
         }
     }
 
-    @Override
-    protected synchronized Binding moveToNext() {
-        Binding result;
-        try {
-            result = moveToNextActual();
-        } catch (Exception e) {
-            freeResources();
-            e.addSuppressed(new RuntimeException("Problem encountered moving to next item."));
-            throw e;
-        }
-        return result;
-    }
+//    @Override
+//    protected Binding moveToNext() {
+//        Binding result;
+//        try {
+//            result = moveToNextActual();
+//        } catch (Exception e) {
+//            freeResources();
+//            e.addSuppressed(new RuntimeException("Problem encountered moving to next item."));
+//            throw e;
+//        }
+//        return result;
+//    }
 
-    protected synchronized Binding moveToNextActual() {
+    @Override
+    protected Binding moveToNext() {
         Binding mergedBindingWithIdx = null;
 
         // One time init
@@ -427,6 +430,7 @@ public class QueryIterServiceBulk
         }
 
         if (result == null) {
+            result = endOfData();
             freeResources();
         }
 
@@ -464,8 +468,12 @@ public class QueryIterServiceBulk
     }
 
     @Override
-    public synchronized void closeIterator() {
+    public void closeIteratorActual() {
         freeResources();
+    }
+
+    @Override
+    protected void requestCancel() {
     }
 
     /**
@@ -741,7 +749,8 @@ public class QueryIterServiceBulk
 
             // Wrap the iterator such that the items are cached
             if (cache != null) {
-                qIter = new QueryIterWrapperCache(execCxt, qIter, cacheBulkSize, cache, cacheKeyFactory, backendRequests, idxVar, targetService);
+                qIter = AbortableIterators.asQueryIterator(
+                        new QueryIterWrapperCache(execCxt, qIter, cacheBulkSize, cache, cacheKeyFactory, backendRequests, idxVar, targetService));
             }
 
             // Apply renaming after cache to avoid mismatch between op and bindings

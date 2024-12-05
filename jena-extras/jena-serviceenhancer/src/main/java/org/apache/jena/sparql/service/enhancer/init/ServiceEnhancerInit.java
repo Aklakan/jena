@@ -18,8 +18,6 @@
 
 package org.apache.jena.sparql.service.enhancer.init;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,8 +28,6 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.query.ARQ;
 import org.apache.jena.query.Query;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.RDFFormat;
 import org.apache.jena.sparql.ARQConstants;
 import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.algebra.OpAsQuery;
@@ -54,9 +50,7 @@ import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.Rename;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
-import org.apache.jena.sparql.engine.iterator.QueryIter;
 import org.apache.jena.sparql.engine.iterator.QueryIterCommonParent;
-import org.apache.jena.sparql.engine.iterator.QueryIterPlainWrapper;
 import org.apache.jena.sparql.engine.iterator.QueryIteratorMapped;
 import org.apache.jena.sparql.engine.main.QC;
 import org.apache.jena.sparql.function.FunctionRegistry;
@@ -254,7 +248,7 @@ public class ServiceEnhancerInit
                     // A context copy is needed in order to isolate changes from further executions;
                     //   without a copy query engines may e.g. overwrite the context value for the NOW() function.
                     Context cxtCopy = execCxt.getContext().copy();
-                    r = execute(op, dataset, binding, cxtCopy);
+                    r = execute(op, dataset, binding, cxtCopy, execCxt);
                 }
             } else {
                 r = chain.createExecution(opExec, opOrig, binding, execCxt);
@@ -264,11 +258,19 @@ public class ServiceEnhancerInit
         registry.addSingleLink(selfExec);
     }
 
-    /** Special processing that unwraps dynamic datasets */
-    private static QueryIterator execute(Op op, DatasetGraph dataset, Binding binding, Context cxt) {
+    /**
+     * Special processing that unwraps dynamic datasets.
+     * Returns a QueryIterCommonParent with the given input binding. If the tracker is non-null then the returned iterator will be tracked in it.
+     *
+     * Note, that the execCxt of the sub-execution must generally remain isolated from the execCxt of the parent-execution (the tracker).
+     * For example, sub-executions will create their own QueryIteratorCheck which upon close will check for any non-closed iterators tracked in their
+     * execCxt. This means, that if QueryIteratorCheck is not a top-level QueryIter but somehow nested, it will complain if there exists an ancestor
+     * iterator that has not yet been closed. Non-closed ancestors can happen as a result of concurrent cancel: A child iterator may close itself in
+     * reaction to the cancel signal, whereas its parent iterator may not have it seen yet.
+     */
+    private static QueryIterator execute(Op op, DatasetGraph dataset, Binding binding, Context cxt, ExecutionContext tracker) {
         QueryIterator innerIter = null;
         QueryIterator outerIter = null;
-        ExecutionContext execCxt = null;
 
         DynamicDatasetGraph ddg = DynamicDatasetUtils.asUnwrappableDynamicDatasetOrNull(dataset);
         if (ddg != null) {
@@ -301,8 +303,8 @@ public class ServiceEnhancerInit
             outerIter = innerIter;
         }
 
-        execCxt = innerIter instanceof QueryIter ? ((QueryIter)innerIter).getExecContext() : null;
-        QueryIterator result = new QueryIterCommonParent(outerIter, binding, execCxt);
+        // execCxt = innerIter instanceof QueryIter ? ((QueryIter)innerIter).getExecContext() : null;
+        QueryIterator result = new QueryIterCommonParent(outerIter, binding, tracker);
         return result;
     }
 

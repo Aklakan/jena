@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
 
+import org.apache.jena.atlas.io.IndentedWriter;
 import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.graph.Node;
 import org.apache.jena.sparql.core.Var;
@@ -32,10 +33,11 @@ import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
+import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
 import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.IteratorUtils;
-import org.apache.jena.sparql.service.enhancer.impl.util.QueryIterSlottedBase;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbstractAbortableIterator;
 import org.apache.jena.sparql.service.enhancer.slice.api.Slice;
 import org.apache.jena.sparql.service.enhancer.slice.api.SliceAccessor;
 
@@ -45,7 +47,10 @@ import com.google.common.collect.Table.Cell;
 import com.google.common.math.LongMath;
 
 public class QueryIterWrapperCache
-    extends QueryIterSlottedBase
+    extends AbstractAbortableIterator<Binding>
+    // extends QueryIter1
+    // extends QueryIterSlottedBase
+    // AbortableIterator1<>
 {
     protected AbstractIterator<Cell<Integer, Integer, Iterator<Binding>>> mergeLeftJoin;
 
@@ -85,7 +90,9 @@ public class QueryIterWrapperCache
             Var idxVar,
             Node serviceNode
             ) {
-        super(execCxt);
+        //super(qIter, execCxt);
+        super();
+        // this.execCxt = execCxt;
         this.inputIter = qIter;
         this.batchSize = batchSize;
         this.cache = cache;
@@ -94,10 +101,20 @@ public class QueryIterWrapperCache
         this.idxVar = idxVar;
         this.serviceNode = serviceNode;
         this.currentBatchIt = null;
+        /*
+        mergeLeftJoin = IteratorUtils.partialLeftMergeJoin(
+                AbortableIterators.concat(
+                        AbortableIterators.wrap(inputBatch.getItems().keySet()),
+                        AbortableIterators.wrap(Arrays.asList(BatchQueryRewriter.REMOTE_END_MARKER))),
+                AbortableIterators.adapt(qIter),
+                outputId -> outputId,
+                binding -> BindingUtils.getNumber(binding, idxVar).intValue()
+            );
+       */
         mergeLeftJoin = IteratorUtils.partialLeftMergeJoin(
                 Iterators.concat(
-                        inputBatch.getItems().keySet().iterator(),
-                        Arrays.asList(BatchQueryRewriter.REMOTE_END_MARKER).iterator()),
+                    inputBatch.getItems().keySet().iterator(),
+                    Arrays.asList(BatchQueryRewriter.REMOTE_END_MARKER).iterator()),
                 qIter,
                 outputId -> outputId,
                 binding -> BindingUtils.getNumber(binding, idxVar).intValue()
@@ -121,7 +138,7 @@ public class QueryIterWrapperCache
 
                 if (!currentBatchIt.hasNext()) {
                     closeCurrentCacheResources();
-                    result = null;
+                    result = endOfData();
                     break;
                 }
             }
@@ -302,10 +319,56 @@ public class QueryIterWrapperCache
     }
 
     @Override
-    protected void closeIterator() {
-        closeCurrentCacheResources();
-        inputIter.close();
+    public void output(IndentedWriter out, SerializationContext sCxt) {
+        // TODO Auto-generated method stub
 
-        super.closeIterator();
     }
+
+    @Override
+    protected void closeIteratorActual() {
+        inputIter.close();
+        closeCurrentCacheResources();
+    }
+
+    @Override
+    protected void requestCancel() {
+        inputIter.cancel();
+    }
+
+//	@Override
+//	public void output(IndentedWriter out, SerializationContext sCxt) {
+//		// TODO Auto-generated method stub
+//
+//	}
+
+//    @Override
+//    protected void closeIterator() {
+//        closeCurrentCacheResources();
+//        inputIter.close();
+//
+//        super.closeIterator();
+//    }
+//
+//    @Override
+//    protected void requestSubCancel() {
+//        // TODO Auto-generated method stub
+//
+//    }
+//
+//    @Override
+//    protected void closeSubIterator() {
+//        closeCurrentCacheResources();
+//    }
+//
+//    @Override
+//    protected boolean hasNextBinding() {
+//        // TODO Auto-generated method stub
+//        return false;
+//    }
+//
+//    @Override
+//    protected Binding moveToNextBinding() {
+//        // TODO Auto-generated method stub
+//        return null;
+//    }
 }
