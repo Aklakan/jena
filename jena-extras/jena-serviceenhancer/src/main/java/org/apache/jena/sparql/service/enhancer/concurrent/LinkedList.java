@@ -58,6 +58,7 @@ public class LinkedList<T> {
             return list;
         }
         public boolean isLinked() {
+            // A node is linked if either (a) prev or next are non-null - or (b) the node is referenced by first.
             // A node is unlinked if prev and next are both null, and this node is not referenced by list.first.
             return prev != null || next != null || list.first == this;
         }
@@ -80,6 +81,7 @@ public class LinkedList<T> {
         return last;
     }
 
+    /** Create a new unlinked node. The node can only be inserted into this list. */
     public LinkedListNode<T> newNode() {
         return new LinkedListNode<>(this);
     }
@@ -170,10 +172,4 @@ public class LinkedList<T> {
     public int size() {
         return size;
     }
-
-//  private void checkLinked(LinkedListNode<T> node) {
-//      if (!node.isLinked()) {
-//          throw new IllegalArgumentException("Node is not linked.");
-//      }
-//  }
 }

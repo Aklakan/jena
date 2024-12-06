@@ -49,7 +49,7 @@ public class OpServiceExecutorImpl
         boolean silent = originalOp.getSilent();
 
         try {
-            QueryIterator singleton = QueryIterSingleton.create(BindingFactory.root(), execCxt);
+            QueryIter singleton = QueryIterSingleton.create(BindingFactory.root(), execCxt);
             result = delegate.createExecution(substitutedOp, singleton, execCxt);
 
             // ---- Execute

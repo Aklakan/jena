@@ -56,6 +56,7 @@ import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.QueryIterDefer;
 import org.apache.jena.sparql.service.enhancer.impl.util.QueryIterSlottedBase;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterators;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.QueryIteratorOverAbortableIterator;
 import org.apache.jena.sparql.service.enhancer.slice.api.IteratorOverReadableChannel;
 import org.apache.jena.sparql.service.enhancer.slice.api.ReadableChannel;
 import org.apache.jena.sparql.service.enhancer.slice.api.ReadableChannelOverSliceAccessor;
@@ -77,9 +78,6 @@ import com.google.common.math.LongMath;
 
 /**
  * QueryIter to process service requests in bulk with support for streaming caching.
- *
- * The methods closeIterator and moveToNext are synchronized.
- *
  */
 public class QueryIterServiceBulk
     extends QueryIterSlottedBase
@@ -449,6 +447,7 @@ public class QueryIterServiceBulk
 
     protected void freeResources() {
         if (backendIt != null) {
+            backendIt.getDelegate().close();
             backendIt.close();
         }
 
@@ -478,7 +477,7 @@ public class QueryIterServiceBulk
 
     /**
      * Prepare the lazy execution of the next batch and register all iterators with {@link #sliceKeyToIter}.
-     * Only called from the synchronized method {@link #moveToNext()}.
+     * Only called from {@link #moveToNext()}.
      */
     // seqId = sequential number injected into the request
     // inputId = id (index) of the input binding
@@ -698,7 +697,6 @@ public class QueryIterServiceBulk
                                 BindingFactory.binding(b, idxVar, NodeFactoryExtra.intToNode(idxVarValue)), execCxt);
 
                             QueryIterPeek it = QueryIterPeek.create(qIterB, execCxt);
-
                             sliceKeyToIter.put(sliceKey, it);
                             sliceKeyToClose.add(sliceKey);
                         } else { // if range is not loaded into cache then schedule a backend request
@@ -746,6 +744,7 @@ public class QueryIterServiceBulk
             };
 
             QueryIterator qIter = new QueryIterDefer(execCxt, qIterSupplier);
+            qIter = new QueryIteratorOverAbortableIterator(AbortableIterators.adapt(qIter));
 
             // Wrap the iterator such that the items are cached
             if (cache != null) {
