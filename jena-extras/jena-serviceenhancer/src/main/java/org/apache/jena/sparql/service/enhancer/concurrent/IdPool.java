@@ -19,8 +19,6 @@
 package org.apache.jena.sparql.service.enhancer.concurrent;
 
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.TreeSet;
 
 /** A pool of integer ids. Acquired ids must be eventually free'd using {@link #giveBack(int)}. */
@@ -39,6 +37,11 @@ public class IdPool {
             result = i++;
         }
         return result;
+    }
+
+    /** Return the size of recycled ids. */
+    public int getRecyclePoolSize() {
+        return ids.size();
     }
 
     /**
@@ -73,33 +76,5 @@ public class IdPool {
 
             ids.add(v);
         }
-    }
-
-    // FIXME Turn into a test
-    public static void main(String[] args) {
-        IdPool pool = new IdPool();
-        List<Integer> ids = new LinkedList<>();
-
-        for (int j = 0; j < 100; ++j) {
-            for (int i = 0; i < 10; ++i) {
-                int x = pool.acquire();
-                if (ids.contains(x)) {
-                    throw new RuntimeException("Error - got id that is already in use");
-                }
-                ids.add(x);
-            }
-
-            Iterator<Integer> it = ids.iterator();
-            for (int i = 0; i < 5 && it.hasNext(); ++i) {
-                int id = it.next();
-                it.remove();
-                pool.giveBack(id);
-            }
-        }
-
-        ids.forEach(pool::giveBack);
-
-        int got = pool.acquire();
-        System.out.println(got);
     }
 }

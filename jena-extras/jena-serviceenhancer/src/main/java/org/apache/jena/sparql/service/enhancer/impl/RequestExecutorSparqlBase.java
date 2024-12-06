@@ -23,12 +23,14 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.jena.atlas.io.IndentedWriter;
+import org.apache.jena.atlas.lib.Lib;
 import org.apache.jena.graph.Node;
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.query.TxnType;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.Transactional;
 import org.apache.jena.sparql.engine.ExecutionContext;
+import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.serializer.SerializationContext;
@@ -67,7 +69,14 @@ public abstract class RequestExecutorSparqlBase
 
     @Override
     public void output(IndentedWriter out, SerializationContext sCxt) {
-        // FIXME
+        out.println(Lib.className(this)) ;
+//        out.incIndent() ;
+//        for ( QueryIterator qIter : execCxt.listAllIterators() )
+//        {
+//            qIter.output( out, sCxt );
+//        }
+//        out.decIndent() ;
+        out.ensureStartOfLine() ;
     }
 
     @Override

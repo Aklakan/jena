@@ -57,7 +57,8 @@ public class TestServiceEnhancerQueryExecutionCancel {
         Model model = AbstractTestServiceEnhancerResultSetLimits.createModel(1000);
 
         // Produce a sufficiently large result set so that abort will surely hit in mid-execution
-        Query query = QueryFactory.create("SELECT * { SERVICE <cache:> { ?a ?b ?c . ?d ?e ?f . ?g ?h ?i . ?j ?k ?l } }");
+        // Query query = QueryFactory.create("SELECT * { SERVICE <cache:> { ?a ?b ?c . ?d ?e ?f . ?g ?h ?i . ?j ?k ?l } }");
+        Query query = QueryFactory.create("SELECT * { SERVICE <bulk+5:> { ?a ?b ?c . ?d ?e ?f . ?g ?h ?i . ?j ?k ?l } }");
 
         // The query without the cache block:
         // Query query = QueryFactory.create("SELECT * { ?a ?b ?c . ?d ?e ?f . ?g ?h ?i . ?j ?k ?l }");

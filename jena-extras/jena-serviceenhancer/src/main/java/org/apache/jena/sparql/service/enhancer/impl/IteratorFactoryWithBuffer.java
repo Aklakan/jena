@@ -230,6 +230,7 @@ public class IteratorFactoryWithBuffer<T, I extends Iterator<T>>
             super.handleException(e);
         }
 
+        /** Close only removes this sub-iterator's position from the 'offsetToChild' map. */
         @Override
         public void close() {
             synchronized (lock) {
