@@ -18,8 +18,11 @@
 
 package org.apache.jena.sparql.engine.iterator;
 
+import java.util.function.Consumer;
+
 import org.apache.jena.atlas.lib.Closeable ;
 import org.apache.jena.sparql.engine.QueryIterator ;
+import org.apache.jena.sparql.engine.binding.Binding;
 
 public class QueryIteratorCloseable extends QueryIteratorWrapper
 {
@@ -30,11 +33,20 @@ public class QueryIteratorCloseable extends QueryIteratorWrapper
         super(qIter) ;
         this.closeable = closeable ;
     }
-    
+
     @Override
     public void close()
-    { 
+    {
         closeable.close() ;
         super.close() ;
+    }
+
+    @Override
+    public void forEachRemaining(Consumer<? super Binding> action) {
+        QueryIterator tmp = iterator;
+        if (tmp != null) {
+            tmp.forEachRemaining(action);
+        }
+        close();
     }
 }

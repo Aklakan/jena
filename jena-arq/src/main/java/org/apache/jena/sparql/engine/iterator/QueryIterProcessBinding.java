@@ -20,6 +20,7 @@ package org.apache.jena.sparql.engine.iterator ;
 
 import java.util.NoSuchElementException ;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import org.apache.jena.atlas.lib.Lib ;
 import org.apache.jena.query.QueryCancelledException;
@@ -114,4 +115,21 @@ public abstract class QueryIterProcessBinding extends QueryIter1 {
 
     @Override
     protected void requestSubCancel() {}
+
+    @Override
+    public void forEachRemaining(Consumer<? super Binding> action) {
+        if (nextBinding != null) {
+            action.accept(nextBinding);
+            nextBinding = null;
+        }
+        getInput().forEachRemaining(input -> {
+            checkCancelled();
+            // Skip forward until a binding to return is found.
+            nextBinding = accept(input) ;
+            if ( nextBinding != null ) {
+                action.accept(nextBinding);
+            }
+        });
+        nextBinding = null ;
+    }
 }

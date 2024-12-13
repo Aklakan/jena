@@ -96,26 +96,25 @@ public class SolverLibTDB
 
         BindingNodeId b = new BindingNodeId(binding);
         // and copy over, getting NodeIds.
-        Iterator<Var> vars = binding.vars();
+        // Iterator<Var> vars = binding.vars();
 
-        for ( ; vars.hasNext() ; ) {
-            Var v = vars.next();
-            Node n = binding.get(v);
-            if ( n == null )
+        binding.forEach((v, n) -> {
+            if ( n != null ) {
                 // Variable mentioned in the binding but not actually defined.
                 // Can occur with BindingProject
-                continue;
+                // continue;
 
-            // Rely on the node table cache for efficency - we will likely be
-            // repeatedly looking up the same node in different bindings.
-            NodeId id = nodeTable.getNodeIdForNode(n);
-            // Even put in "does not exist" for a node now known not to be in the DB.
-            // Optional: whether to put in "known missing"
-            // Currently, we do. The rest of the code should work with either choice.
+                // Rely on the node table cache for efficency - we will likely be
+                // repeatedly looking up the same node in different bindings.
+                NodeId id = nodeTable.getNodeIdForNode(n);
+                // Even put in "does not exist" for a node now known not to be in the DB.
+                // Optional: whether to put in "known missing"
+                // Currently, we do. The rest of the code should work with either choice.
 
-            // if ( ! NodeId.isDoesNotExist(id) )
-            b.put(v, id);
-        }
+                // if ( ! NodeId.isDoesNotExist(id) )
+                b.put(v, id);
+            }
+        });
         return b;
     }
 

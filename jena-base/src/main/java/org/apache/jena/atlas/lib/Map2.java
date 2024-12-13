@@ -21,6 +21,8 @@ package org.apache.jena.atlas.lib;
 
 import java.util.Iterator ;
 import java.util.Map ;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.apache.jena.atlas.iterator.Iter ;
 
@@ -111,5 +113,36 @@ public class Map2<K, V> implements Iterable<K>
         if ( map2 != null )
             x += map2.size();
         return x ;
+    }
+
+    @Override
+    public void forEach(Consumer<? super K> action) {
+        if ( map1 != null ) {
+            map1.keySet().forEach(action) ;
+            if ( map2 != null ) {
+                map2.forEach(k -> {
+                    if (!map1.containsKey(k)) {
+                        action.accept(k);
+                    }
+                }) ;
+            }
+        } else if ( map2 != null ) {
+            map2.forEach(action) ;
+        }
+    }
+
+    public void forEachEntry(BiConsumer<? super K, ? super V> action) {
+        if ( map1 != null ) {
+            map1.forEach(action) ;
+            if ( map2 != null ) {
+                map2.forEachEntry((k, v) -> {
+                    if (!map1.containsKey(k)) {
+                        action.accept(k, v);
+                    }
+                }) ;
+            }
+        } else if ( map2 != null ) {
+            map2.forEachEntry(action) ;
+        }
     }
 }

@@ -20,6 +20,7 @@ package org.apache.jena.sparql.engine.binding;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.graph.Node;
@@ -60,5 +61,10 @@ public class BindingOverMap extends BindingBase {
     @Override
     protected boolean isEmpty1() {
         return map.isEmpty();
+    }
+
+    @Override
+    protected void forEach1(BiConsumer<Var, Node> action) {
+        map.forEach(action);
     }
 }

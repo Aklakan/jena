@@ -19,6 +19,7 @@
 package org.apache.jena.sparql.engine.iterator;
 
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 
 import org.apache.jena.atlas.lib.Lib;
 import org.apache.jena.atlas.logging.Log;
@@ -112,5 +113,23 @@ public abstract class QueryIterRepeatApply extends QueryIter1 {
         if ( currentStage != null )
             currentStage.cancel();
         cancelRequested = true;
+    }
+
+    @Override
+    public void forEachRemaining(Consumer<? super Binding> action) {
+        if (currentStage != null) {
+            checkCancel();
+            currentStage.forEachRemaining(action);
+            // currentStage.close();
+        }
+        getInput().forEachRemaining(input -> {
+            checkCancel();
+            currentStage = nextStage(input);
+            if (currentStage != null) {
+                currentStage.forEachRemaining(action);
+                // currentStage.close();
+            }
+        });
+        close();
     }
 }

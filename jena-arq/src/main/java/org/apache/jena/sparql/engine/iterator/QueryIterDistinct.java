@@ -18,9 +18,19 @@
 
 package org.apache.jena.sparql.engine.iterator ;
 
-import java.util.* ;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
 
-import org.apache.jena.atlas.data.* ;
+import org.apache.jena.atlas.data.BagFactory;
+import org.apache.jena.atlas.data.DistinctDataBag;
+import org.apache.jena.atlas.data.DistinctDataNet;
+import org.apache.jena.atlas.data.ThresholdPolicy;
+import org.apache.jena.atlas.data.ThresholdPolicyFactory;
 import org.apache.jena.atlas.lib.InternalErrorException ;
 import org.apache.jena.query.ARQ ;
 import org.apache.jena.query.SortCondition ;
@@ -35,9 +45,9 @@ import org.apache.jena.sparql.system.SerializationFactoryFinder;
 /**
  * A QueryIterator that suppresses items already seen. This will stream results
  * until a threshold is passed. At that point, it will fill a disk-backed
- * {@link DistinctDataNet}, then yield   
+ * {@link DistinctDataNet}, then yield
  * not  return any results until the input iterator has been exhausted.
- * 
+ *
  * @see DistinctDataBag
  */
 public class QueryIterDistinct extends QueryIter1
@@ -58,7 +68,7 @@ public class QueryIterDistinct extends QueryIter1
                 throw new ARQException("Bad spillToDiskThreshold: "+memThreshold) ;
         }
     }
-    
+
     @Override
     protected boolean hasNextBinding() {
         if ( slot != null )
@@ -66,7 +76,7 @@ public class QueryIterDistinct extends QueryIter1
         if ( iterator != null )
             // Databag active.
             return iterator.hasNext() ;
-       
+
         // At this point, we are currently in the initial pre-threshold mode.
         if ( seen.size() < memThreshold ) {
             Binding b = getInputNextUnseen() ;
@@ -76,35 +86,38 @@ public class QueryIterDistinct extends QueryIter1
             slot = b ;
             return true ;
         }
-        
+
         // Hit the threshold.
         loadDataBag() ;
-        // Switch to iterating from the data bag.  
+        // Switch to iterating from the data bag.
         iterator = db.iterator() ;
         // Leave slot null.
         return iterator.hasNext() ;
     }
-    
+
     /**
-     * Load the data bag with. Filter incoming by the already seen in-memory elements. 
-     * 
+     * Load the data bag with. Filter incoming by the already seen in-memory elements.
+     *
      * For DISTINCT-ORDER, and if DISTINCT spills then we need to take
      * account of the ORDER. The normal (non-spill case) already preserves the input
      * order, passing through the first occurence. It is only if a spill happens that
      * we need to ensure the spill buckets respect sort order.
-     */  
+     */
     private void loadDataBag() {
         ThresholdPolicy<Binding> policy = ThresholdPolicyFactory.policyFromContext(super.getExecContext().getContext()) ;
         Comparator<Binding> comparator = new BindingComparator(preserveOrder, super.getExecContext()) ;
         this.db = BagFactory.newDistinctBag(policy, SerializationFactoryFinder.bindingSerializationFactory(), comparator) ;
-        for(;;) {
-            Binding b = getInputNextUnseen() ;
-            if ( b == null )
-                break ;
-            db.add(b) ;
-        }
+        forRemainingUnseenInput(db::add);
     }
-    
+
+    private void forRemainingUnseenInput(Consumer<? super Binding> action) {
+        getInput().forEachRemaining(b -> {
+            if ( !seen.contains(b) ) {
+                action.accept(b) ;
+            }
+        });
+    }
+
     /** Return the next binding from the input filtered by seen.
      * This does not update seen.
      * Returns null on end of input.
@@ -157,4 +170,33 @@ public class QueryIterDistinct extends QueryIter1
     protected void requestSubCancel()
     { }
 
+    @Override
+    public void forEachRemaining(Consumer<? super Binding> action) {
+        if ( slot != null ) {
+            action.accept( slot );
+            slot = null;
+        }
+        if ( iterator != null ) {
+            // Databag active.
+            iterator.forEachRemaining(action) ;
+        } else {
+            getInput().forEachRemaining(b -> {
+                if ( seen.size() < memThreshold ) {
+                    // At this point, we are currently in the initial pre-threshold mode.
+                    if ( ! seen.contains(b) ) {
+                        action.accept(b) ;
+                        seen.add(b) ;
+                    }
+                } else {
+                    // Hit the threshold.
+                    loadDataBag() ;
+                    // Switch to iterating from the data bag.
+                    iterator = db.iterator() ;
+                    // Leave slot null.
+                    iterator.forEachRemaining(action) ;
+                }
+            });
+        }
+        close();
+    }
 }

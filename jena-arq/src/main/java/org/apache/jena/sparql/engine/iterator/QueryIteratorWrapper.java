@@ -44,31 +44,24 @@ public class QueryIteratorWrapper extends QueryIteratorBase {
 
     @Override
     protected void closeIterator() {
-        if ( iterator != null ) {
-            iterator.close();
-            iterator = null;
-        }
+        performClose(iterator);
+        iterator = null;
     }
 
     @Override
     protected void requestCancel() {
-        if ( iterator != null ) {
-            iterator.cancel();
-        }
-    }
-
-    @Override
-    public void output(IndentedWriter out) {
-        iterator.output(out);
+        performRequestCancel(iterator);
     }
 
     @Override
     public void output(IndentedWriter out, SerializationContext sCxt) {
-        out.println(Lib.className(this) + "/" + Lib.className(iterator));
-        out.incIndent();
-        iterator.output(out, sCxt);
-        out.decIndent();
+        QueryIterator tmp = iterator;
+        out.println(Lib.className(this) + "/" + Lib.className(tmp));
+        if (tmp != null) {
+            out.incIndent();
+            tmp.output(out, sCxt);
+            out.decIndent();
+        }
         // out.println(Utils.className(this)+"/"+Utils.className(iterator)) ;
     }
-
 }

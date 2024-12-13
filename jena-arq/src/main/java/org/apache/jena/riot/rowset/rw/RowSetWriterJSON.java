@@ -138,14 +138,14 @@ public class RowSetWriterJSON implements RowSetWriter {
             println(out, quoteName(kBindings), ": [");
             incIndent(out);
 
-            boolean firstRow = true;
-            for ( ; rowSet.hasNext() ; ) {
-                Binding binding = rowSet.next();
-                if ( !firstRow )
+            boolean[] firstRow = {true};
+            rowSet.forEachRemaining(binding -> {
+                if ( !firstRow[0] )
                     println(out, " ,");
                 writeRow(out, rowSet, binding);
-                firstRow = false;
-            }
+                firstRow[0] = false;
+            });
+
             println(out);
             decIndent(out);
             println(out, "]");      // bindings

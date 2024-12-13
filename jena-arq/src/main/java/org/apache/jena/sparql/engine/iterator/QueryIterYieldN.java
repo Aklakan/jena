@@ -19,6 +19,7 @@
 package org.apache.jena.sparql.engine.iterator;
 
 import java.util.NoSuchElementException ;
+import java.util.function.Consumer;
 
 import org.apache.jena.atlas.io.IndentedWriter ;
 import org.apache.jena.atlas.lib.Lib ;
@@ -33,27 +34,27 @@ public class QueryIterYieldN extends QueryIter
     protected int limitYielded ;
     protected int countYielded = 0 ;
     protected Binding binding ;
-    
+
     public QueryIterYieldN(int num, Binding b)
     {
         this(num, b, null) ;
     }
-    
+
     public QueryIterYieldN(int num, Binding b, ExecutionContext context)
     {
         super(context) ;
         binding = b ;
         limitYielded = num ;
     }
-    
+
     public Binding getBinding() { return binding ; }
-    
+
     @Override
     protected boolean hasNextBinding()
     {
         return countYielded < limitYielded ;
     }
-    
+
     @Override
     protected Binding moveToNextBinding()
     {
@@ -65,16 +66,24 @@ public class QueryIterYieldN extends QueryIter
     }
 
     @Override
+    public void forEachRemaining(Consumer<? super Binding> action) {
+        for (; countYielded < limitYielded; ++countYielded) {
+            checkCancel();
+            action.accept(binding);
+        }
+    }
+
+    @Override
     protected void closeIterator()
     {
         //binding = null ;
     }
-    
+
     @Override
     protected void requestCancel()
     {
     }
-    
+
     @Override
     public void output(IndentedWriter out, SerializationContext sCxt)
     {

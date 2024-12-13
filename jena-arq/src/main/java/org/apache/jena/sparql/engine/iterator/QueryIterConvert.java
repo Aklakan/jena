@@ -18,6 +18,8 @@
 
 package org.apache.jena.sparql.engine.iterator;
 
+import java.util.function.Consumer;
+
 import org.apache.jena.atlas.io.IndentedWriter ;
 import org.apache.jena.atlas.lib.Lib ;
 import org.apache.jena.sparql.engine.ExecutionContext ;
@@ -35,21 +37,21 @@ public class QueryIterConvert extends QueryIter1
     {
         public Binding convert(Binding obj) ;
     }
-    
-    Converter converter ; 
-    
+
+    Converter converter ;
+
     public QueryIterConvert(QueryIterator iter, Converter c, ExecutionContext context)
-    { 
+    {
         super(iter, context) ;
         converter = c ;
     }
-    
+
     @Override
-    protected void 
+    protected void
     closeSubIterator() {}
-    
+
     @Override
-    protected void 
+    protected void
     requestSubCancel() {}
 
     @Override
@@ -66,7 +68,17 @@ public class QueryIterConvert extends QueryIter1
 
     @Override
     protected void details(IndentedWriter out, SerializationContext cxt)
-    { 
+    {
         out.println(Lib.className(this)) ;
+    }
+
+    @Override
+    public void forEachRemaining(Consumer<? super Binding> action) {
+        getInput().forEachRemaining(input -> {
+            checkCancel();
+            Binding output = converter.convert(input);
+            action.accept(output);
+        });
+        close();
     }
 }

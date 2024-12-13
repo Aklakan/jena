@@ -20,6 +20,7 @@ package org.apache.jena.sparql.engine.main.iterator;
 
 import java.util.Iterator;
 import java.util.List ;
+import java.util.function.Consumer;
 
 import org.apache.jena.atlas.io.IndentedWriter ;
 import org.apache.jena.atlas.lib.Lib ;
@@ -100,6 +101,21 @@ public class QueryIterUnion extends QueryIterRepeatApply
                     out.decIndent();
                 }
             }
+
+            @Override
+            public void forEachRemaining(Consumer<? super Binding> action) {
+                if (qIter != null) {
+                    checkCancel();
+                    qIter.forEachRemaining(action);
+                    qIter.close();
+                }
+                subOpIt.forEachRemaining(subOp -> {
+                    checkCancel();
+                    qIter = QC.execute(subOp, binding, getExecContext());
+                    qIter.forEachRemaining(action);
+                    qIter.close();
+                });
+            }
         };
     }
 
@@ -114,3 +130,4 @@ public class QueryIterUnion extends QueryIterRepeatApply
         out.ensureStartOfLine() ;
     }
 }
+

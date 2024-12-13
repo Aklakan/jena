@@ -19,6 +19,7 @@
 package org.apache.jena.sparql.engine.iterator;
 
 import java.util.Iterator ;
+import java.util.function.Consumer;
 
 import org.apache.jena.atlas.io.IndentedWriter ;
 import org.apache.jena.atlas.iterator.Iter ;
@@ -60,6 +61,15 @@ public class QueryIterPlainWrapper extends QueryIter
 
     @Override
     protected Binding moveToNextBinding() { return iterator.next(); }
+
+    @Override
+    public void forEachRemaining(Consumer<? super Binding> action) {
+        iterator.forEachRemaining(input -> {
+            checkCancel();
+            action.accept(input);
+        });
+        close();
+    }
 
     @Override
     protected void closeIterator() {

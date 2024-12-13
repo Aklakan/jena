@@ -42,14 +42,14 @@ import org.apache.jena.sparql.expr.aggregate.Accumulator ;
 
 public class QueryIterGroup extends QueryIterPlainWrapper
 {
-	private final QueryIterator embeddedIterator;
+    private final QueryIterator embeddedIterator;
 
-	public QueryIterGroup(QueryIterator qIter,
+    public QueryIterGroup(QueryIterator qIter,
                           VarExprList groupVars,
                           List<ExprAggregator> aggregators,
                           ExecutionContext execCxt) {
-	    // Delayed initalization
-	    // Does the group calculation when first used (typically hasNext)
+        // Delayed initalization
+        // Does the group calculation when first used (typically hasNext)
         super(calc(qIter, groupVars, aggregators, execCxt),
               execCxt);
         this.embeddedIterator = qIter;
@@ -67,7 +67,7 @@ public class QueryIterGroup extends QueryIterPlainWrapper
         super.closeIterator();
     }
 
-	private static Pair<Var, Accumulator> placeholder = Pair.create((Var)null, (Accumulator)null) ;
+    private static Pair<Var, Accumulator> placeholder = Pair.create((Var)null, (Accumulator)null) ;
 
     private static Iterator<Binding> calc(final QueryIterator iter,
                                           final VarExprList groupVarExpr,
@@ -107,29 +107,27 @@ public class QueryIterGroup extends QueryIterPlainWrapper
                 // Case: there is input.
                 // Phase 1 : Create keys and aggregators per key, and pump bindings through the aggregators.
                 MultiValuedMap<Binding, Pair<Var, Accumulator>> accumulators = MultiMapUtils.newListValuedHashMap();
-                while (iter.hasNext()) {
-                    Binding b = iter.nextBinding();
+                iter.forEachRemaining(b -> {
                     Binding key = genKey(groupVarExpr, b, execCxt);
-
                     if ( !hasAggregators ) {
                         // Put in a dummy to remember the input.
                         accumulators.put(key, placeholder);
-                        continue;
-                    }
+                    } else {
 
-                    // Create if does not exist.
-                    if ( !accumulators.containsKey(key) ) {
-                        for ( ExprAggregator agg : aggregators ) {
-                            Accumulator x = agg.getAggregator().createAccumulator();
-                            Var v = agg.getVar();
-                            accumulators.put(key, Pair.create(v, x));
+                        // Create if does not exist.
+                        if ( !accumulators.containsKey(key) ) {
+                            for ( ExprAggregator agg : aggregators ) {
+                                Accumulator x = agg.getAggregator().createAccumulator();
+                                Var v = agg.getVar();
+                                accumulators.put(key, Pair.create(v, x));
+                            }
                         }
-                    }
 
-                    // Do the per-accumulator calculation.
-                    for ( Pair<Var, Accumulator> pair : accumulators.get(key) )
-                        pair.getRight().accumulate(b, execCxt);
-                }
+                        // Do the per-accumulator calculation.
+                        for ( Pair<Var, Accumulator> pair : accumulators.get(key) )
+                            pair.getRight().accumulate(b, execCxt);
+                    }
+                });
 
                 // Phase 2 : There was input and so there are some groups.
                 // For each bucket, get binding, add aggregator values to the binding.

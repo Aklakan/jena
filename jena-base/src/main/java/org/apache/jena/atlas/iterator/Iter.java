@@ -306,12 +306,10 @@ public class Iter<T> implements IteratorCloseable<T> {
             if ( slotOccupied ) {
                 action.accept(slot);
             }
-            T t;
-            while (stream.hasNext()) {
-                t = stream.next();
+            stream.forEachRemaining(t -> {
                 if ( filter.test(t) )
                     action.accept(t);
-            }
+            });
             slotOccupied = false;
         }
 

@@ -71,11 +71,10 @@ abstract public class BindingBase implements Binding
 
     protected void forEach1(BiConsumer<Var, Node> action) {
         Iterator<Var> vIter = vars1();
-        while(vIter.hasNext() ) {
-            Var v = vIter.next();
+        vIter.forEachRemaining(v -> {
             Node n = get(v);
             action.accept(v, n);
-        }
+        });
     }
 
     protected abstract Iterator<Var> vars1();

@@ -19,6 +19,7 @@
 package org.apache.jena.sparql.engine.iterator;
 
 import java.util.Iterator ;
+import java.util.function.Consumer;
 
 import org.apache.jena.atlas.io.IndentedWriter ;
 import org.apache.jena.atlas.lib.Lib ;
@@ -27,6 +28,7 @@ import org.apache.jena.query.QueryException;
 import org.apache.jena.sparql.SystemARQ;
 import org.apache.jena.sparql.engine.ExecutionContext ;
 import org.apache.jena.sparql.engine.QueryIterator ;
+import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.serializer.SerializationContext ;
 import org.apache.jena.sparql.util.Symbol;
 
@@ -121,5 +123,11 @@ public class QueryIteratorCheck extends QueryIteratorWrapper
             }
         }
         Log.warn(QueryIteratorCheck.class, str);
+    }
+
+    @Override
+    public void forEachRemaining(Consumer<? super Binding> action) {
+        iterator.forEachRemaining(action);
+        close();
     }
 }

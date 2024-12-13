@@ -70,7 +70,7 @@ public abstract class QueryIteratorBase
     }
 
     private boolean requestingCancel() {
-        return (requestingCancel != null && requestingCancel.get()) || Thread.interrupted() ;
+        return (requestingCancel != null && requestingCancel.get()) || Thread.currentThread().isInterrupted() ;
     }
 
     private void haveCancelled() {}
@@ -140,19 +140,23 @@ public abstract class QueryIteratorBase
         return nextBinding();
     }
 
+    protected void checkCancel() {
+        // Need to make sure to only read this once per iteration
+        boolean shouldCancel = requestingCancel();
+
+        if ( shouldCancel ) {
+            // Try to close first to release resources (in case the user
+            // doesn't have a close() call in a finally block)
+            close();
+            throw new QueryCancelledException();
+        }
+    }
+
     /** final - subclasses implement moveToNextBinding() */
     @Override
     public final Binding nextBinding() {
         try {
-            // Need to make sure to only read this once per iteration
-            boolean shouldCancel = requestingCancel();
-
-            if ( shouldCancel ) {
-                // Try to close first to release resources (in case the user
-                // doesn't have a close() call in a finally block)
-                close();
-                throw new QueryCancelledException();
-            }
+            checkCancel();
 
             if ( finished )
                 throw new NoSuchElementException(Lib.className(this));
@@ -164,11 +168,11 @@ public abstract class QueryIteratorBase
             if ( obj == null )
                 throw new NoSuchElementException(Lib.className(this));
 
-            if ( shouldCancel && !finished ) {
-                // But .cancel sets both requestingCancel and abortIterator
-                // This only happens with a continuing iterator.
-                close();
-            }
+//            if ( false && !finished ) {
+//                // But .cancel sets both requestingCancel and abortIterator
+//                // This only happens with a continuing iterator.
+//                close();
+//            }
 
             return obj;
         } catch (QueryFatalException ex) {

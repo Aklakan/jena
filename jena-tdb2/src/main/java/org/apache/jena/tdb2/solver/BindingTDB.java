@@ -72,18 +72,18 @@ public class BindingTDB extends BindingBase
         Binding b = idBinding.getParentBinding();
 
         Iterator<Var> iter = idBinding.iterator();
-        for ( Var v : idBinding )
-        {
+        iter.forEachRemaining(v -> {
             if ( b == null || ! b.contains(v) )
                 vars.add(v);
-        }
+        });
         return vars;
     }
 
     @Override
     protected boolean isEmpty1()
     {
-        return size1() == 0;
+        // return size1() == 0;
+        return idBinding.isEmpty();
     }
 
     @Override
