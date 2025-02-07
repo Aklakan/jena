@@ -37,6 +37,7 @@ import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.service.enhancer.impl.BatchQueryRewriter.SubstitutionStrategy;
+import org.apache.jena.sparql.syntax.syntaxtransform.QueryTransformOps;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -130,7 +131,13 @@ public class TestServiceEnhancerBatchQueryRewriter {
     }
 
     private static Query defaultRewrite(OpService op , Batch<Integer, PartitionRequest<Binding>> batch) {
-        BatchQueryRewriter rewriter = new BatchQueryRewriter(new OpServiceInfo(op), Var.alloc("idx"), false, false, false);
+        BatchQueryRewriter rewriter = BatchQueryRewriterBuilder.from(new OpServiceInfo(op), Var.alloc("idx"))
+                .setSequentialUnion(false)
+                .setOrderRetainingUnion(false)
+                .setOmitEndMarker(false)
+                .setSubstitutionStrategy(SubstitutionStrategy.SUBSTITUTE)
+                .build();
+
         BatchQueryRewriteResult rewrite = rewriter.rewrite(batch);
         Op resultOp = rewrite.getOp();
         Query result = harmonizeBnodes(OpAsQuery.asQuery(resultOp));

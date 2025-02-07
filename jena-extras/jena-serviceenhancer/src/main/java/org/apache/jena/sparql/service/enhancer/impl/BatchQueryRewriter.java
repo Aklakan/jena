@@ -30,6 +30,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.jena.graph.Node;
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.SortCondition;
 import org.apache.jena.sparql.algebra.Op;
@@ -46,6 +48,7 @@ import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.main.QC;
 import org.apache.jena.sparql.expr.ExprVar;
 import org.apache.jena.sparql.expr.NodeValue;
+import org.apache.jena.sparql.graph.NodeTransformLib;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformAssignToExtend;
 import org.apache.jena.sparql.service.enhancer.impl.util.AssertionUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
