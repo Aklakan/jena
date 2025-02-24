@@ -101,7 +101,7 @@ public class ChainingServiceExecutorBulkConcurrent
 
                     // QueryIterator tmp = chain.createExecution(newOp, QueryIterPlainWrapper.create(indexedBindings, execCxt), execCxt);
                     // Pass the adapted request through the whole service executor chain again.
-                    QueryIterator tmp = ServiceExec.exec(subIter, newOp, execCxt);
+                    QueryIterator tmp = ServiceExec.exec(newOp, subIter, execCxt);
                     return AbortableIterators.adapt(tmp);
                 }
 
