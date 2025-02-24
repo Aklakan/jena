@@ -44,7 +44,7 @@ public class ServicePluginExamples {
 
         String queryStr = "SELECT * {\n"
                 + "  BIND(<urn:foo> AS ?s)\n"
-                + "  SERVICE <loop:urn:arq:self> {\n"
+                + "  SERVICE <loop:urn:x-arq:self> {\n"
                 + "      { BIND(?s AS ?x) } UNION { BIND(?s AS ?y) }\n"
                 + "  }\n"
                 + "}";
