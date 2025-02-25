@@ -50,7 +50,7 @@ public class ServiceEnhancerConstants {
 
     /** Default number of slots when no explicit number is given.
      *  Subject to capping by {@link #serviceConcurrentMaxSlotCount}. */
-    public static final Symbol serviceConcurrentDtfSlotCount = SystemARQ.allocSymbol(NS, "serviceConcurrentDftSlotCount") ;
+    public static final Symbol serviceConcurrentDftSlotCount = SystemARQ.allocSymbol(NS, "serviceConcurrentDftSlotCount") ;
 
     public static final Symbol serviceConcurrentMaxSlotCount = SystemARQ.allocSymbol(NS, "serviceConcurrentMaxSlotCount") ;
 

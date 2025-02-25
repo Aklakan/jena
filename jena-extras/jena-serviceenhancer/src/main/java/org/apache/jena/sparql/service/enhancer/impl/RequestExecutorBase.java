@@ -18,6 +18,7 @@
 
 package org.apache.jena.sparql.service.enhancer.impl;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -46,6 +47,8 @@ import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableItera
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIteratorPeek;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterators;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbstractAbortableIterator;
+
+import com.google.common.io.Closer;
 
 /** A flat map iterator that can read ahead in the input iterator and run flat map operations concurrently. */
 public abstract class RequestExecutorBase<G, I, O>
@@ -558,24 +561,24 @@ public abstract class RequestExecutorBase<G, I, O>
     }
 
     protected void freeResources() {
-        activeIter.close();
+        // Use closer to free as much as possible in case of failure.
+        try (Closer closer = Closer.create()) {
+            closer.register(activeIter::close);
 
-        for (TaskEntry<O, AbortableIterator<O>> taskEntry : inputToOutputIt.values()) {
-            Closeable closable = taskEntry.stopAndGet();
-            closable.close();
+            for (TaskEntry<O, AbortableIterator<O>> taskEntry : inputToOutputIt.values()) {
+                Closeable closable = taskEntry.stopAndGet();
+                closer.register(closable::close);
+            }
+
+            closer.register(batchIterator::close);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
-//      if (executorServicePool != null) {
-//          executorServicePool.shutdownAll();
-//      }
-
-        batchIterator.close();
     }
 
     @Override
     protected void closeIteratorActual() {
         freeResources();
-        // super.closeIterator();
     }
 
     @Override
