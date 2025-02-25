@@ -105,6 +105,7 @@ public abstract class RequestExecutorSparqlBase
             };
         } else {
             ExecutionContext isolatedExecCxt = new ExecutionContext(execCxt.getContext(), execCxt.getActiveGraph(), execCxt.getDataset(), execCxt.getExecutor());
+            // ExecutionContext isolatedExecCxt = ExecutionContext.create(execCxt.getDataset(), execCxt);
             result = new IteratorCreatorWithTxn<>(isolatedExecCxt, TxnType.READ) {
                 @Override
                 public AbortableIterator<Binding> createIterator() {

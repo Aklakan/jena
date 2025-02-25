@@ -97,11 +97,11 @@ public class ChainingServiceExecutorBulkConcurrent
 //                        BindingFactory.binding(inputs.get(i), globalIdxVar, NodeValue.makeInteger(reverseMap.get(i)).asNode()))
 //                        .iterator();
 
-                    QueryIterator subIter = QueryIterPlainWrapper.create(inputs.iterator(), execCxt);
+                    QueryIterator subIter = QueryIterPlainWrapper.create(inputs.iterator(), batchExecCxt);
 
                     // QueryIterator tmp = chain.createExecution(newOp, QueryIterPlainWrapper.create(indexedBindings, execCxt), execCxt);
                     // Pass the adapted request through the whole service executor chain again.
-                    QueryIterator tmp = ServiceExec.exec(newOp, subIter, execCxt);
+                    QueryIterator tmp = ServiceExec.exec(newOp, subIter, batchExecCxt);
                     return AbortableIterators.adapt(tmp);
                 }
 
