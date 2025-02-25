@@ -135,8 +135,11 @@ public abstract class RequestExecutorBase<G, I, O>
          */
         @Override
         public final void closeIteratorActual() {
-            executorServiceSync.submit(this::inThreadCloseAction);
-            outThreadCloseAction();
+            try {
+                executorServiceSync.submit(this::inThreadCloseAction);
+            } finally {
+                outThreadCloseAction();
+            }
         }
 
         @Override

@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /** Utility wrapper for an ExecutorService to add synchronous API that abstracts away the Future. */
 public class ExecutorServiceWrapperSync {
@@ -58,7 +59,9 @@ public class ExecutorServiceWrapperSync {
 
     public static <T> T submit(ExecutorService executorService, Callable<T> callable) {
         try {
-            return executorService.submit(callable).get();
+            Future<T> future = executorService.submit(callable);
+            T result = future.get();
+            return result;
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
