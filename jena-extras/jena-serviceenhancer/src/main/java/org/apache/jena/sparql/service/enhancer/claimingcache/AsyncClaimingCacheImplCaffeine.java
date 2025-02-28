@@ -138,10 +138,13 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
         // Note: LinkedList.listIterator() becomes invalidated after any modification
         // In principle a LinkedList would be the more appropriate data structure
         synchronized (evictionGuards) {
+            System.err.println("Registered Eviction guard: " + predicate);
             evictionGuards.add(predicate);
         }
         return () -> {
             synchronized (evictionGuards) {
+                System.err.println("Removed Eviction guard: " + predicate);
+
                 evictionGuards.remove(predicate);
                 runLevel3Eviction();
             }
@@ -279,9 +282,10 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
 
             Map<K, RefFuture<V>> level1 = new ConcurrentHashMap<>();
             Map<K, V> level3 = new ConcurrentHashMap<>();
-            Collection<Predicate<? super K>> evictionGuards = new ArrayList<>();
+            Collection<Predicate<? super K>> evictionGuards = Sets.newIdentityHashSet(); // new ArrayList<>();
 
             RemovalListener<K, V> level3AwareAtomicRemovalListener = (k, v, c) -> {
+                System.err.println("Removal triggered: " + k + " " + v + " " + c);
                 // Check for actual removal - key no longer present in level1
                 if (!level1.containsKey(k)) {
 
@@ -291,6 +295,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                         for (Predicate<? super K> evictionGuard : evictionGuards) {
                             isGuarded = evictionGuard.test(k);
                             if (isGuarded) {
+                                System.err.println("Protecting from eviction: " + k + " - " + level3.size() + " items protected");
                                 if (logger.isDebugEnabled()) {
                                     logger.debug("Protecting from eviction: " + k + " - " + level3.size() + " items protected");
                                 }
@@ -364,36 +369,6 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
         Builder<K, V> result = new Builder<>();
         result.setCaffeine(caffeine);
         return result;
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-
-        AsyncClaimingCacheImplCaffeine<String, String> cache = AsyncClaimingCacheImplCaffeine.<String, String>newBuilder(
-                Caffeine.newBuilder().maximumSize(10).expireAfterWrite(1, TimeUnit.SECONDS).scheduler(Scheduler.systemScheduler()))
-            .setCacheLoader(key -> "Loaded " + key)
-            .setAtomicRemovalListener((k, v, c) -> System.out.println("Evicted " + k))
-            .setClaimListener((k, v) -> System.out.println("Claimed: " + k))
-            .setUnclaimListener((k, v) -> System.out.println("Unclaimed: " + k))
-            .build();
-
-        RefFuture<String> ref = cache.claim("hell");
-
-        Closeable disposable = cache.addEvictionGuard(k -> k.contains("hell"));
-
-        System.out.println(ref.await());
-        ref.close();
-
-        TimeUnit.SECONDS.sleep(5);
-
-        RefFuture<String> reclaim = cache.claim("hell");
-
-        disposable.close();
-
-        reclaim.close();
-
-        TimeUnit.SECONDS.sleep(5);
-
-        System.out.println("done");
     }
 
     /**

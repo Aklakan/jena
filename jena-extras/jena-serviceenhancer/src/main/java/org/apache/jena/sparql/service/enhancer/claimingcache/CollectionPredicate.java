@@ -15,19 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.jena.sparql.service.enhancer.claimingcache;
 
-package org.apache.jena.sparql.service.enhancer.impl.util.iterator;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.function.Predicate;
 
-import org.apache.jena.atlas.iterator.IteratorCloseable;
-import org.apache.jena.sparql.util.PrintSerializable;
-
-public interface AbortableIterator<T> extends IteratorCloseable<T>, PrintSerializable
+/** Predicate to test for containment in a collection. */
+public class CollectionPredicate<T>
+    implements Predicate<T>
 {
-    /** Get next binding */
-    public T nextBinding() ;
+    private Collection<T> collection;
 
-    /**
-     * Cancels the query as soon as is possible for the given iterator
-     */
-    public void cancel();
+    public CollectionPredicate(Collection<T> collection) {
+        super();
+        this.collection = Objects.requireNonNull(collection);
+    }
+
+    @Override
+    public boolean test(T t) {
+        boolean result = collection.contains(t);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return collection.toString();
+    }
 }

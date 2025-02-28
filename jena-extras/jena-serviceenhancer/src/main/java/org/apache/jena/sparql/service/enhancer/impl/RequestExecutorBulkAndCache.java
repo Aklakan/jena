@@ -85,7 +85,8 @@ public class RequestExecutorBulkAndCache
         BatchQueryRewriterBuilder builder = BatchQueryRewriterBuilder.from(serviceInfo, globalIdxVar);
 
         if (ServiceEnhancerConstants.SELF.equals(targetServiceNode)) {
-            builder.setOrderRetainingUnion(true)
+            builder
+                .setOrderRetainingUnion(true)
                 .setSequentialUnion(true);
         }
 

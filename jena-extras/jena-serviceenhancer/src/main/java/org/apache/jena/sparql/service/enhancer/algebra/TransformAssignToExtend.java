@@ -28,6 +28,7 @@ import org.apache.jena.sparql.algebra.op.OpExtend;
  * Rationale: Execution of OpLateral in Jena 5.0.0 inserts OpAssign operations. Attempting to execute those remote results in
  * SPARQL LET syntax elements which are usually not understood by remote endpoints.
  */
+@Deprecated // Should no longer be necessary with https://github.com/apache/jena/pull/3029
 public class TransformAssignToExtend
     extends TransformCopy
 {

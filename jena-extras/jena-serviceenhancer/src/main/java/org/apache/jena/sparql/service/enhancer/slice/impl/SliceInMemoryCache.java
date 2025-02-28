@@ -26,6 +26,7 @@ import org.apache.jena.atlas.lib.Closeable;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCache;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCacheImplCaffeine;
 import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
+import org.apache.jena.sparql.service.enhancer.claimingcache.CollectionPredicate;
 import org.apache.jena.sparql.service.enhancer.impl.util.LockUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.PageUtils;
 import org.apache.jena.sparql.service.enhancer.slice.api.ArrayOps;
@@ -138,7 +139,7 @@ public class SliceInMemoryCache<A>
             logger.debug("Added eviction guard over ranges " + ranges + " affecting page ids " + pageIds);
         }
 
-        Closeable core = pageCache.addEvictionGuard(key -> pageIds.contains(key));
+        Closeable core = pageCache.addEvictionGuard(new CollectionPredicate<>(pageIds));
         return () -> {
             if (logger.isDebugEnabled()) {
                 logger.debug("Removed eviction guard over ranges " + ranges + " affecting page ids " + pageIds);
