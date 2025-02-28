@@ -15,19 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.jena.sparql.service.enhancer.claimingcache;
 
-package org.apache.jena.sparql.service.enhancer.impl.util.iterator;
+import java.util.Objects;
+import java.util.function.Predicate;
 
-import org.apache.jena.atlas.iterator.IteratorCloseable;
-import org.apache.jena.sparql.util.PrintSerializable;
+import com.google.common.collect.Range;
 
-public interface AbortableIterator<T> extends IteratorCloseable<T>, PrintSerializable
+/** Predicate to match by a range. */
+public class RangePredicate<T extends Comparable<T>>
+    implements Predicate<T>
 {
-    /** Get next binding */
-    public T nextBinding() ;
+    private Range<T> range;
 
-    /**
-     * Cancels the query as soon as is possible for the given iterator
-     */
-    public void cancel();
+    public RangePredicate(Range<T> range) {
+        super();
+        this.range = Objects.requireNonNull(range);
+    }
+
+    @Override
+    public boolean test(T t) {
+        boolean result = range.contains(t);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return range.toString();
+    }
 }

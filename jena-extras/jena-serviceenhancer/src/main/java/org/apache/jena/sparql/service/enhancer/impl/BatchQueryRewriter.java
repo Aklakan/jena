@@ -76,6 +76,7 @@ public class BatchQueryRewriter {
         SUBSTITUTE,
 
         /** Modern approach using {@link Substitute#substitute(Op, Binding). */
+        @Deprecated // Seems to cause more troubles than its worth
         INJECT
     }
 
@@ -187,7 +188,8 @@ public class BatchQueryRewriter {
             //   This may cause unbound variables to be projected
             op = switch (substitutionStrategy) {
                 case SUBSTITUTE -> QC.substitute(op, normedBinding);
-                case INJECT -> Transformer.transform(TransformAssignToExtend.get(), Substitute.inject(op, normedBinding));
+                //case INJECT -> Transformer.transform(TransformAssignToExtend.get(), Substitute.inject(op, normedBinding));
+                case INJECT -> Substitute.inject(op, normedBinding);
             };
 
             // Relabel any blank nodes
