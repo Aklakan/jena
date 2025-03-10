@@ -27,7 +27,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.jena.sparql.service.enhancer.concurrent.LinkedList.LinkedListNode;
+import org.apache.jena.sparql.service.enhancer.util.IdPool;
+import org.apache.jena.sparql.service.enhancer.util.LinkedList;
+import org.apache.jena.sparql.service.enhancer.util.LinkedList.LinkedListNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

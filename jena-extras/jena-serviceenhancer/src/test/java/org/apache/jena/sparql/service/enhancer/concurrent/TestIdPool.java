@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.apache.jena.sparql.service.enhancer.util.IdPool;
 import org.junit.Assert;
 import org.junit.Test;
 

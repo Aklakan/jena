@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.jena.sparql.service.enhancer.concurrent;
+package org.apache.jena.sparql.service.enhancer.util;
 
 import java.util.Iterator;
 import java.util.TreeSet;

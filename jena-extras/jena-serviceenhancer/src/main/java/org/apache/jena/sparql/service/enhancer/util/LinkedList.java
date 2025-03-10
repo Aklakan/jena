@@ -16,7 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.jena.sparql.service.enhancer.concurrent;
+package org.apache.jena.sparql.service.enhancer.util;
+
+import java.util.AbstractCollection;
+import java.util.Iterator;
+import java.util.Objects;
 
 /**
  * A doubly linked list to keep track of idle executors in the ExecutorServicePool.
@@ -31,7 +35,9 @@ package org.apache.jena.sparql.service.enhancer.concurrent;
  *
  * This is not a fully fledged linked list implementation, e.g. it does not implement Collection.
  */
-public class LinkedList<T> {
+public class LinkedList<T>
+    extends AbstractCollection<T>
+{
     public static class LinkedListNode<T> {
         private volatile T value;
         private volatile LinkedListNode<T> prev;
@@ -169,7 +175,52 @@ public class LinkedList<T> {
         }
     }
 
+    @Override
     public int size() {
         return size;
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return new LinkedListIterator(first);
+    }
+
+    protected class LinkedListIterator
+        implements Iterator<T> {
+
+        protected LinkedListNode<T> removable;
+        protected LinkedListNode<T> current;
+
+        public LinkedListIterator(LinkedListNode<T> current) {
+            super();
+            this.current = current;
+        }
+
+        protected void ensureValid(LinkedListNode<T> node) {
+            Objects.requireNonNull(node);
+            if (!node.isLinked()) {
+                throw new IllegalStateException("Linked list iterator points to an unlinked node.");
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return current != null;
+        }
+
+        @Override
+        public T next() {
+            ensureValid(current);
+            removable = current;
+            current = current.getNext();
+            return removable.getValue();
+        }
+
+        @Override
+        public void remove() {
+            Objects.requireNonNull(removable, "Linked list iterator is not positioned at a removable element.");
+            unlink(removable);
+            removable = null;
+        }
     }
 }
