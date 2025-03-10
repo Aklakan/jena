@@ -121,14 +121,14 @@ public class SliceAccessorImpl<A>
         ensureUnlocked();
 
         // Remove any claimed page before startPageId
-        NavigableMap<Long, RefFuture<BufferView<A>>> prefixPagesToRelease = claimedPages.headMap(startPageId, false);
-        prefixPagesToRelease.values().forEach(Ref::close);
-        prefixPagesToRelease.clear();
+        NavigableMap<Long, RefFuture<BufferView<A>>> headPagesToRelease = claimedPages.headMap(startPageId, false);
+        headPagesToRelease.values().forEach(Ref::close);
+        headPagesToRelease.clear();
 
         // Remove any claimed page after endPageId
-        NavigableMap<Long, RefFuture<BufferView<A>>> suffixPagesToRelease = claimedPages.tailMap(endPageId, false);
-        suffixPagesToRelease.values().forEach(Ref::close);
-        suffixPagesToRelease.clear();
+        NavigableMap<Long, RefFuture<BufferView<A>>> tailPagesToRelease = claimedPages.tailMap(endPageId, false);
+        tailPagesToRelease.values().forEach(Ref::close);
+        tailPagesToRelease.clear();
 
         // Phase 1/2: Trigger loading of all pages
         for (long i = startPageId; i <= endPageId; ++i) {
@@ -172,7 +172,7 @@ public class SliceAccessorImpl<A>
 
     protected void ensureUnlocked() {
         if (isLocked) {
-            throw new IllegalStateException("Pages ware already locked - need to be unlocked first");
+            throw new IllegalStateException("Pages were already locked - need to be unlocked first");
         }
     }
 

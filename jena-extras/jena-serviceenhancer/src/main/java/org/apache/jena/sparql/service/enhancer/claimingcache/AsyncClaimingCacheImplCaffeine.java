@@ -73,7 +73,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
     // level1: claimed items - those items will never be evicted as long as the references are not closed
     protected Map<K, RefFuture<V>> level1;
 
-    // level2: the caffine cache - items in this cache are not claimed are subject to eviction according to configuration
+    // level2: the caffine cache - items in this cache are not claimed and are subject to eviction according to configuration
     protected AsyncCache<K, V> level2;
     protected Function<K, CompletableFuture<V>> level3AwareCacheLoader;
 
@@ -282,7 +282,6 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
 
         @SuppressWarnings("unchecked")
         public AsyncClaimingCacheImplCaffeine<K, V> build() {
-
             Map<K, RefFuture<V>> level1 = new ConcurrentHashMap<>();
             Map<K, V> level3 = new ConcurrentHashMap<>();
             LinkedList<Predicate<? super K>> evictionGuards = new LinkedList<>();
@@ -327,7 +326,6 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                 if (!isEventSuppressed) {
                     // CompletableFuture<V> cfv = (CompletableFuture<V>)v;
                     CompletableFuture<V> cfv = CompletableFuture.completedFuture((V)v);
-
                     V vv = null;
                     if (cfv.isDone()) {
                         try {
@@ -336,7 +334,6 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                             throw new RuntimeException("Should not happen", e);
                         }
                     }
-
                     level3AwareAtomicRemovalListener.onRemoval(kk, vv, c);
                 }
             });

@@ -75,31 +75,31 @@ public class ServiceResponseCache {
         AsyncClaimingCacheImplCaffeine.Builder<ServiceCacheKey, ServiceCacheValue> builder =
                 AsyncClaimingCacheImplCaffeine.newBuilder(Caffeine.newBuilder().maximumSize(maxCacheSize));
         builder = builder
-                .setCacheLoader(key -> {
-                    long id = entryCounter.getAndIncrement();
-                    idToKey.put(id, key);
-                    Slice<Binding[]> slice = sliceFactory.get();
-                    ServiceCacheValue r = new ServiceCacheValue(id, slice);
+            .setCacheLoader(key -> {
+                long id = entryCounter.getAndIncrement();
+                idToKey.put(id, key);
+                Slice<Binding[]> slice = sliceFactory.get();
+                ServiceCacheValue r = new ServiceCacheValue(id, slice);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Loaded cache entry: {} - {}", key.getServiceNode(), id);
+                }
+                return r;
+            })
+            .setAtomicRemovalListener((k, v, c) -> {
+                // We are not yet handling cancellation of loading a key; in that case the value may not yet be available
+                // Handle it here here with null for v?
+                if (v != null) {
+                    long id = v.getId();
                     if (logger.isDebugEnabled()) {
-                        logger.debug("Loaded cache entry: {} - {}", key.getServiceNode(), id);
+                        logger.debug("Removed cache entry: {} - {}", k.getServiceNode(), id);
                     }
-                    return r;
-                })
-                .setAtomicRemovalListener((k, v, c) -> {
-                    // We are not yet handling cancellation of loading a key; in that case the value may not yet be available
-                    // Handle it here here with null for v?
-                    if (v != null) {
-                        long id = v.getId();
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Removed cache entry: {} - {}", k.getServiceNode(), id);
-                        }
-                        idToKey.remove(id);
-                    } else {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Removed cache entry without value {}", k);
-                        }
+                    idToKey.remove(id);
+                } else {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Removed cache entry without value {}", k);
                     }
-                });
+                }
+            });
         cache = builder.build();
     }
 

@@ -44,10 +44,10 @@ public class SliceMetaDataImpl
 
     public SliceMetaDataImpl() {
         this(
-                TreeRangeSet.create(),
-                TreeRangeMap.create(),
-                0,
-                Long.MAX_VALUE
+            TreeRangeSet.create(),
+            TreeRangeMap.create(),
+            0,
+            Long.MAX_VALUE
         );
     }
 

@@ -36,12 +36,14 @@ import org.apache.jena.riot.RDFParser;
 import org.apache.jena.sparql.algebra.Algebra;
 import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.algebra.OpAsQuery;
+import org.apache.jena.sparql.algebra.Table;
 import org.apache.jena.sparql.algebra.Transform;
 import org.apache.jena.sparql.algebra.Transformer;
 import org.apache.jena.sparql.algebra.optimize.Optimize;
 import org.apache.jena.sparql.core.Substitute;
 import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
+import org.apache.jena.sparql.exec.QueryExecDataset;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_JoinStrategy;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
 import org.junit.Assert;
@@ -532,6 +534,46 @@ public class TestServiceEnhancerMisc {
             }
             // Expect the 3 labels of the test dataset
             Assert.assertEquals(3, rsSize);
+        }
+    }
+
+    /** Test case where an attempt is made to cache slightly more items than the maximum cache size. */
+    @Test
+    public void testCacheEvictionCornerCase() {
+        int n = 10;
+        int d = 1;
+        Model model = AbstractTestServiceEnhancerResultSetLimits.createModel(n + d);
+        Dataset ds = DatasetFactory.wrap(model);
+        // ServiceEnhancerInit.wrapOptimizer(ds.getContext());
+        ServiceResponseCache cache = new ServiceResponseCache(1, 1, n);
+        ServiceResponseCache.set(ds.getContext(), cache);
+
+        Table prevTable = null;
+        for (int i = 0; i < 1000000; ++i) {
+            String queryStr = """
+                SELECT * {
+                    { SELECT ?dept { ?dept a <urn:Department> } ORDER BY ?dept LIMIT $N }
+                    SERVICE <loop:cache> { SELECT ?dept (COUNT(*) AS ?employees) { ?dept <urn:hasEmployee> ?emp } GROUP BY ?dept }
+                }
+                """.replace("$N", "" + (n + d));
+
+            Table thisTable = QueryExecDataset.newBuilder()
+                .dataset(ds.asDatasetGraph())
+                .query(queryStr)
+                .table();
+
+            if (prevTable != null) {
+                if (!prevTable.equals(thisTable)) {
+                    System.err.println("Test failure on iteration #" + i);
+                }
+                Assert.assertEquals(prevTable, thisTable);
+            } else {
+                prevTable = thisTable;
+            }
+
+            if (i % 10 == 0) {
+                cache.invalidateAll();
+            }
         }
     }
 }

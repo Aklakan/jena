@@ -544,6 +544,9 @@ public class QueryIterServiceBulkAndCache
                 }
                 // Log.debug(BatchRequestIterator.class, "Cached ranges: " + slice.getLoadedRanges().toString());
 
+                // FIXME I think locking the slice must immediately add an eviction guard for all data in the slice.
+                //   FIXME Right now its done in a separate step which I think can cause a race condition!!!
+                //   FIXME Also, if we know the cache size here, then we can cleverly stop caching batches that are outside of the max cache size! -so this way, rerunning the same query again will use the cache.
                 lock.lock();
             }
 

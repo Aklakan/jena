@@ -206,13 +206,13 @@ public class SliceInMemoryCache<A>
         Set<Long> pageIds = PageUtils.touchedPageIndices(ranges.asRanges(), pageSize);
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Added eviction guard over ranges {} affecting page ids {}.", ranges, pageIds);
+            logger.debug("Added eviction guard over ranges {} affecting {} pages with ids {}.", ranges, pageIds.size(), pageIds);
         }
 
         Closeable core = pageCache.addEvictionGuard(new CollectionPredicate<>(pageIds));
         return () -> {
             if (logger.isDebugEnabled()) {
-                logger.debug("Removed eviction guard over ranges {} affecting page ids {}.", ranges, pageIds);
+                logger.debug("Removed eviction guard over ranges {} affecting {} pages ids {}.", ranges, pageIds.size(), pageIds);
             }
             core.close();
         };

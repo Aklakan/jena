@@ -31,8 +31,10 @@ public class TestAsyncClaimingCache {
     @Test
     public void test() throws InterruptedException {
 
+        int maxCacheSize = 10;
+
         AsyncClaimingCacheImplCaffeine<String, String> cache = AsyncClaimingCacheImplCaffeine.<String, String>newBuilder(
-                Caffeine.newBuilder().maximumSize(10).expireAfterWrite(1, TimeUnit.SECONDS).scheduler(Scheduler.systemScheduler()))
+                Caffeine.newBuilder().maximumSize(maxCacheSize).expireAfterWrite(1, TimeUnit.MILLISECONDS).scheduler(Scheduler.systemScheduler()))
             .setCacheLoader(key -> "Loaded " + key)
             .setAtomicRemovalListener((k, v, c) -> System.out.println("Evicted " + k))
             .setClaimListener((k, v) -> System.out.println("Claimed: " + k))
