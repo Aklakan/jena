@@ -37,6 +37,10 @@ import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableItera
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerInit;
 
+/**
+ * This class is an iterator that handles partitioning bulk requests and caching.
+ * The class {@link QueryIterServiceBulkAndCache} is responsible to process a concrete batch.
+ */
 public class RequestExecutorBulkAndCache
     extends RequestExecutorSparqlBase
 {
@@ -92,7 +96,7 @@ public class RequestExecutorBulkAndCache
 
         BatchQueryRewriter rewriter = builder.build();
 
-        QueryIterServiceBulk baseIt = new QueryIterServiceBulk(
+        QueryIterServiceBulkAndCache baseIt = new QueryIterServiceBulkAndCache(
                 serviceInfo, rewriter, cacheKeyFactory, opExecutor, batchExecCxt, inputs,
                 resultSizeCache, cache, cacheMode);
 

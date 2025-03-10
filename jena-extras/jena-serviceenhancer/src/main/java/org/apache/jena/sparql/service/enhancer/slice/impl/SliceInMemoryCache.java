@@ -25,9 +25,11 @@ import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.jena.atlas.lib.Closeable;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCache;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCacheImplCaffeine;
-import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
 import org.apache.jena.sparql.service.enhancer.claimingcache.CollectionPredicate;
-import org.apache.jena.sparql.service.enhancer.impl.util.LockUtils;
+import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
+import org.apache.jena.sparql.service.enhancer.concurrent.AutoLock;
+import org.apache.jena.sparql.service.enhancer.concurrent.LockWrapper;
+import org.apache.jena.sparql.service.enhancer.concurrent.ReadWriteLockModular;
 import org.apache.jena.sparql.service.enhancer.impl.util.PageUtils;
 import org.apache.jena.sparql.service.enhancer.slice.api.ArrayOps;
 import org.apache.jena.sparql.service.enhancer.slice.api.Slice;
@@ -64,7 +66,6 @@ public class SliceInMemoryCache<A>
     public static <A> Slice<A> create(ArrayOps<A> arrayOps, int pageSize, int maxCachedPages) {
         AsyncClaimingCacheImplCaffeine.Builder<Long, BufferView<A>> cacheBuilder = AsyncClaimingCacheImplCaffeine.newBuilder(
             Caffeine.newBuilder().maximumSize(maxCachedPages));
-
         return new SliceInMemoryCache<>(arrayOps, pageSize, cacheBuilder);
     }
 
@@ -76,13 +77,12 @@ public class SliceInMemoryCache<A>
         if (logger.isDebugEnabled()) {
             logger.debug("Attempting to evict page " + pageId + " with range " + pageRange);
         }
-        LockUtils.runWithLock(readWriteLock.writeLock(), () -> {
+        try (AutoLock autoLock = AutoLock.lock(readWriteLock.writeLock())) {
             metaData.getLoadedRanges().remove(pageRange);
-        });
+        }
         if (logger.isDebugEnabled()) {
             logger.debug("Evicted page " + pageId + " with range " + pageRange);
         }
-
     }
 
     protected BufferView<A> loadPage(long pageId) {
@@ -108,6 +108,76 @@ public class SliceInMemoryCache<A>
             }
         };
         return result;
+    }
+
+    protected class EvictionGuardedLock
+        extends LockWrapper {
+
+        protected Lock delegate;
+        protected Closeable disposable;
+
+        public EvictionGuardedLock(Lock delegate) {
+            super();
+            this.delegate = delegate;
+        }
+
+        @Override
+        protected Lock getDelegate() {
+            return delegate;
+        }
+
+        protected void customLock() {
+            if (disposable != null) {
+                throw new IllegalStateException("Lock is already held");
+            }
+            disposable = pageCache.addEvictionGuard(x -> true);
+        }
+
+        protected void customUnlock() {
+            if (disposable == null) {
+                throw new IllegalStateException("Lock is not held");
+            }
+            disposable.close();
+        }
+
+        @Override
+        public void lock() {
+            customLock();
+            try {
+                super.lock();
+            } catch (Throwable t) {
+                customUnlock();
+                t.addSuppressed(new RuntimeException());
+                throw t;
+            }
+        }
+
+        @Override
+        public void lockInterruptibly() throws InterruptedException {
+            customLock();
+            try {
+                super.lockInterruptibly();
+            } catch (Throwable t) {
+                customUnlock();
+                t.addSuppressed(new RuntimeException());
+                throw t;
+            }
+        }
+
+        @Override
+        public void unlock() {
+            try {
+                customUnlock();
+            } finally {
+                super.unlock();
+            }
+        }
+    }
+
+    @Override
+    public ReadWriteLock getReadWriteLock() {
+        ReadWriteLock rwl = super.getReadWriteLock();
+        return new ReadWriteLockModular(new EvictionGuardedLock(rwl.readLock()), new EvictionGuardedLock(rwl.writeLock()));
     }
 
     @Override
@@ -136,13 +206,13 @@ public class SliceInMemoryCache<A>
         Set<Long> pageIds = PageUtils.touchedPageIndices(ranges.asRanges(), pageSize);
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Added eviction guard over ranges " + ranges + " affecting page ids " + pageIds);
+            logger.debug("Added eviction guard over ranges {} affecting page ids {}.", ranges, pageIds);
         }
 
         Closeable core = pageCache.addEvictionGuard(new CollectionPredicate<>(pageIds));
         return () -> {
             if (logger.isDebugEnabled()) {
-                logger.debug("Removed eviction guard over ranges " + ranges + " affecting page ids " + pageIds);
+                logger.debug("Removed eviction guard over ranges {} affecting page ids {}.", ranges, pageIds);
             }
             core.close();
         };

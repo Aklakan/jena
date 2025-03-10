@@ -578,7 +578,7 @@ public class RequestExecutor
                     txnBegin(dsg, txnType);
                 }
 
-                QueryIterServiceBulk baseIt = new QueryIterServiceBulk(
+                QueryIterServiceBulkAndCache baseIt = new QueryIterServiceBulkAndCache(
                         serviceInfo, rewriter, cacheKeyFactory, opExecutor, batchExecCxt, inputs,
                         resultSizeCache, cache, cacheMode);
 

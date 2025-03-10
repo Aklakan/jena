@@ -79,11 +79,11 @@ import com.google.common.math.LongMath;
 /**
  * QueryIter to process service requests in bulk with support for streaming caching.
  */
-public class QueryIterServiceBulk
+public class QueryIterServiceBulkAndCache
     extends QueryIterSlottedBase
     // extends AbstractAbortableIterator<Binding>
 {
-    private static final Logger logger = LoggerFactory.getLogger(QueryIterServiceBulk.class);
+    private static final Logger logger = LoggerFactory.getLogger(QueryIterServiceBulkAndCache.class);
 
     protected OpServiceInfo serviceInfo;
     protected ServiceCacheKeyFactory cacheKeyFactory;
@@ -136,7 +136,7 @@ public class QueryIterServiceBulk
     // Close a sliceKey's iterator upon exhaustion if they slice key is in the set
     protected Set<SliceKey> sliceKeyToClose = new HashSet<>();
 
-    public QueryIterServiceBulk(
+    public QueryIterServiceBulkAndCache(
             OpServiceInfo serviceInfo,
             BatchQueryRewriter batchQueryRewriter,
             ServiceCacheKeyFactory cacheKeyFactory,

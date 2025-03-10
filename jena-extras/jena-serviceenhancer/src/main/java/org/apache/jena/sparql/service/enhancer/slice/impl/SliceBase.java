@@ -33,7 +33,6 @@ import com.google.common.collect.RangeSet;
 public abstract class SliceBase<A>
     implements Slice<A>
 {
-
     protected ArrayOps<A> arrayOps;
 
     // A read/write lock for synchronizing reads/writes to the slice
@@ -48,7 +47,6 @@ public abstract class SliceBase<A>
     }
 
     protected abstract SliceMetaDataBasic getMetaData();
-
 
     @Override
     public RangeSet<Long> getLoadedRanges() {

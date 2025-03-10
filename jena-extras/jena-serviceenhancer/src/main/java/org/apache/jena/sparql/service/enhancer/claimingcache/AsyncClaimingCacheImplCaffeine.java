@@ -29,14 +29,15 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.apache.jena.atlas.lib.Closeable;
-import org.apache.jena.sparql.service.enhancer.impl.util.LockUtils;
+import org.apache.jena.sparql.service.enhancer.concurrent.AutoLock;
+import org.apache.jena.sparql.service.enhancer.util.LinkedList;
+import org.apache.jena.sparql.service.enhancer.util.LinkedList.LinkedListNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,6 @@ import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
-import com.github.benmanes.caffeine.cache.Scheduler;
 import com.google.common.collect.Sets;
 
 /**
@@ -92,7 +92,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
     // A list of predicates that decide whether a key is considered protected from eviction
     // Each predicate abstracts matching a set of keys, e.g. a range of integer values.
     // The predicates are assumed to always return the same result for the same argument.
-    protected final Collection<Predicate<? super K>> evictionGuards;
+    protected final LinkedList<Predicate<? super K>> evictionGuards;
 
     protected RemovalListener<K, V> atomicRemovalListener;
 
@@ -103,7 +103,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
             AsyncCache<K, V> level2,
             Function<K, V> level3AwareCacheLoader,
             Map<K, V> level3,
-            Collection<Predicate<? super K>> evictionGuards,
+            LinkedList<Predicate<? super K>> evictionGuards,
             BiConsumer<K, RefFuture<V>> claimListener,
             BiConsumer<K, RefFuture<V>> unclaimListener,
             RemovalListener<K, V> atomicRemovalListener,
@@ -137,15 +137,16 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
     public Closeable addEvictionGuard(Predicate<? super K> predicate) {
         // Note: LinkedList.listIterator() becomes invalidated after any modification
         // In principle a LinkedList would be the more appropriate data structure
+        LinkedListNode<Predicate<? super K>> linkedListNode;
         synchronized (evictionGuards) {
             System.err.println("Registered Eviction guard: " + predicate);
-            evictionGuards.add(predicate);
+            linkedListNode = evictionGuards.append(predicate);
+            // evictionGuards.add(predicate);
         }
         return () -> {
             synchronized (evictionGuards) {
                 System.err.println("Removed Eviction guard: " + predicate);
-
-                evictionGuards.remove(predicate);
+                linkedListNode.unlink();
                 runLevel3Eviction();
             }
         };
@@ -173,12 +174,14 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
             Holder<Boolean> isFreshSecondaryRef = Holder.of(Boolean.FALSE);
 
             // Guard against concurrent invalidation requests
-            RefFuture<V> secondaryRef = LockUtils.runWithLock(invalidationLock.readLock(), () -> {
-                return level1.computeIfAbsent(key, k -> {
+            RefFuture<V> secondaryRef;
+
+            try (AutoLock autoLock = AutoLock.lock(invalidationLock.readLock())) {
+                secondaryRef = level1.computeIfAbsent(key, k -> {
                     // Wrap the loaded reference such that closing the fully loaded reference adds it to level 2
 
                     if (logger.isTraceEnabled()) {
-                        logger.trace("Claiming item [" + key + "] from level2");
+                        logger.trace("Claiming item [{}] from level2.", key);
                     }
                     CompletableFuture<V> future;
 //                    try {
@@ -212,7 +215,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                             RefFutureImpl.cancelFutureOrCloseValue(future, null);
                             level1.remove(key);
                             if (logger.isTraceEnabled()) {
-                                logger.trace("Item [" + key + "] was unclaimed. Transferring to level2.");
+                                logger.trace("Item [{}] was unclaimed. Transferring to level2.", key);
                             }
                             level2.put(key, future);
 
@@ -225,7 +228,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                     holder.set(r);
                     return r;
                 });
-            });
+            }
 
             RefFuture<V> r = secondaryRef.acquire("secondary ref");
             if (claimListener != null) {
@@ -282,7 +285,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
 
             Map<K, RefFuture<V>> level1 = new ConcurrentHashMap<>();
             Map<K, V> level3 = new ConcurrentHashMap<>();
-            Collection<Predicate<? super K>> evictionGuards = Sets.newIdentityHashSet(); // new ArrayList<>();
+            LinkedList<Predicate<? super K>> evictionGuards = new LinkedList<>();
 
             RemovalListener<K, V> level3AwareAtomicRemovalListener = (k, v, c) -> {
                 System.err.println("Removal triggered: " + k + " " + v + " " + c);
@@ -386,18 +389,18 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
 
     @Override
     public void invalidateAll() {
-        LockUtils.runWithLock(invalidationLock.writeLock(), () -> {
+        try (AutoLock autoLock = AutoLock.lock(invalidationLock.writeLock())) {
             // Cache<K, V> synchronousCache = level2.synchronous();
             List<K> keys = new ArrayList<>(level2.asMap().keySet()); //synchronousCache.asMap().keySet());
             invalidateAllInternal(keys);
-        });
+        }
     }
 
     @Override
     public void invalidateAll(Iterable<? extends K> keys) {
-        LockUtils.runWithLock(invalidationLock.writeLock(), () -> {
+        try (AutoLock autoLock = AutoLock.lock(invalidationLock.writeLock())) {
             invalidateAllInternal(keys);
-        });
+        }
     }
 
     private void invalidateAllInternal(Iterable<? extends K> keys) {
