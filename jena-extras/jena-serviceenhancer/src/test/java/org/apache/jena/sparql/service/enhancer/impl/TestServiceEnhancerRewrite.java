@@ -35,9 +35,6 @@ import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerInit;
 import org.apache.jena.sparql.sse.SSE;
 import org.apache.jena.sys.JenaSystem;
 import org.junit.Assert;
-import org.junit.Test;
-
-
 
 public class TestServiceEnhancerRewrite {
     // Ensure extensions are initialized
