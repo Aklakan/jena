@@ -22,12 +22,12 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 /** Predicate to test for containment in a collection. */
-public class CollectionPredicate<T>
+public class PredicateContains<T>
     implements Predicate<T>
 {
     private Collection<T> collection;
 
-    public CollectionPredicate(Collection<T> collection) {
+    public PredicateContains(Collection<T> collection) {
         super();
         this.collection = Objects.requireNonNull(collection);
     }

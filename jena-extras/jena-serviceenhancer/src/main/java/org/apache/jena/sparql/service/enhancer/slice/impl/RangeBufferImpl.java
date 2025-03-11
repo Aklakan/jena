@@ -121,8 +121,7 @@ public class RangeBufferImpl<A>
 
         if (!ranges.encloses(totalReadRange)) {
             RangeSet<Long> gaps = ranges.complement().subRangeSet(totalReadRange);
-
-            throw new ReadOverGapException("Attempt to read over gaps at: " + gaps);
+            throw new ReadOverGapException("Attempt to read over gaps. Gaps: " + gaps + ", Requested range: " + totalReadRange + ", Available ranges: " + ranges);
         }
 
         int result = backingBuffer.readInto(tgt, tgtOffset, srcOffset, length);
