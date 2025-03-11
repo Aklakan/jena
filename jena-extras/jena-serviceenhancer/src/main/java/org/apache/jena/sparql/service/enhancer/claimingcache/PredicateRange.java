@@ -23,12 +23,12 @@ import java.util.function.Predicate;
 import com.google.common.collect.Range;
 
 /** Predicate to match by a range. */
-public class RangePredicate<T extends Comparable<T>>
+public class PredicateRange<T extends Comparable<T>>
     implements Predicate<T>
 {
     private Range<T> range;
 
-    public RangePredicate(Range<T> range) {
+    public PredicateRange(Range<T> range) {
         super();
         this.range = Objects.requireNonNull(range);
     }

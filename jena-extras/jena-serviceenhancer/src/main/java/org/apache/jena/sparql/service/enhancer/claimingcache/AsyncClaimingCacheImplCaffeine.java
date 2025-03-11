@@ -70,24 +70,26 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
 {
     private static final Logger logger = LoggerFactory.getLogger(AsyncClaimingCacheImplCaffeine.class);
 
-    // level1: claimed items - those items will never be evicted as long as the references are not closed
+    // level1: Claimed items - those items will never be evicted as long as the references are not closed.
     protected Map<K, RefFuture<V>> level1;
 
-    // level2: the caffine cache - items in this cache are not claimed and are subject to eviction according to configuration
+    // level2: The caffine cache - items in this cache are not claimed and are subject to eviction according to configuration.
     protected AsyncCache<K, V> level2;
     protected Function<K, CompletableFuture<V>> level3AwareCacheLoader;
 
-    // level3: items evicted from level2 but caught be eviction protection
+    // level3: Items evicted from level2 but caught by at least one eviction guard.
     protected Map<K, V> level3;
 
-    // Runs atomically in the claim action after the entry exists in level1
+    // Runs atomically in the claim action after the entry exists in level1.
     protected BiConsumer<K, RefFuture<V>> claimListener;
 
-    // Runs atomically in the unclaim action before the entry is removed from level1
+    // Runs atomically in the unclaim action before the entry is removed from level1.
     protected BiConsumer<K, RefFuture<V>> unclaimListener;
 
-    // A lock that prevents invalidation while entries are being loaded
+    // A lock that prevents invalidation while entries are being loaded.
     protected ReentrantReadWriteLock invalidationLock = new ReentrantReadWriteLock();
+
+    protected ReentrantReadWriteLock evictionGuardLock;
 
     // A list of predicates that decide whether a key is considered protected from eviction
     // Each predicate abstracts matching a set of keys, e.g. a range of integer values.
@@ -104,6 +106,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
             Function<K, V> level3AwareCacheLoader,
             Map<K, V> level3,
             LinkedList<Predicate<? super K>> evictionGuards,
+            ReentrantReadWriteLock evictionGuardLock,
             BiConsumer<K, RefFuture<V>> claimListener,
             BiConsumer<K, RefFuture<V>> unclaimListener,
             RemovalListener<K, V> atomicRemovalListener,
@@ -115,6 +118,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
         this.level3AwareCacheLoader = k -> CompletableFuture.completedFuture(level3AwareCacheLoader.apply(k));
         this.level3 = level3;
         this.evictionGuards = evictionGuards;
+        this.evictionGuardLock = evictionGuardLock;
         this.claimListener = claimListener;
         this.unclaimListener = unclaimListener;
         this.atomicRemovalListener = atomicRemovalListener;
@@ -135,16 +139,13 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
      */
     @Override
     public Closeable addEvictionGuard(Predicate<? super K> predicate) {
-        // Note: LinkedList.listIterator() becomes invalidated after any modification
-        // In principle a LinkedList would be the more appropriate data structure
         LinkedListNode<Predicate<? super K>> linkedListNode;
-        synchronized (evictionGuards) {
+        try (AutoLock lock = AutoLock.lock(evictionGuardLock.writeLock())) {
             System.err.println("Registered Eviction guard: " + predicate);
             linkedListNode = evictionGuards.append(predicate);
-            // evictionGuards.add(predicate);
         }
         return () -> {
-            synchronized (evictionGuards) {
+            try (AutoLock lock = AutoLock.lock(evictionGuardLock.writeLock())) {
                 System.err.println("Removed Eviction guard: " + predicate);
                 linkedListNode.unlink();
                 runLevel3Eviction();
@@ -152,7 +153,10 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
         };
     }
 
-    /** Called while being synchronized on the evictionGuards */
+    /**
+     * Remove all items from level3 that do not match any eviction guard.
+     * Called while being synchronized on the evictionGuards.
+     */
     protected void runLevel3Eviction() {
         Iterator<Entry<K, V>> it = level3.entrySet().iterator();
         while (it.hasNext()) {
@@ -285,23 +289,27 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
             Map<K, RefFuture<V>> level1 = new ConcurrentHashMap<>();
             Map<K, V> level3 = new ConcurrentHashMap<>();
             LinkedList<Predicate<? super K>> evictionGuards = new LinkedList<>();
+            ReentrantReadWriteLock evictionGuardLock = new ReentrantReadWriteLock();
 
             RemovalListener<K, V> level3AwareAtomicRemovalListener = (k, v, c) -> {
                 System.err.println("Removal triggered: " + k + " " + v + " " + c);
-                // Check for actual removal - key no longer present in level1
+                // Check for actual removal - key no longer present in level1.
                 if (!level1.containsKey(k)) {
 
                     boolean isGuarded = false;
-                    synchronized (evictionGuards) {
-                        // Check for an eviction guard
+                    try (AutoLock lock = AutoLock.lock(evictionGuardLock.writeLock())) {
+                        // Check whether this eviction from level2 should be caught by an eviction guard.
                         for (Predicate<? super K> evictionGuard : evictionGuards) {
                             isGuarded = evictionGuard.test(k);
                             if (isGuarded) {
-                                System.err.println("Protecting from eviction: " + k + " - " + level3.size() + " items protected");
+                                System.err.println("Protecting from eviction: " + k + " - " + level3.size() + " items protected.");
                                 if (logger.isDebugEnabled()) {
-                                    logger.debug("Protecting from eviction: " + k + " - " + level3.size() + " items protected");
+                                    logger.debug("Protecting from eviction: {} - {} items protected.", k, level3.size());
                                 }
-                                level3.put(k, v);
+
+                                // try (AutoLock writeLock = AutoLock.lock(evictionGuardLock.writeLock())) {
+                                    level3.put(k, v);
+                                // }
                                 break;
                             }
                         }
@@ -341,11 +349,14 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
             // Cache loader that checks for existing items in level
             Function<K, V> level3AwareCacheLoader = k -> {
                 Object[] tmp = new Object[] { null };
-                // Atomically get and remove an existing key from level3
-                level3.compute(k, (kk, v) -> {
-                    tmp[0] = v;
-                    return null;
-                });
+                // Atomically get and remove an existing key from level3.
+                // Protect the access from concurrent eviction.
+                try (AutoLock lock = AutoLock.lock(evictionGuardLock.writeLock())) {
+                    level3.compute(k, (kk, v) -> {
+                        tmp[0] = v;
+                        return null;
+                    });
+                }
 
                 V r = (V)tmp[0];
                 if (r == null) {
@@ -361,7 +372,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
 
             AsyncCache<K, V> level2 = finalLevel2Builder.buildAsync();
 
-            return new AsyncClaimingCacheImplCaffeine<>(level1, level2, level3AwareCacheLoader, level3, evictionGuards, claimListener, unclaimListener, level3AwareAtomicRemovalListener, suppressedRemovalEvents);
+            return new AsyncClaimingCacheImplCaffeine<>(level1, level2, level3AwareCacheLoader, level3, evictionGuards, evictionGuardLock, claimListener, unclaimListener, level3AwareAtomicRemovalListener, suppressedRemovalEvents);
         }
     }
 
@@ -388,7 +399,8 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
     public void invalidateAll() {
         try (AutoLock autoLock = AutoLock.lock(invalidationLock.writeLock())) {
             // Cache<K, V> synchronousCache = level2.synchronous();
-            List<K> keys = new ArrayList<>(level2.asMap().keySet()); //synchronousCache.asMap().keySet());
+            //synchronousCache.asMap().keySet());
+            List<K> keys = new ArrayList<>(level2.asMap().keySet());
             invalidateAllInternal(keys);
         }
     }

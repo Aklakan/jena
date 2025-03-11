@@ -20,7 +20,10 @@ package org.apache.jena.sparql.service.enhancer.claimingcache;
 
 import java.util.Objects;
 
-/** Helper class to set a reference within a lambda */
+/**
+ * Helper class to set and get a reference within a lambda.
+ * A bit nicer than using an array with a single item.
+ */
 class Holder<T> {
     private T value;
 

@@ -25,7 +25,8 @@ import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.jena.atlas.lib.Closeable;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCache;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCacheImplCaffeine;
-import org.apache.jena.sparql.service.enhancer.claimingcache.CollectionPredicate;
+import org.apache.jena.sparql.service.enhancer.claimingcache.PredicateContains;
+import org.apache.jena.sparql.service.enhancer.claimingcache.PredicateTrue;
 import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
 import org.apache.jena.sparql.service.enhancer.concurrent.AutoLock;
 import org.apache.jena.sparql.service.enhancer.concurrent.LockWrapper;
@@ -130,7 +131,7 @@ public class SliceInMemoryCache<A>
             if (disposable != null) {
                 throw new IllegalStateException("Lock is already held");
             }
-            disposable = pageCache.addEvictionGuard(x -> true);
+            disposable = pageCache.addEvictionGuard(PredicateTrue.get());
         }
 
         protected void customUnlock() {
@@ -209,7 +210,7 @@ public class SliceInMemoryCache<A>
             logger.debug("Added eviction guard over ranges {} affecting {} pages with ids {}.", ranges, pageIds.size(), pageIds);
         }
 
-        Closeable core = pageCache.addEvictionGuard(new CollectionPredicate<>(pageIds));
+        Closeable core = pageCache.addEvictionGuard(new PredicateContains<>(pageIds));
         return () -> {
             if (logger.isDebugEnabled()) {
                 logger.debug("Removed eviction guard over ranges {} affecting {} pages ids {}.", ranges, pageIds.size(), pageIds);
