@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import org.apache.jena.atlas.lib.Closeable;
 import org.apache.jena.sparql.service.enhancer.claimingcache.Ref;
 import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
+import org.apache.jena.sparql.service.enhancer.concurrent.AutoLock;
 import org.apache.jena.sparql.service.enhancer.impl.util.AutoCloseableWithLeakDetectionBase;
 import org.apache.jena.sparql.service.enhancer.impl.util.FinallyRunAll;
 import org.apache.jena.sparql.service.enhancer.impl.util.PageUtils;
@@ -71,17 +72,10 @@ public class SliceAccessorImpl<A>
 {
     private static final Logger logger = LoggerFactory.getLogger(SliceAccessorImpl.class);
 
-    // protected SmartRangeCacheImpl<T> cache;
     protected SliceWithPages<A> slice;
-
     protected Range<Long> offsetRange;
     protected ConcurrentNavigableMap<Long, RefFuture<BufferView<A>>> claimedPages = new ConcurrentSkipListMap<>();
-    // protected NavigableMap<Long, BufferView<A>> pageMap;
-    protected boolean isLocked = false;
-
-    /** The number of items to process in one batch (before checking for conditions such as interrupts or no-more-demand) */
-    protected int bulkSize = 16;
-
+    // protected boolean isLocked = false;
     protected Collection<Closeable> evictionGuards = new ArrayList<>();
 
     public SliceAccessorImpl(SliceWithPages<A> cache) {
@@ -116,9 +110,9 @@ public class SliceAccessorImpl<A>
         claimByPageIdRange(startPageId, endPageId);
     }
 
-    protected synchronized void claimByPageIdRange(long startPageId, long endPageId) {
+    protected void claimByPageIdRange(long startPageId, long endPageId) {
         ensureOpen();
-        ensureUnlocked();
+        // ensureUnlocked();
 
         // Remove any claimed page before startPageId
         NavigableMap<Long, RefFuture<BufferView<A>>> headPagesToRelease = claimedPages.headMap(startPageId, false);
@@ -134,7 +128,7 @@ public class SliceAccessorImpl<A>
         for (long i = startPageId; i <= endPageId; ++i) {
             claimedPages.computeIfAbsent(i, idx -> {
                 if (logger.isTraceEnabled()) {
-                    logger.trace("Acquired page item [" + idx + "]");
+                    logger.trace("Acquired page item [{}]", idx);
                 }
                 RefFuture<BufferView<A>> page = slice.getPageForPageId(idx);
 
@@ -170,31 +164,31 @@ public class SliceAccessorImpl<A>
             TreeMap::new));
     }
 
-    protected void ensureUnlocked() {
-        if (isLocked) {
-            throw new IllegalStateException("Pages were already locked - need to be unlocked first");
-        }
-    }
+//    protected void ensureUnlocked() {
+//        if (isLocked) {
+//            throw new IllegalStateException("Pages were already locked - need to be unlocked first");
+//        }
+//    }
 
-    @Override
-    public void lock() {
-        ensureUnlocked();
+//    @Override
+//    public void lock() {
+//        ensureUnlocked();
+//
+//        isLocked = true;
+//        // updatePageMap();
+//        // pageMap.values().forEach(page -> page.getReadWriteLock().readLock().lock());
+//        // Prevent creation of new executors (other than by us) while we analyze the state
+//        // slice.getWorkerCreationLock().lock();
+//    }
 
-        isLocked = true;
-        // updatePageMap();
-        // pageMap.values().forEach(page -> page.getReadWriteLock().readLock().lock());
-        // Prevent creation of new executors (other than by us) while we analyze the state
-        // slice.getWorkerCreationLock().lock();
-    }
-
-    @Override
-    public void unlock() {
-        // Unlock all pages
-        // updatePageMap();
-        // pageMap.values().forEach(page -> page.getReadWriteLock().readLock().unlock());
-        // slice.getWorkerCreationLock().unlock();
-        isLocked = false;
-    }
+//    @Override
+//    public void unlock() {
+//        // Unlock all pages
+//        // updatePageMap();
+//        // pageMap.values().forEach(page -> page.getReadWriteLock().readLock().unlock());
+//        // slice.getWorkerCreationLock().unlock();
+//        isLocked = false;
+//    }
 
     public void releaseEvictionGuards() {
         if (!evictionGuards.isEmpty()) {
@@ -207,9 +201,9 @@ public class SliceAccessorImpl<A>
 
     @Override
     public void releaseAll() {
-        if (isLocked) {
-            unlock();
-        }
+//        if (isLocked) {
+//            unlock();
+//        }
 
         // Release all claimed pages
         // Remove all claimed pages before the checkpoint
@@ -224,7 +218,7 @@ public class SliceAccessorImpl<A>
     }
 
     @Override
-    public synchronized void write(long offset, A arrayWithItemsOfTypeT, int arrOffset, int arrLength) {
+    public void write(long offset, A arrayWithItemsOfTypeT, int arrOffset, int arrLength) {
 
         ensureOpen();
 
@@ -236,9 +230,7 @@ public class SliceAccessorImpl<A>
         long nextOffset = offset;
         int nextArrOffset = arrOffset;
 
-        Lock lock = slice.getReadWriteLock().writeLock();
-        lock.lock();
-        try {
+        try (AutoLock lock = AutoLock.lock(slice.getReadWriteLock().writeLock())) {
             long knownSize = slice.getKnownSize();
 
             int remaining = arrLength;
@@ -260,16 +252,17 @@ public class SliceAccessorImpl<A>
                         numItemsUntilPageKnownSize)),
                         remaining);
 
-                Lock contentWriteLock = buffer.getReadWriteLock().writeLock();
-                contentWriteLock.lock();
+//                Lock contentWriteLock = buffer.getReadWriteLock().writeLock();
+//                contentWriteLock.lock();
 
                 try {
                     buffer.getRangeBuffer().write(offsetInPage, arrayWithItemsOfTypeT, nextArrOffset, limit);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
-                } finally {
-                    contentWriteLock.unlock();
                 }
+//                } finally {
+//                    contentWriteLock.unlock();
+//                }
                 remaining -= limit;
                 nextOffset += limit;
                 nextArrOffset += limit;
@@ -278,14 +271,10 @@ public class SliceAccessorImpl<A>
             slice.updateMinimumKnownSize(nextOffset);
             slice.getLoadedRanges().add(totalWriteRange);
             slice.getHasDataCondition().signalAll();
-
-        } finally {
-            lock.unlock();
         }
     }
 
-
-    /** Read a range of data - does not await any new data */
+    /** Read a range of data - does not await any new data. Used to read cached ranges. */
     @Override
     public int unsafeRead(A tgt, int tgtOffset, long srcOffset, int length) throws IOException {
         ensureOpen();
@@ -326,12 +315,13 @@ public class SliceAccessorImpl<A>
     }
 
     /**
-     * Method is subject to removal - use sequentialReaderForSlice.read
+     * Method is subject to removal - use {@link #unsafeRead(Object, int, long, int)}.
      *
      * The range [srcOffset, srcOffset + length) must be within the claimed range!
      * @throws IOException
      *
      */
+    // @Override
     public int blockingRead(A tgt, int tgtOffset, long srcOffset, int length) throws IOException {
         ensureOpen();
 
@@ -340,13 +330,12 @@ public class SliceAccessorImpl<A>
                 offsetRange.encloses(totalReadRange),
                 "Read range  " + totalReadRange + " is not enclosed by claimed range " + offsetRange);
 
-
         int result;
-
         long currentOffset = srcOffset;
-        ReadWriteLock rwl = slice.getReadWriteLock();
-        Lock readLock = rwl.readLock();
+        ReadWriteLock sliceReadWriteLock = slice.getReadWriteLock();
+        Lock readLock = sliceReadWriteLock.readLock();
         readLock.lock();
+        long pageSize = slice.getPageSize();
         try {
 
             RangeSet<Long> loadedRanges = slice.getLoadedRanges();
@@ -376,7 +365,7 @@ public class SliceAccessorImpl<A>
                         // Wait for data to become available
                         // Solution based on https://stackoverflow.com/questions/13088363/how-to-wait-for-data-with-reentrantreadwritelock
 
-                        Lock writeLock = rwl.writeLock();
+                        Lock writeLock = sliceReadWriteLock.writeLock();
                         readLock.unlock();
                         writeLock.lock();
 
@@ -385,7 +374,9 @@ public class SliceAccessorImpl<A>
                             while ((entry = loadedRanges.rangeContaining(currentOffset)) == null &&
                                     ((knownSize = slice.getMaximumKnownSize()) < 0 || currentOffset < knownSize)) {
                                 try {
-                                    logger.info("Awaiting more data: " + entry + " " + currentOffset + " " + knownSize);
+                                    if (logger.isDebugEnabled()) {
+                                        logger.debug("Awaiting more data: entry: {}, currentOffset: {}, knownSize: {}", entry, currentOffset, knownSize);
+                                    }
                                     slice.getHasDataCondition().await();
                                 } catch (InterruptedException e) {
                                     throw new RuntimeException(e);
@@ -399,13 +390,13 @@ public class SliceAccessorImpl<A>
                 }
             } finally {
                 readLock.unlock();
+                readLock = null;
             }
 
             if (failures != null && !failures.isEmpty()) {
                 throw new RuntimeException("Attempt to read a range of data marked with an error",
                         failures.get(0));
             }
-
 
             if (entry == null) {
                 close();
@@ -420,27 +411,30 @@ public class SliceAccessorImpl<A>
                 long startAbs = cset.first();
                 long endAbs = startAbs + result;
 
-                long pageSize = slice.getPageSize();
                 long startPageId = PageUtils.getPageIndexForOffset(startAbs, pageSize);
                 long endPageId = PageUtils.getPageIndexForOffset(endAbs, pageSize);
                 long indexInPage = PageUtils.getIndexInPage(startAbs, pageSize);
 
+                int nextTgtOffset = tgtOffset;
                 for (long i = startPageId; i <= endPageId; ++i) {
-                    long endIndex = i == endPageId
+                    long endIndexRaw = i == endPageId
                             ? PageUtils.getIndexInPage(endAbs, pageSize)
                             : pageSize;
+                    int endIndex = Math.toIntExact(endIndexRaw);
 
                     RefFuture<BufferView<A>> currentPageRef = getClaimedPages().get(i);
 
                     BufferView<A> buffer = currentPageRef.await();
-                    buffer.getRangeBuffer().readInto(tgt, tgtOffset, indexInPage, Math.toIntExact(endIndex));
-
+                    buffer.getRangeBuffer().readInto(tgt, nextTgtOffset, indexInPage, endIndex);
+                    nextTgtOffset += endIndex;
                     indexInPage = 0;
                 }
             }
 
         } finally {
-            readLock.unlock();
+            if (readLock != null) {
+                readLock.unlock();
+            }
         }
 
 
@@ -460,5 +454,4 @@ public class SliceAccessorImpl<A>
             evictionGuards.add(disposable);
         }
     }
-
 }

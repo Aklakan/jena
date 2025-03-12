@@ -18,14 +18,13 @@
 
 package org.apache.jena.sparql.service.enhancer.slice.impl;
 
-import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import org.apache.jena.atlas.lib.Closeable;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCache;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCacheImplCaffeine;
-import org.apache.jena.sparql.service.enhancer.claimingcache.PredicateContains;
+import org.apache.jena.sparql.service.enhancer.claimingcache.PredicateRangeSet;
 import org.apache.jena.sparql.service.enhancer.claimingcache.PredicateTrue;
 import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
 import org.apache.jena.sparql.service.enhancer.concurrent.AutoLock;
@@ -70,19 +69,31 @@ public class SliceInMemoryCache<A>
         return new SliceInMemoryCache<>(arrayOps, pageSize, cacheBuilder);
     }
 
+    // FIXME This looks wrong: Eviction must consider eviction guards.
+    /**
+     * This method is called after eviction guard checks.
+     * Locking the slice first registers an eviction guard before actually locking the slice.
+     */
     protected void evictPage(long pageId) {
         long pageOffset = getPageOffsetForPageId(pageId);
         int pageSize = metaData.getPageSize();
 
         Range<Long> pageRange = Range.closedOpen(pageOffset, pageOffset + pageSize);
         if (logger.isDebugEnabled()) {
-            logger.debug("Attempting to evict page " + pageId + " with range " + pageRange);
+            logger.debug("Attempting to evict page {} with range {}.", pageId, pageRange);
         }
+
+        // This method is only called for items not protected by eviction guards.
+        // Eviction can happen concurrently so we must lock the slice.
+        // FIXME What if the slice is locked for reading, the eviction happens but gets blocked, and the reader
+        //       want to access the same page that is being evicted? Since eviction is blocked this is a dead lock.
+        // Perhaps we need to move the rwl to the cache itself?
         try (AutoLock autoLock = AutoLock.lock(readWriteLock.writeLock())) {
             metaData.getLoadedRanges().remove(pageRange);
         }
+
         if (logger.isDebugEnabled()) {
-            logger.debug("Evicted page " + pageId + " with range " + pageRange);
+            logger.debug("Evicted page {} with range {}.", pageId, pageRange);
         }
     }
 
@@ -105,12 +116,20 @@ public class SliceInMemoryCache<A>
 
             @Override
             public ReadWriteLock getReadWriteLock() {
-                return readWriteLock;
+                // return readWriteLock;
+                return SliceInMemoryCache.this.getReadWriteLock();
+            }
+
+            @Override
+            public String toString() {
+                // return "(BufferView pageId " + pageId + " " + metaData + ")";
+                return "(BufferView pageId " + pageId + ")";
             }
         };
         return result;
     }
 
+    /** LockWrapper that disables eviction before actually acquiring the lock. */
     protected class EvictionGuardedLock
         extends LockWrapper {
 
@@ -127,27 +146,46 @@ public class SliceInMemoryCache<A>
             return delegate;
         }
 
-        protected void customLock() {
+        protected void disableEviction() {
             if (disposable != null) {
                 throw new IllegalStateException("Lock is already held");
             }
             disposable = pageCache.addEvictionGuard(PredicateTrue.get());
         }
 
-        protected void customUnlock() {
+        protected void enableEviction() {
             if (disposable == null) {
                 throw new IllegalStateException("Lock is not held");
             }
             disposable.close();
+            disposable = null;
         }
+
+//        @Override
+//        public void lock() {
+//            super.lock();
+//            customLock();
+//        }
+//
+//        @Override
+//        public void lockInterruptibly() throws InterruptedException {
+//            super.lockInterruptibly();
+//            customLock();
+//        }
+//
+//        @Override
+//        public void unlock() {
+//            customUnlock();
+//            super.unlock();
+//        }
 
         @Override
         public void lock() {
-            customLock();
+            disableEviction();
             try {
                 super.lock();
             } catch (Throwable t) {
-                customUnlock();
+                enableEviction();
                 t.addSuppressed(new RuntimeException());
                 throw t;
             }
@@ -155,11 +193,11 @@ public class SliceInMemoryCache<A>
 
         @Override
         public void lockInterruptibly() throws InterruptedException {
-            customLock();
+            disableEviction();
             try {
                 super.lockInterruptibly();
             } catch (Throwable t) {
-                customUnlock();
+                enableEviction();
                 t.addSuppressed(new RuntimeException());
                 throw t;
             }
@@ -168,9 +206,9 @@ public class SliceInMemoryCache<A>
         @Override
         public void unlock() {
             try {
-                customUnlock();
-            } finally {
                 super.unlock();
+            } finally {
+                enableEviction();
             }
         }
     }
@@ -204,16 +242,17 @@ public class SliceInMemoryCache<A>
     @Override
     public Closeable addEvictionGuard(RangeSet<Long> ranges) {
         long pageSize = getPageSize();
-        Set<Long> pageIds = PageUtils.touchedPageIndices(ranges.asRanges(), pageSize);
+        RangeSet<Long> pageIdRanges = PageUtils.touchedPageIndexRangeSet(ranges.asRanges(), pageSize);
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Added eviction guard over ranges {} affecting {} pages with ids {}.", ranges, pageIds.size(), pageIds);
+            logger.debug("Added eviction guard over page id ranges {}.", pageIdRanges);
         }
 
-        Closeable core = pageCache.addEvictionGuard(new PredicateContains<>(pageIds));
+        PredicateRangeSet<Long> rangeSetMatcher = new PredicateRangeSet<>(pageIdRanges);
+        Closeable core = pageCache.addEvictionGuard(rangeSetMatcher);
         return () -> {
             if (logger.isDebugEnabled()) {
-                logger.debug("Removed eviction guard over ranges {} affecting {} pages ids {}.", ranges, pageIds.size(), pageIds);
+                logger.debug("Added eviction guard over page id ranges {}.", pageIdRanges);
             }
             core.close();
         };
@@ -221,17 +260,17 @@ public class SliceInMemoryCache<A>
 
     @Override
     public void clear() {
-        ReadWriteLock rwl = getReadWriteLock();
-        Lock writeLock = rwl.writeLock();
-        writeLock.lock();
-        try {
+        try (AutoLock lock = AutoLock.lock(getReadWriteLock().writeLock())) {
             pageCache.invalidateAll();
             setMinimumKnownSize(0);
             setMaximumKnownSize(Long.MAX_VALUE);
             getFailedRanges().clear();
             getLoadedRanges().clear();
-        } finally {
-            writeLock.unlock();
         }
+    }
+
+    @Override
+    public String toString() {
+        return "SliceInMemoryCache " + metaData;
     }
 }

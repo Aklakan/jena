@@ -35,6 +35,7 @@ import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
+import org.apache.jena.sparql.service.enhancer.concurrent.AutoLock;
 import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.IteratorUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbstractAbortableIterator;
@@ -237,11 +238,13 @@ public class QueryIterWrapperCache
             currentOffset += arrLen;
             cacheDataAccessor.claimByOffsetRange(start, end);
 
-            cacheDataAccessor.lock();
-            try {
+            Slice<Binding[]> slice = cacheDataAccessor.getSlice();
+
+            // cacheDataAccessor.lock();
+            // Lock the whole slice to update data and metadata both atomically.
+            try (AutoLock sliceWriteLock = AutoLock.lock(slice.getReadWriteLock().writeLock())) {
                 cacheDataAccessor.write(start, arr, 0, arrLen);
 
-                Slice<Binding[]> slice = cacheDataAccessor.getSlice();
                 // If rhs is completely empty (without any data) then only update the slice metadata
 
                 if (isRhsExhausted) {
@@ -293,9 +296,10 @@ public class QueryIterWrapperCache
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
-            } finally {
-                cacheDataAccessor.unlock();
             }
+//            } finally {
+//                cacheDataAccessor.unlock();
+//            }
 
             if (isRhsExhausted) {
                 // Only initialize after unlocking the current cacheDataAccessor

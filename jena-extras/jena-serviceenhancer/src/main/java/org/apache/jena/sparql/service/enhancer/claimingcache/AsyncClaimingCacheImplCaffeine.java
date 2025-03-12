@@ -141,12 +141,16 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
     public Closeable addEvictionGuard(Predicate<? super K> predicate) {
         LinkedListNode<Predicate<? super K>> linkedListNode;
         try (AutoLock lock = AutoLock.lock(evictionGuardLock.writeLock())) {
-            System.err.println("Registered Eviction guard: " + predicate);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Registered Eviction guard: {}. Active guards: {}", predicate, evictionGuards);
+            }
             linkedListNode = evictionGuards.append(predicate);
         }
         return () -> {
             try (AutoLock lock = AutoLock.lock(evictionGuardLock.writeLock())) {
-                System.err.println("Removed Eviction guard: " + predicate);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Removed Eviction guard: {}. Active guards: {}", predicate, evictionGuards);
+                }
                 linkedListNode.unlink();
                 runLevel3Eviction();
             }
@@ -187,12 +191,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                     if (logger.isTraceEnabled()) {
                         logger.trace("Claiming item [{}] from level2.", key);
                     }
-                    CompletableFuture<V> future;
-//                    try {
-                        future = level2.get(key, (kkk, executor) -> level3AwareCacheLoader.apply(kkk));
-//                    } catch (ExecutionException e) {
-//                        throw new RuntimeException("Should not happen", e);
-//                    }
+                    CompletableFuture<V> future = level2.get(key, (kk, executor) -> level3AwareCacheLoader.apply(kk));
 
                     // level2.invalidate(key) triggers level2's removal listener but we are about to add the item to level1
                     // so we don't want to publish a removal event to the outside
@@ -204,7 +203,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                     Ref<CompletableFuture<V>> freshSecondaryRef =
                         RefImpl.create(future, synchronizer, () -> {
 
-                            // This is the unclaim action
+                            // This is the unclaim action.
 
                             RefFuture<V> v = holder.get();
 
@@ -292,7 +291,9 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
             ReentrantReadWriteLock evictionGuardLock = new ReentrantReadWriteLock();
 
             RemovalListener<K, V> level3AwareAtomicRemovalListener = (k, v, c) -> {
-                System.err.println("Removal triggered: " + k + " " + v + " " + c);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Removal triggered: {} {} {}.", k, v, c);
+                }
                 // Check for actual removal - key no longer present in level1.
                 if (!level1.containsKey(k)) {
 
@@ -302,12 +303,12 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                         for (Predicate<? super K> evictionGuard : evictionGuards) {
                             isGuarded = evictionGuard.test(k);
                             if (isGuarded) {
-                                System.err.println("Protecting from eviction: " + k + " - " + level3.size() + " items protected.");
                                 if (logger.isDebugEnabled()) {
                                     logger.debug("Protecting from eviction: {} - {} items protected.", k, level3.size());
                                 }
 
                                 // try (AutoLock writeLock = AutoLock.lock(evictionGuardLock.writeLock())) {
+                                // FIXME level3 is not a concurrent map - either change the map type or synchronize!
                                     level3.put(k, v);
                                 // }
                                 break;

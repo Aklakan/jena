@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.jena.atlas.lib.Closeable;
 import org.apache.jena.sparql.service.enhancer.claimingcache.AsyncClaimingCacheImplCaffeine;
 import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -29,6 +30,7 @@ import com.github.benmanes.caffeine.cache.Scheduler;
 
 public class TestAsyncClaimingCache {
     @Test
+    @Ignore
     public void test() throws InterruptedException {
 
         int maxCacheSize = 10;

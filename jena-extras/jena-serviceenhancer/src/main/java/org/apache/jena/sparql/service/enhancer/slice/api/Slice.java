@@ -27,6 +27,7 @@ import java.util.function.Function;
 
 import org.apache.jena.atlas.lib.Closeable;
 import org.apache.jena.atlas.lib.Sync;
+import org.apache.jena.sparql.service.enhancer.concurrent.AutoLock;
 
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -93,17 +94,12 @@ public interface Slice<T>
         X result;
         ReadWriteLock rwl = this.getReadWriteLock();
         Lock lock = isWrite ? rwl.writeLock() : rwl.readLock();
-        lock.lock();
-        try {
+        try (AutoLock autoLock = AutoLock.lock(lock)) {
             result = fn.apply(this);
-
             if (isWrite) {
                 this.getHasDataCondition().signalAll();
             }
-        } finally {
-            lock.unlock();
         }
-
         return result;
     }
 

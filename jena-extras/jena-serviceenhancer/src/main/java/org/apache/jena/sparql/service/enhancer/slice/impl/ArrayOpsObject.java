@@ -85,4 +85,9 @@ public class ArrayOpsObject<T>
     public int length(Object[] array) {
         return array.length;
     }
+
+    @Override
+    public String toString(T[] array) {
+        return Arrays.toString(array);
+    }
 }
