@@ -516,12 +516,16 @@ public class QueryIterServiceBulkAndCache
             // Binding joinBinding = new BindingProject(joinVarMap.keySet(), inputBinding);
 
             Slice<Binding[]> slice = null;
-            Lock lock = null;
+            Lock sliceReadLock = null;
             RefFuture<ServiceCacheValue> cacheValueRef = null;
 
             if (cache != null) {
 
                 ServiceCacheKey cacheKey = cacheKeyFactory.createCacheKey(inputBinding);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Created cache key: {}", cacheKey);
+                }
+
                 // ServiceCacheKey cacheKey = new ServiceCacheKey(targetService, serviceInfo.getRawQueryOp(), joinBinding, useLoopJoin);
                 // System.out.println("Lookup with cache key " + cacheKey);
 
@@ -537,17 +541,14 @@ public class QueryIterServiceBulkAndCache
                     slice.clear();
                 }
 
-                lock = slice.getReadWriteLock().readLock();
-
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Created cache key: {}", cacheKey);
-                }
+                // Locking for reading prevents any further changes to the slice's metadata, such as loaded ranges.
+                sliceReadLock = slice.getReadWriteLock().readLock();
                 // Log.debug(BatchRequestIterator.class, "Cached ranges: " + slice.getLoadedRanges().toString());
 
                 // FIXME I think locking the slice must immediately add an eviction guard for all data in the slice.
                 //   FIXME Right now its done in a separate step which I think can cause a race condition!!!
                 //   FIXME Also, if we know the cache size here, then we can cleverly stop caching batches that are outside of the max cache size! -so this way, rerunning the same query again will use the cache.
-                lock.lock();
+                sliceReadLock.lock();
             }
 
             RangeSet<Long> loadedRanges;
@@ -663,10 +664,13 @@ public class QueryIterServiceBulkAndCache
 
                         if (isLoaded) {
                             usesCacheRead = true;
+                            // Set up a an accessor for serving the cached data from the slice.
+                            // Make sure to protect the cached data from eviction.
+
                             // Accessor will be closed via channel below
                             SliceAccessor<Binding[]> accessor = slice.newSliceAccessor();
 
-                            // Prevent eviction of the scheduled range
+                            // Prevent eviction of the scheduled range.
                             accessor.addEvictionGuard(Range.closedOpen(lo, hi));
 
                             // Create a channel over the accessor for sequential reading
@@ -721,8 +725,8 @@ public class QueryIterServiceBulkAndCache
                     }
                 }
             } finally {
-                if (lock != null) {
-                    lock.unlock();
+                if (sliceReadLock != null) {
+                    sliceReadLock.unlock();
                 }
             }
 

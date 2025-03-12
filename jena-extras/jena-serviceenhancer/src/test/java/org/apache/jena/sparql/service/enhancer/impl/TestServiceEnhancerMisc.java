@@ -540,22 +540,28 @@ public class TestServiceEnhancerMisc {
     /** Test case where an attempt is made to cache slightly more items than the maximum cache size. */
     @Test
     public void testCacheEvictionCornerCase() {
-        int n = 10;
-        int d = 1;
-        Model model = AbstractTestServiceEnhancerResultSetLimits.createModel(n + d);
+        int numTests = 100;
+        int maxCacheSize = 10;
+        int numExcessItems = 1; // Number of items by which to exceed the maximum cache size.
+        testCacheEvictionCornerCaseWorker(numTests, maxCacheSize, numExcessItems);
+        // IntStream.range(0, 20).boxed().toList().parallelStream().forEach(i -> testCacheEvictionCornerCaseWorker());
+    }
+
+    public void testCacheEvictionCornerCaseWorker(int numTests, int maxCacheSize, int numExcessItems) {
+        Model model = AbstractTestServiceEnhancerResultSetLimits.createModel(maxCacheSize + numExcessItems);
         Dataset ds = DatasetFactory.wrap(model);
         // ServiceEnhancerInit.wrapOptimizer(ds.getContext());
-        ServiceResponseCache cache = new ServiceResponseCache(1, 1, n);
+        ServiceResponseCache cache = new ServiceResponseCache(1, 1, maxCacheSize);
         ServiceResponseCache.set(ds.getContext(), cache);
 
         Table prevTable = null;
-        for (int i = 0; i < 1000000; ++i) {
+        for (int i = 0; i < numTests; ++i) {
             String queryStr = """
                 SELECT * {
                     { SELECT ?dept { ?dept a <urn:Department> } ORDER BY ?dept LIMIT $N }
-                    SERVICE <loop:cache> { SELECT ?dept (COUNT(*) AS ?employees) { ?dept <urn:hasEmployee> ?emp } GROUP BY ?dept }
+                    SERVICE <loop:cache:> { SELECT ?dept (COUNT(*) AS ?employees) { ?dept <urn:hasEmployee> ?emp } GROUP BY ?dept }
                 }
-                """.replace("$N", "" + (n + d));
+                """.replace("$N", "" + (maxCacheSize + numExcessItems));
 
             Table thisTable = QueryExecDataset.newBuilder()
                 .dataset(ds.asDatasetGraph())

@@ -142,7 +142,7 @@ public class RangeBufferImpl<A>
             throw new RuntimeException("Attempt to write beyond buffer capacity");
         }
 
-        // TODO Add debug mode: Check when writing to already known ranges
+        // XXX Add debug mode: Check when writing to already known ranges
         // Range<Long> writeRange = Range.closedOpen(start, end);
 
         backingBuffer.write(offsetInBuffer, arrayWithItemsOfTypeT, arrOffset, arrLength);

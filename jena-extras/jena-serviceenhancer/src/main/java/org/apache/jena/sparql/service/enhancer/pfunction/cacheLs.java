@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -50,6 +49,7 @@ import org.apache.jena.sparql.pfunction.PropFuncArgType;
 import org.apache.jena.sparql.pfunction.PropertyFunctionEval;
 import org.apache.jena.sparql.service.enhancer.assembler.ServiceEnhancerVocab;
 import org.apache.jena.sparql.service.enhancer.claimingcache.RefFuture;
+import org.apache.jena.sparql.service.enhancer.concurrent.AutoLock;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceCacheKey;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceCacheValue;
 import org.apache.jena.sparql.service.enhancer.impl.ServiceResponseCache;
@@ -160,12 +160,8 @@ public class cacheLs
                             if (refFuture != null) {
                                 ServiceCacheValue entry = refFuture.await();
                                 Slice<Binding[]> slice = entry.getSlice();
-                                Lock lock = slice.getReadWriteLock().readLock();
-                                lock.lock();
-                                try {
+                                try (AutoLock lock = AutoLock.lock(slice.getReadWriteLock().readLock())) {
                                     ranges = new ArrayList<>(entry.getSlice().getLoadedRanges().asRanges());
-                                } finally {
-                                    lock.unlock();
                                 }
 
                                 if (ranges.isEmpty()) {
