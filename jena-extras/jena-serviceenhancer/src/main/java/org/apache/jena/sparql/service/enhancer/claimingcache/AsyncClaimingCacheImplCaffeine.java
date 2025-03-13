@@ -142,16 +142,20 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
         LinkedListNode<Predicate<? super K>> linkedListNode;
         try (AutoLock lock = AutoLock.lock(evictionGuardLock.writeLock())) {
             if (logger.isDebugEnabled()) {
-                logger.debug("Registered Eviction guard: {}. Active guards: {}", predicate, evictionGuards);
+                logger.debug("Registering eviction guard: {}. Already active guards: {}.", predicate, evictionGuards);
             }
             linkedListNode = evictionGuards.append(predicate);
         }
         return () -> {
             try (AutoLock lock = AutoLock.lock(evictionGuardLock.writeLock())) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Removed Eviction guard: {}. Active guards: {}", predicate, evictionGuards);
+                if (!linkedListNode.isLinked()) {
+                    throw new IllegalStateException("Eviction guard " + predicate + " has already been removed.");
                 }
+
                 linkedListNode.unlink();
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Removed eviction guard: {}. Now active guards: {}.", predicate, evictionGuards);
+                }
                 runLevel3Eviction();
             }
         };
@@ -170,7 +174,14 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
 
             boolean isGuarded = evictionGuards.stream().anyMatch(p -> p.test(k));
             if (!isGuarded) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Evicting key {} which is no longer protected by remaining guards {}.", k, evictionGuards);
+                }
+
                 atomicRemovalListener.onRemoval(k, v, RemovalCause.COLLECTED);
+
+                // Remove the key from level 3.
+                // This is the only place where entries are removed from level 3
                 it.remove();
             }
         }
@@ -292,7 +303,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
 
             RemovalListener<K, V> level3AwareAtomicRemovalListener = (k, v, c) -> {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Removal triggered: {} {} {}.", k, v, c);
+                    logger.debug("Removal triggered. Key: {}, Value: {}, Cause: {}.", k, v, c);
                 }
                 // Check for actual removal - key no longer present in level1.
                 if (!level1.containsKey(k)) {
@@ -304,7 +315,7 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                             isGuarded = evictionGuard.test(k);
                             if (isGuarded) {
                                 if (logger.isDebugEnabled()) {
-                                    logger.debug("Protecting from eviction: {} - {} items protected.", k, level3.size());
+                                    logger.debug("Protecting this key from eviction: {}. Number of already protected keys: {}.", k, level3.size());
                                 }
 
                                 // try (AutoLock writeLock = AutoLock.lock(evictionGuardLock.writeLock())) {

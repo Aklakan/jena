@@ -274,9 +274,16 @@ public class SliceAccessorImpl<A>
         }
     }
 
-    /** Read a range of data - does not await any new data. Used to read cached ranges. */
     @Override
     public int unsafeRead(A tgt, int tgtOffset, long srcOffset, int length) throws IOException {
+        // M must prevent any changes to the slice metadata while reading!
+        try (AutoLock autoLock = AutoLock.lock(getSlice().getReadWriteLock().readLock())) {
+            return unsafeReadInternal(tgt, tgtOffset, srcOffset, length);
+        }
+    }
+
+    /** Read a range of data - does not await any new data. Used to read cached ranges. */
+    public int unsafeReadInternal(A tgt, int tgtOffset, long srcOffset, int length) throws IOException {
         ensureOpen();
 
         Range<Long> totalReadRange = Range.closedOpen(srcOffset, srcOffset + length);

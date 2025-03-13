@@ -601,7 +601,7 @@ public class QueryIterServiceBulkAndCache
                     //   based on 'currentInputIdBindingsServed'
                 } else {
                     RangeSet<Long> presentRanges = loadedRanges.subRangeSet(requestedRange);
-                    RangeSet<Long> absentRanges = loadedRanges.complement().subRangeSet(requestedRange);
+                    RangeSet<Long> absentRanges = loadedRanges.complement().subRangeSet(requestedRange); // FIXME This is RangeUtils.gaps?!
 
                     presentRanges.asRanges().forEach(r -> allRanges.put(r, true));
                     absentRanges.asRanges().forEach(r -> allRanges.put(r, false));
