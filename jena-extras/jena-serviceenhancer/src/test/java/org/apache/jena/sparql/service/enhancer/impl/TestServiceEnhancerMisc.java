@@ -540,7 +540,9 @@ public class TestServiceEnhancerMisc {
     /** Test case where an attempt is made to cache slightly more items than the maximum cache size. */
     @Test
     public void testCacheEvictionCornerCase() {
-        int numTests = 300000;
+        // Investigation of some some very rare race conditions due to cache thrashing
+        // required around 100K+ tests.
+        int numTests = 100;
         int maxCacheSize = 10;
         int numExcessItems = 1; // Number of items by which to exceed the maximum cache size.
         testCacheEvictionCornerCaseWorker(numTests, maxCacheSize, numExcessItems);
@@ -550,23 +552,22 @@ public class TestServiceEnhancerMisc {
     public void testCacheEvictionCornerCaseWorker(int numTests, int maxCacheSize, int numExcessItems) {
         Model model = AbstractTestServiceEnhancerResultSetLimits.createModel(maxCacheSize + numExcessItems);
         Dataset ds = DatasetFactory.wrap(model);
-        // ServiceEnhancerInit.wrapOptimizer(ds.getContext());
         ServiceResponseCache cache = new ServiceResponseCache(1, 1, maxCacheSize);
-        // ServiceResponseCache cache = new ServiceResponseCache(100, 100, 100);
         ServiceResponseCache.set(ds.getContext(), cache);
 
-        Table prevTable = null;
-        for (int i = 0; i < numTests; ++i) {
-            String queryStr = """
+        String queryStr = """
                 SELECT * {
                     { SELECT ?dept { ?dept a <urn:Department> } ORDER BY ?dept LIMIT $N }
                     SERVICE <loop:cache:> { SELECT ?dept (COUNT(*) AS ?employees) { ?dept <urn:hasEmployee> ?emp } GROUP BY ?dept }
                 }
                 """.replace("$N", "" + (maxCacheSize + numExcessItems));
+        Query query = QueryFactory.create(queryStr);
 
+        Table prevTable = null;
+        for (int i = 0; i < numTests; ++i) {
             Table thisTable = QueryExecDataset.newBuilder()
                 .dataset(ds.asDatasetGraph())
-                .query(queryStr)
+                .query(query)
                 .table();
 
             if (prevTable != null) {
