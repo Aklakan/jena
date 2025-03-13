@@ -27,7 +27,6 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 
-
 public class RangeBufferImpl<A>
     implements RangeBuffer<A>
 {
@@ -115,12 +114,14 @@ public class RangeBufferImpl<A>
     @Override
     public int readInto(A tgt, int tgtOffset, long srcOffset, int length) throws IOException {
 
+        // FIXME Must ensure the ranges are locked while we read!
+
         long start = srcOffset + offsetInRanges;
         long end = start + length;
         Range<Long> totalReadRange = Range.closedOpen(start, end);
 
         if (!ranges.encloses(totalReadRange)) {
-            RangeSet<Long> gaps = ranges.complement().subRangeSet(totalReadRange);
+            RangeSet<Long> gaps = RangeUtils.gaps(totalReadRange,ranges);
             throw new ReadOverGapException("Attempt to read over gaps. Gaps: " + gaps + ", Requested range: " + totalReadRange + ", Available ranges: " + ranges);
         }
 

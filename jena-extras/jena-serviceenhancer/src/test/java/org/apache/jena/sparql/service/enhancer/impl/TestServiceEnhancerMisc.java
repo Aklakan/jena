@@ -540,7 +540,7 @@ public class TestServiceEnhancerMisc {
     /** Test case where an attempt is made to cache slightly more items than the maximum cache size. */
     @Test
     public void testCacheEvictionCornerCase() {
-        int numTests = 100;
+        int numTests = 300000;
         int maxCacheSize = 10;
         int numExcessItems = 1; // Number of items by which to exceed the maximum cache size.
         testCacheEvictionCornerCaseWorker(numTests, maxCacheSize, numExcessItems);
@@ -552,6 +552,7 @@ public class TestServiceEnhancerMisc {
         Dataset ds = DatasetFactory.wrap(model);
         // ServiceEnhancerInit.wrapOptimizer(ds.getContext());
         ServiceResponseCache cache = new ServiceResponseCache(1, 1, maxCacheSize);
+        // ServiceResponseCache cache = new ServiceResponseCache(100, 100, 100);
         ServiceResponseCache.set(ds.getContext(), cache);
 
         Table prevTable = null;
