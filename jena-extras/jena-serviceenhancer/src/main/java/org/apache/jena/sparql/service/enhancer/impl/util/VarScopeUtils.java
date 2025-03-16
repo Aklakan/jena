@@ -147,7 +147,7 @@ public class VarScopeUtils {
     }
 
     /**
-     * Similar to {@link #normalizeVarScopes(Collection)}, however reduces the scope levels of all variables
+     * Similar to {@link #normalizeVarScopes(Collection, Set)}, however reduces the scope levels of all variables
      * by the globally minimum scope level.
      * In other words, if the minimum scope level among all given variables is 'n' then the returned mapping
      * reduces every scope level by 'n'.

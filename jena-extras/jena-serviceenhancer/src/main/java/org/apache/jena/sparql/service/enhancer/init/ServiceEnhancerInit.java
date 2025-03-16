@@ -100,10 +100,11 @@ public class ServiceEnhancerInit
         MappingRegistry.addPrefixMapping("se", ServiceEnhancerVocab.getURI());
     }
 
-    /** Initialize the SERVICE <collect:> { }. This collects all bindings of the graph pattern into a list and serves them
-     * from the list. */
-    // TODO Finish doc: Needed for SERVICE <concurrent:> { }
-    // FIXME Go with SERVICE <collect:> or SERVICE <defer:> ?!
+    /**
+     * Initialize the SERVICE &lt;collect:&gt; { }.
+     * This collects all bindings of the graph pattern into a list and serves them
+     * from the list.
+     */
     public static void initFeatureCollect() {
         String collectOptName = "collect";
         ServiceExecutorRegistry.get().addBulkLink((opService, input, execCxt, chain) -> {
@@ -177,17 +178,10 @@ public class ServiceEnhancerInit
             QueryIterator r;
             ServiceOpts so = ServiceOptsSE.getEffectiveService(opExec);
             OpService target = so.getTargetService();
-            DatasetGraph dataset = execCxt.getDataset();
 
             // It seems that we always need to run the optimizer here
             // in order to have property functions recognized properly
             if (ServiceEnhancerConstants.SELF_BULK.equals(target.getService())) {
-//                List<Binding> tmp = new ArrayList<>();
-//                input.forEachRemaining(tmp::add);
-//                input = QueryIterPlainWrapper.create(tmp.iterator(), execCxt);
-//                System.out.println(tmp);
-//                RDFDataMgr.write(System.out, execCxt.getDataset(), RDFFormat.TRIG);
-
                 String optimizerMode = so.getFirstValue(ServiceOptsSE.SO_OPTIMIZE, "on", "on");
                 Op op = opExec.getSubOp();
 

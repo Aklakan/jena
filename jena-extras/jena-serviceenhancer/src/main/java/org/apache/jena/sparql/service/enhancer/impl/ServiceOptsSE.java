@@ -34,7 +34,10 @@ public class ServiceOptsSE {
 
     public static final String SO_LOOP = "loop";
 
-    /** Modifies loop to substitute only in-scope variables on the rhs. Original behavior is to substitute variables regardless of scope. Usage: SERVICE <loop+scoped> {}. */
+    /**
+     * Modifies loop to substitute only in-scope variables on the rhs.
+     * Original behavior is to substitute variables regardless of scope. Usage: SERVICE &gt;loop+scoped&lt; {}.
+     */
     public static final String SO_LOOP_MODE_SCOPED = "scoped";
 
     // public static final String SO_CONCURRENT = "concurrent";

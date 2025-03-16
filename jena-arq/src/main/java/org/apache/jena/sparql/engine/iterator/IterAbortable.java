@@ -20,7 +20,6 @@ package org.apache.jena.sparql.engine.iterator;
 
 import java.util.Iterator;
 
-import org.apache.jena.atlas.iterator.IteratorCloseable;
 import org.apache.jena.atlas.iterator.IteratorWrapper;
 import org.apache.jena.query.QueryCancelledException;
 
@@ -30,7 +29,7 @@ import org.apache.jena.query.QueryCancelledException;
  * including from another thread, and causes the iterator to throw an exception
  * when next touched (hasNext, next).
  */
-public class IterAbortable<T> extends IteratorWrapper<T> implements Abortable, IteratorCloseable<T> {
+public class IterAbortable<T> extends IteratorWrapper<T> implements Abortable {
     private volatile boolean abortFlag = false;
     private boolean haveAborted = false;
 

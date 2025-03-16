@@ -161,13 +161,11 @@ public class ChainingServiceExecutorBulkServiceEnhancer
 
         if (applySpecialProcessing) {
             ChainingServiceExecutorBulkCache exec = new ChainingServiceExecutorBulkCache(bulkSize, finalCacheMode, concurrentSlots, readaheadOfBindingsPerSlot);
-            ServiceExecutorBulk restartChain = (o, ii, e) -> ServiceExec.exec(ii, o, e);
-            // result = exec.createExecution(newOp, input, execCxt, chain);
-            result = exec.createExecution(newOp, input, execCxt, restartChain);
+            result = exec.createExecution(newOp, input, execCxt, ServiceExec::exec);
         } else if (useLoop) {
             // We don't need special bulk/cache processing, but we removed loop from the serviceIRI
             // So restart the chain
-            result = ServiceExec.exec(input, newOp, execCxt);
+            result = ServiceExec.exec(newOp, input, execCxt);
         } else {
             result = chain.createExecution(newOp, input, execCxt);
         }
