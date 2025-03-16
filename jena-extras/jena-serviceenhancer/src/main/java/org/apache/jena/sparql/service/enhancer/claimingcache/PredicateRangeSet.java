@@ -18,6 +18,7 @@
 
 package org.apache.jena.sparql.service.enhancer.claimingcache;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -25,9 +26,11 @@ import com.google.common.collect.RangeSet;
 
 /** Predicate to match by a range set. */
 public class PredicateRangeSet<T extends Comparable<T>>
-    implements Predicate<T>
+    implements Predicate<T>, Serializable
 {
-    private RangeSet<T> rangeSet;
+    private static final long serialVersionUID = 1L;
+
+    private final RangeSet<T> rangeSet;
 
     public PredicateRangeSet(RangeSet<T> rangeSet) {
         super();
@@ -43,5 +46,22 @@ public class PredicateRangeSet<T extends Comparable<T>>
     @Override
     public String toString() {
         return rangeSet.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(rangeSet);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        PredicateRangeSet<?> other = (PredicateRangeSet<?>) obj;
+        return Objects.equals(rangeSet, other.rangeSet);
     }
 }

@@ -25,13 +25,12 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.stream.Stream;
 
-import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.atlas.iterator.IteratorCloseable;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterators;
-
-import com.google.common.collect.Streams;
 import org.junit.Assert;
 import org.junit.Test;
+
+import com.google.common.collect.Streams;
 
 public class TestServiceEnhancerBatcher {
 
