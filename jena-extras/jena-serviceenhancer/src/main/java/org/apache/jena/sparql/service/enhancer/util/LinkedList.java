@@ -23,17 +23,14 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * A doubly linked list to keep track of idle executors in the ExecutorServicePool.
- * Each executor keeps a reference to a single node of this list.
+ * A doubly linked list for keeping track of a sequence of items,
+ * with O(1) insertion and deletion (using {@link LinkedListNode#unlink()}).
  *
- * If the executor becomes busy then it unlinks itself from the list.
- * If the executor becomes idle then it appends itself to the end of this list with its idle timestamp.
+ * Use {@link #append(Object)} to add an item at the end of the list and obtain a corresponding {@link LinkedListNode} instance.
+ * Use {@link LinkedListNode#unlink()} to remove a specific node from the list
+ * and {@link LinkedListNode#moveToEnd()} to (re-)link a node as the last item of the list.
  *
- * Consequently, the executors that have been idle longest are at the beginning of the list.
- * The cleanup task only has to release the idle executors at the beginning of the list.
- * The cleanup task can stop when encountering an executor whose idle time is too recent.
- *
- * This is not a fully fledged linked list implementation, e.g. it does not implement Collection.
+ * The list is not thread-safe.
  */
 public class LinkedList<T>
     extends AbstractCollection<T>
@@ -63,9 +60,17 @@ public class LinkedList<T>
         public LinkedList<T> getList() {
             return list;
         }
+        /**
+         * A node is linked if either:
+         * <ul>
+         *   <li>prev or next are non-null</li>
+         *   <li>the node is referenced by list.first</li>
+         * </ul>
+         *
+         * Conversely, a node is unlinked if prev and next are both null, and
+         * this node is not referenced by list.first.
+         */
         public boolean isLinked() {
-            // A node is linked if either (a) prev or next are non-null - or (b) the node is referenced by first.
-            // A node is unlinked if prev and next are both null, and this node is not referenced by list.first.
             return prev != null || next != null || list.first == this;
         }
         public void unlink() {
@@ -90,6 +95,13 @@ public class LinkedList<T>
     /** Create a new unlinked node. The node can only be inserted into this list. */
     public LinkedListNode<T> newNode() {
         return new LinkedListNode<>(this);
+    }
+
+    /** Use {@link #append(Object)} to add a value and obtain its linked list node. */
+    @Override
+    public boolean add(T value) {
+        append(value);
+        return true;
     }
 
     public LinkedListNode<T> append(T value) {
