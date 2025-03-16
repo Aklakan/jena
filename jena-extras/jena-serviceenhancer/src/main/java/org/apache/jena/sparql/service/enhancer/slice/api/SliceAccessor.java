@@ -63,7 +63,6 @@ public interface SliceAccessor<A>
      * Pages outside of that range will be immediately be released.
      *
      * This method prepares the pages which can be subsequently locked.
-     * Calling this method while the page range is locked ({@link #lock()}) raises an {@link IllegalStateException}.
      *
      * @param startOffset
      * @param endOffset

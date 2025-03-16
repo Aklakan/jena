@@ -37,7 +37,6 @@ import org.apache.jena.query.SortCondition;
 import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.algebra.OpAsQuery;
 import org.apache.jena.sparql.algebra.OpLib;
-import org.apache.jena.sparql.algebra.Transformer;
 import org.apache.jena.sparql.algebra.op.OpExtend;
 import org.apache.jena.sparql.algebra.op.OpOrder;
 import org.apache.jena.sparql.algebra.op.OpSlice;
@@ -49,7 +48,6 @@ import org.apache.jena.sparql.engine.main.QC;
 import org.apache.jena.sparql.expr.ExprVar;
 import org.apache.jena.sparql.expr.NodeValue;
 import org.apache.jena.sparql.graph.NodeTransformLib;
-import org.apache.jena.sparql.service.enhancer.algebra.TransformAssignToExtend;
 import org.apache.jena.sparql.service.enhancer.impl.util.AssertionUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.BindingUtils;
 import org.slf4j.Logger;
@@ -72,11 +70,13 @@ import org.slf4j.LoggerFactory;
 public class BatchQueryRewriter {
 
     public enum SubstitutionStrategy {
-        /** Legacy approach (before LATERAL was introduced) based on {@link QC#substitute(Op, Binding)}. */
+        /** Approach using {@link QC#substitute(Op, Binding)}. */
         SUBSTITUTE,
 
-        /** Modern approach using {@link Substitute#substitute(Op, Binding). */
-        @Deprecated // Seems to cause more troubles than its worth
+        /**
+         * Experimental approach using {@link Substitute#inject(Op, Binding)}.
+         * Seems less reliable than SUBSTITUTE.
+         */
         INJECT
     }
 
