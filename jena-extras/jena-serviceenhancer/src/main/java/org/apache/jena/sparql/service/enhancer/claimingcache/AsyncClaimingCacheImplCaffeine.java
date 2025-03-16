@@ -325,11 +325,11 @@ public class AsyncClaimingCacheImplCaffeine<K, V>
                                 break;
                             }
                         }
-                    }
 
-                    if (!isGuarded) {
-                        if (atomicRemovalListener != null) {
-                            atomicRemovalListener.onRemoval(k, v, c);
+                        if (!isGuarded) {
+                            if (atomicRemovalListener != null) {
+                                atomicRemovalListener.onRemoval(k, v, c);
+                            }
                         }
                     }
                 }

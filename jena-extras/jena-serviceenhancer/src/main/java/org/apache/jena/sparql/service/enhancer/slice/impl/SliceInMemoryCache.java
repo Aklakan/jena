@@ -83,14 +83,10 @@ public class SliceInMemoryCache<A>
             logger.debug("Attempting to evict page {} with range {}.", pageId, pageRange);
         }
 
-        // This method is only called for items not protected by eviction guards.
-        // Eviction can happen concurrently so we must lock the slice.
-        // FIXME What if the slice is locked for reading, the eviction happens but gets blocked, and the reader
-        //       want to access the same page that is being evicted? Since eviction is blocked this is a dead lock.
-        // Perhaps we need to move the rwl to the cache itself?
-        try (AutoLock autoLock = AutoLock.lock(readWriteLock.writeLock())) {
-            metaData.getLoadedRanges().remove(pageRange);
-        }
+        // The public locking mechanism registers an eviction guard before acquisition of the internal lock
+        // So eviction cannot happen if the slice is locked
+
+        metaData.getLoadedRanges().remove(pageRange);
 
         if (logger.isDebugEnabled()) {
             logger.debug("Evicted page {} with range {}.", pageId, pageRange);

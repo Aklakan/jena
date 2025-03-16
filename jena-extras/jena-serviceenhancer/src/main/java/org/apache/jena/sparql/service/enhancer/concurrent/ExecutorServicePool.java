@@ -49,10 +49,10 @@ public class ExecutorServicePool {
     private class ExecutorServiceWithKey
         extends ForwardingExecutorService
     {
-        private final LinkedListNode<Action> node;
+        private final LinkedListNode<ExecutorState> node;
         private ExecutorService delegate;
 
-        public ExecutorServiceWithKey(ExecutorService delegate, LinkedListNode<Action> node) {
+        public ExecutorServiceWithKey(ExecutorService delegate, LinkedListNode<ExecutorState> node) {
             super();
             this.delegate = delegate;
             this.node = node;
@@ -64,7 +64,7 @@ public class ExecutorServicePool {
             return delegate;
         }
 
-        public LinkedListNode<Action> getNode() {
+        public LinkedListNode<ExecutorState> getNode() {
             return node;
         }
     }
@@ -134,7 +134,7 @@ public class ExecutorServicePool {
         }
     }
 
-    private class Action {
+    private class ExecutorState {
         int executorId;
         ExecutorServiceWithKey executorService;
 
@@ -142,7 +142,18 @@ public class ExecutorServicePool {
         long idleTimestamp;
     }
 
-    private LinkedList<Action> actions = new LinkedList<>();
+    /**
+     * A doubly linked list to keep track of idle executors in the ExecutorServicePool.
+     * Each executor keeps a reference to a single node of this list.
+     *
+     * If the executor becomes busy then it unlinks itself from the list.
+     * If the executor becomes idle then it appends itself to the end of this list with its idle timestamp.
+     *
+     * Consequently, the executors that have been idle longest are at the beginning of the list.
+     * The cleanup task only has to release the idle executors at the beginning of the list.
+     * The cleanup task can stop when encountering an executor whose idle time is too recent.
+     */
+    private LinkedList<ExecutorState> actions = new LinkedList<>();
 
     public ExecutorServicePool() {
         this(0, 0);
@@ -167,7 +178,7 @@ public class ExecutorServicePool {
         // Attempt to get an executor from the idle list
         ExecutorServiceWithKey backend = null;
         synchronized (actions) {
-            LinkedListNode<Action> node;
+            LinkedListNode<ExecutorState> node;
             node = actions.getFirst();
             if (node != null) {
                 // Synchronized unlinking of the node prevents accidental concurrent cleanup
@@ -192,9 +203,9 @@ public class ExecutorServicePool {
 
     protected ExecutorServiceWithKey newBackend(int executorId) {
         ExecutorService core = createSingleThreadExecutor(executorId);
-        LinkedListNode<Action> node = actions.newNode();
+        LinkedListNode<ExecutorState> node = actions.newNode();
         ExecutorServiceWithKey result = new ExecutorServiceWithKey(core, node);
-        Action action = new Action();
+        ExecutorState action = new ExecutorState();
         action.executorId = executorId;
         action.executorService = result;
         node.setValue(action);
@@ -221,7 +232,7 @@ public class ExecutorServicePool {
     }
 
     private void giveBack(ExecutorServiceWithKey executor) {
-        LinkedListNode<Action> node = executor.getNode();
+        LinkedListNode<ExecutorState> node = executor.getNode();
         node.getValue().idleTimestamp = System.currentTimeMillis();
         // Note: Even if there are more than maxIdleExecutors executors right now then
         // we still only clean them up after the idle delay.
@@ -231,7 +242,7 @@ public class ExecutorServicePool {
 
     /** Releases the executor (allows custom behavior if needed). Called from the cleanupTask. */
     private void releaseExecutor(ExecutorServiceWithKey executor, boolean updateExecutorMap) {
-        LinkedListNode<Action> node = executor.getNode();
+        LinkedListNode<ExecutorState> node = executor.getNode();
         int executorId = node.getValue().executorId;
         node.unlink();
         if (updateExecutorMap) {
@@ -266,12 +277,12 @@ public class ExecutorServicePool {
                 logger.debug("Cleanup of idle service executors starting.");
             }
             int cleanupCount = 0;
-            LinkedListNode<Action> node = actions.getFirst();
+            LinkedListNode<ExecutorState> node = actions.getFirst();
             long delta = -1;
             if (node != null) {
                 long currentTime = System.currentTimeMillis();
                 while(node != null) {
-                    Action action = node.getValue();
+                    ExecutorState action = node.getValue();
                     long timestamp = action.idleTimestamp;
                     delta = currentTime - timestamp;
                     if (delta >= idleTimeout || actions.size() > maxIdleExecutors) {
