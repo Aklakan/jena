@@ -49,9 +49,6 @@ import com.google.common.math.LongMath;
 
 public class QueryIterWrapperCache
     extends AbstractAbortableIterator<Binding>
-    // extends QueryIter1
-    // extends QueryIterSlottedBase
-    // AbortableIterator1<>
 {
     protected AbstractIterator<Cell<Integer, Integer, Iterator<Binding>>> mergeLeftJoin;
 
@@ -102,6 +99,14 @@ public class QueryIterWrapperCache
         this.idxVar = idxVar;
         this.serviceNode = serviceNode;
         this.currentBatchIt = null;
+
+
+        // ArrayList<Integer> debug = new ArrayList<>(inputBatch.getItems().keySet());
+        // if (debug.size() == 1 && debug.get(0) == 0) {
+        //     System.err.println("debug point " + debug);
+        // }
+
+        // XXX Push abort down to the iterators of the join? Presently, abort is handled on this QueryIter.
         /*
         mergeLeftJoin = IteratorUtils.partialLeftMergeJoin(
                 AbortableIterators.concat(
@@ -159,7 +164,7 @@ public class QueryIterWrapperCache
             if (!BatchQueryRewriter.isRemoteEndMarker(outputId)) {
 
                 inputPart = inputs.get(outputId);
-                Binding inputBinding = inputPart.getPartitionKey();
+                Binding inputBinding = inputPart.partitionKey();
                 // System.out.println("Moving to inputBinding " + inputBinding);
 
                 ServiceCacheKey cacheKey = cacheKeyFactory.createCacheKey(inputBinding);
@@ -219,10 +224,11 @@ public class QueryIterWrapperCache
                     Binding rawOutputBinding = rhs.next();
                     clientBatch.add(rawOutputBinding);
 
-                    // Cut away the idx value for the binding in the cache
+                    // Cut away the idx value for the binding in the cache.
                     Binding outputBinding = BindingUtils.project(rawOutputBinding, rawOutputBinding.vars(), idxVar);
                     arr[arrLen++] = outputBinding;
                 }
+                // Update the following stats only once after the loop.
                 remainingBatchCapacity -= arrLen;
                 processedBindingCount += arrLen;
             }
@@ -230,8 +236,8 @@ public class QueryIterWrapperCache
             boolean isRhsExhausted = rhs == null || !rhs.hasNext();
 
             // Submit batch so far
-            long inputOffset = inputPart.getOffset();
-            long inputLimit = inputPart.getLimit();
+            long inputOffset = inputPart.offset();
+            long inputLimit = inputPart.limit();
             long start = inputOffset + currentOffset;
             long end = start + arrLen;
 
@@ -277,20 +283,20 @@ public class QueryIterWrapperCache
                     if (isKeyCompleted) {
                         if (isEndKnown) {
                             if (currentOffset > 0) {
-                                slice.mutateMetaData(metaData -> metaData.setKnownSize(end));
+                                slice.setKnownSize(end);
                             } else {
                                 // If we saw no binding we don't know at which point the data actually ended
                                 // but the start(=end) point is an upper limit
                                 // Note: Setting the maximum size to zero will make it a known size of 0
-                                slice.mutateMetaData(metaData -> metaData.setMaximumKnownSize(end));
+                                slice.setMaximumKnownSize(end);
                             }
                         } else {
                             // Data retrieval ended at a limit (e.g. we retrieved 10/10 items)
                             // We don't know whether there is more data - but it gives a lower bound
-                            slice.mutateMetaData(metaData -> metaData.setMinimumKnownSize(end));
+                            slice.updateMinimumKnownSize(end);
                         }
                     } else {
-                        slice.mutateMetaData(metaData -> metaData.setMinimumKnownSize(end));
+                        slice.updateMinimumKnownSize(end);
                     }
                     currentOffset = 0;
                 }

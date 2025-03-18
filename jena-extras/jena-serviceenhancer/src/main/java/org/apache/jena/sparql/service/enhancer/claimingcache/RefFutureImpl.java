@@ -103,4 +103,21 @@ public class RefFutureImpl<T>
             logger.warn("Exception raised during close", e);
         }
     }
+
+    @Override
+    public String toString() {
+        CompletableFuture<T> future = this.get();
+        String status;
+        if (future.isDone()) {
+            try {
+                T value = future.get();
+                status = "" + value;
+            } catch (InterruptedException | ExecutionException e) {
+                status = "failed: " + e;
+            }
+        } else {
+            status = "pending...";
+        }
+        return "RefFuture [" + status + "]";
+    }
 }

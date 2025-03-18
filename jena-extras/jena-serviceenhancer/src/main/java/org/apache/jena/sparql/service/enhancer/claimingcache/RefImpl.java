@@ -164,15 +164,16 @@ public class RefImpl<T>
                 throw new RuntimeException(msg);
             }
 
-            // A bit of ugliness to allow the reference to release itself
+            // A bit of ugliness to allow the reference to release itself.
             Holder<Ref<T>> tmp = Holder.of(null);
-            tmp.set(new RefImpl<>(this, value, synchronizer, () -> release(tmp.get()), comment));
+            tmp.set(new RefImpl<>(this, value, synchronizer, () -> {
+                Ref<T> ref = tmp.get();
+                release(ref);
+            }, comment));
 
             result.set(tmp.get());
             childRefs.put(result.get(), comment);
             ++activeChildRefs;
-            //activeChildRefs.incrementAndGet();
-            // return result;
         };
 
         synchronizer.accept(action);

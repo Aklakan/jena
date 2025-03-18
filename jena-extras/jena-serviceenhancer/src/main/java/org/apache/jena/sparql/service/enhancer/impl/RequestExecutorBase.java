@@ -365,7 +365,8 @@ public abstract class RequestExecutorBase<G, I, O>
         this.granularity = Objects.requireNonNull(granularity);
         this.batchIterator = Objects.requireNonNull(batchIterator);
 
-        // Set up a dummy task with an empty iterator as the active one and ensure it is properly closed
+        // Set up a dummy task with an empty iterator as the active one
+        // (currentInputId set to -1) and ensure it gets properly closed.
         activeTaskEntry = TaskEntry.empty(currentInputId);
         inputToOutputIt.put(currentInputId, activeTaskEntry);
 
@@ -382,11 +383,10 @@ public abstract class RequestExecutorBase<G, I, O>
 
         // Peek the next binding on the active iterator and verify that it maps to the current
         // partition key
-        // while (!isCancelled()) {
-        while (true) {
+        while (true) { // Note: Cancellation handled by activeIter
             if (activeIter.hasNext()) {
                 O peek = activeIter.peek();
-                // The iterator returns null if it was aborted
+                // The iterator returns null if it was aborted.
                 if (peek == null) {
                     break;
                 }
@@ -397,13 +397,12 @@ public abstract class RequestExecutorBase<G, I, O>
                     case BATCH -> activeTaskEntry.task().getBatchId();
                 };
 
-                // long peekOutputId = BindingUtils.getNumber(peek, globalIdxVar).longValue();
-
                 boolean inputIdMatches = peekOutputId == currentInputId;
                 if (inputIdMatches) {
-                    // parentBinding = inputToBinding.get(currentInputId);
                     result = activeIter.next();
                     break;
+                } else {
+                    // System.err.println("No match");
                 }
             }
 
@@ -417,15 +416,19 @@ public abstract class RequestExecutorBase<G, I, O>
             }
 
             // Move to the next inputId
-            ++currentInputId;
+            ++currentInputId; // TODO peekOutputId may not have matched currentInputId
 
-            // Check if we need to load any further batches
-            prepareNextBatchExecs();
-
-            // If there is still no further batch then we assume we reached the end
             activeTaskEntry = inputToOutputIt.get(currentInputId);
             if (activeTaskEntry == null) {
-                break;
+                // Check if we need to load any further batches
+                prepareNextBatchExecs();
+
+                activeTaskEntry = inputToOutputIt.get(currentInputId);
+
+                // If there is still no further batch then we assume we reached the end
+                if (activeTaskEntry == null) {
+                    break;
+                }
             }
 
             activeIter = activeTaskEntry.stopAndGet();
