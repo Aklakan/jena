@@ -349,34 +349,36 @@ public class QueryIterServiceBulkAndCache
 
             if (activeIt != null) {
                 if (activeIt.hasNext()) {
+                    // Peek the next binding from the active iterator.
                     Binding peek = activeIt.peek();
                     int peekOutputId = BindingUtils.getNumber(peek, idxVar).intValue();
                     if (BatchQueryRewriter.isRemoteEndMarker(peekOutputId)) {
-                        // Attempt to move to the next range
-                        ++currentRangeId;
-                        continue;
-                    }
+                        // If that binding was the end marker just fall through - this
+                        // moves the active iterator to the next range or input and
+                        // retries the loop.
+                    } else {
+                        // Process the peeked binding into a result binding.
+                        SliceKey sliceKey = outputToSliceKey.get(peekOutputId);
 
-                    SliceKey sliceKey = outputToSliceKey.get(peekOutputId);
+                        if (sliceKey == null) {
+                            throw new IllegalStateException(
+                                    String.format("An output binding referred to an input id without corresponding input binding. Referenced input id %1$d, Output binding: %2$s", peekOutputId, peek));
+                        }
 
-                    if (sliceKey == null) {
-                        throw new IllegalStateException(
-                                String.format("An output binding referred to an input id without corresponding input binding. Referenced input id %1$d, Output binding: %2$s", peekOutputId, peek));
-                    }
+                        boolean matchesCurrentPartition = sliceKey.getInputId() == currentInputId &&
+                                sliceKey.getRangeId() == currentRangeId;
 
-                    boolean matchesCurrentPartition = sliceKey.getInputId() == currentInputId &&
-                            sliceKey.getRangeId() == currentRangeId;
+                        if (matchesCurrentPartition) {
+                            Binding parentBinding = inputs.get(currentInputId);
+                            Binding childBindingWithIdx = activeIt.next();
 
-                    if (matchesCurrentPartition) {
-                        Binding parentBinding = inputs.get(currentInputId);
-                        Binding childBindingWithIdx = activeIt.next();
-
-                        // Check for compatibility
-                        mergedBindingWithIdx = Algebra.merge(parentBinding, childBindingWithIdx);
-                        if (mergedBindingWithIdx == null) {
-                            continue;
-                        } else {
-                            break;
+                            // Check for compatibility
+                            mergedBindingWithIdx = Algebra.merge(parentBinding, childBindingWithIdx);
+                            if (mergedBindingWithIdx == null) {
+                                continue;
+                            } else {
+                                break;
+                            }
                         }
                     }
                 } else {
@@ -520,19 +522,18 @@ public class QueryIterServiceBulkAndCache
             RefFuture<ServiceCacheValue> cacheValueRef = null;
 
             if (cache != null) {
-
                 ServiceCacheKey cacheKey = cacheKeyFactory.createCacheKey(inputBinding);
                 if (logger.isDebugEnabled()) {
                     logger.debug("Created cache key: {}", cacheKey);
                 }
 
-                // ServiceCacheKey cacheKey = new ServiceCacheKey(targetService, serviceInfo.getRawQueryOp(), joinBinding, useLoopJoin);
-                // System.out.println("Lookup with cache key " + cacheKey);
-
                 // Note: cacheValueRef must be closed as part of the iterators that read from the cache
                 cacheValueRef = cache.getCache().claim(cacheKey);
 
                 ServiceCacheValue serviceCacheValue = cacheValueRef.await();
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Claimed slice for key {} with state {}.", cacheKey, serviceCacheValue);
+                }
 
                 // Lock an existing cache entry so we can read out the loaded ranges
                 slice = serviceCacheValue.getSlice();
@@ -733,8 +734,8 @@ public class QueryIterServiceBulkAndCache
             rangeId = 0;
         }
 
-        // Create *deferred* a remote execution if needed
-        // A limit on the query may cause the deferred execution to never run
+        // Create a *deferred* backend query execution if needed.
+        // A limit on the query may cause the deferred execution to never run.
         if (!backendRequests.isEmpty()) {
             BatchQueryRewriteResult rewrite = batchQueryRewriter.rewrite(backendRequests);
             // System.out.println(rewrite);

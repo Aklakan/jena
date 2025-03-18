@@ -133,7 +133,7 @@ public class BatchQueryRewriter {
 
     public static Set<Var> seenVars(Collection<PartitionRequest<Binding>> batchRequest) {
         Set<Var> result = new LinkedHashSet<>();
-        batchRequest.forEach(br -> BindingUtils.addAll(result, br.getPartitionKey()));
+        batchRequest.forEach(br -> BindingUtils.addAll(result, br.partitionKey()));
         return result;
     }
 
@@ -172,7 +172,7 @@ public class BatchQueryRewriter {
 
             PartitionRequest<Binding> req = e.getValue();
             long idx = e.getKey();
-            Binding scopedBinding = req.getPartitionKey();
+            Binding scopedBinding = req.partitionKey();
 
             Set<Var> scopedBindingVars = BindingUtils.varsMentioned(scopedBinding);
 
@@ -195,8 +195,8 @@ public class BatchQueryRewriter {
             // Relabel any blank nodes
             op = NodeTransformLib.transform(node -> relabelBnode(node, idx), op);
 
-            long o = req.hasOffset() ? req.getOffset() : Query.NOLIMIT;
-            long l = req.hasLimit() ? req.getLimit() : Query.NOLIMIT;
+            long o = req.hasOffset() ? req.offset() : Query.NOLIMIT;
+            long l = req.hasLimit() ? req.limit() : Query.NOLIMIT;
 
             if (o != Query.NOLIMIT || l != Query.NOLIMIT) {
                 op = new OpSlice(op, o, l);

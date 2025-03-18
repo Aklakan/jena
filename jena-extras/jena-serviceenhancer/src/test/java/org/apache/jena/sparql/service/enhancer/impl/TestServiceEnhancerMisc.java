@@ -37,22 +37,30 @@ import org.apache.jena.sparql.algebra.Algebra;
 import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.algebra.OpAsQuery;
 import org.apache.jena.sparql.algebra.Table;
+import org.apache.jena.sparql.algebra.TableFactory;
 import org.apache.jena.sparql.algebra.Transform;
 import org.apache.jena.sparql.algebra.Transformer;
 import org.apache.jena.sparql.algebra.optimize.Optimize;
 import org.apache.jena.sparql.core.Substitute;
 import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
+import org.apache.jena.sparql.exec.QueryExec;
 import org.apache.jena.sparql.exec.QueryExecDataset;
+import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_JoinStrategy;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
+import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerInit;
+import org.apache.jena.sys.JenaSystem;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.StandardSystemProperty;
 
 /** Miscellaneous tests for many aspects of the service enhancer plugin. */
 public class TestServiceEnhancerMisc {
+    private static final Logger logger = LoggerFactory.getLogger(TestServiceEnhancerMisc.class);
 
     @Test
     public void testLargeCache01() {
@@ -565,10 +573,13 @@ public class TestServiceEnhancerMisc {
 
         Table prevTable = null;
         for (int i = 0; i < numTests; ++i) {
-            Table thisTable = QueryExecDataset.newBuilder()
+            Table thisTable;
+            try (QueryExec qe = QueryExecDataset.newBuilder()
                 .dataset(ds.asDatasetGraph())
                 .query(query)
-                .table();
+                .build()) {
+                thisTable = TableFactory.create(qe.select());
+            }
 
             if (prevTable != null) {
                 if (!prevTable.equals(thisTable)) {
@@ -582,6 +593,67 @@ public class TestServiceEnhancerMisc {
             if (i % 10 == 0) {
                 cache.invalidateAll();
             }
+        }
+    }
+
+    @Test
+    public void testCacheEvictionCornerCase2() {
+        // Investigation of some some very rare race conditions due to cache thrashing.
+        // There was a bug in QueryIterBulkAndCache.moveToNext when backend requests were
+        // followed by cached ranges: In that case iterator ended too early not serving the cached data.
+        // Reproduction required around 100K+ iterations.
+        int numTests = 100;
+        int maxCacheSize = 10;
+        int numExcessItems = 1; // Number of items by which to exceed the maximum cache size.
+        testCacheEvictionCornerCaseWorker2(numTests, maxCacheSize, numExcessItems);
+        // IntStream.range(0, 20).boxed().toList().parallelStream().forEach(i -> testCacheEvictionCornerCaseWorker());
+    }
+
+    public void testCacheEvictionCornerCaseWorker2(int numTests, int maxCacheSize, int numExcessItems) {
+        Dataset ds = RDFDataMgr.loadDataset("linkedgeodata.sample.ttl");
+        ServiceResponseCache cache = new ServiceResponseCache(1, 1, maxCacheSize);
+        ServiceResponseCache.set(ds.getContext(), cache);
+
+        String queryStr = """
+                PREFIX owl: <http://www.w3.org/2002/07/owl#>
+                SELECT * {
+                    { SELECT ?t { ?t a owl:Class } LIMIT $N }
+                    SERVICE <loop:cache:bulk+2:> { SELECT ?s ?t { ?s a ?t } LIMIT 2 }
+                }
+                """.replace("$N", "" + (maxCacheSize + numExcessItems));
+        Query query = QueryFactory.create(queryStr);
+
+        Table prevTable = null;
+        for (int i = 0; i < numTests; ++i) {
+            Table thisTable;
+            try (QueryExec qe = QueryExecDataset.newBuilder()
+                .dataset(ds.asDatasetGraph())
+                .query(query)
+                .build()) {
+                ServiceEnhancerInit.wrapOptimizer(qe.getContext());
+
+                RowSet rs = qe.select();
+                thisTable = TableFactory.create(rs);
+            }
+
+            if (logger.isDebugEnabled()) {
+                logger.debug(ResultSetFormatter.asText(ResultSet.adapt(thisTable.toRowSet())));
+            }
+
+            if (prevTable != null) {
+                if (!prevTable.equals(thisTable)) {
+                    if (logger.isErrorEnabled()) {
+                        logger.error("Test failure on iteration #" + i);
+                    }
+                }
+                Assert.assertEquals(prevTable, thisTable);
+            } else {
+                prevTable = thisTable;
+            }
+
+//            if (i % 10 == 0) {
+//                cache.invalidateAll();
+//            }
         }
     }
 }
