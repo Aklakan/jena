@@ -20,7 +20,6 @@ package org.apache.jena.sparql.service.enhancer.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,6 +47,7 @@ import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableItera
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterators;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbstractAbortableIterator;
 
+import com.google.common.collect.DiscreteDomain;
 import com.google.common.io.Closer;
 
 /** A flat map iterator that can read ahead in the input iterator and run flat map operations concurrently. */
@@ -209,7 +209,6 @@ public abstract class RequestExecutorBase<G, I, O>
 
     /** Helper record for tracking running prefetch tasks. */
     static class TaskEntry<T, X extends AbortableIterator<T>> {
-        // protected LifeCycle<PrefetchTaskForBinding> taskLifeCycle;
         protected PrefetchTaskForBatch<T, X> task;
         protected Closeable inThreadCloseAction;
 
@@ -217,7 +216,6 @@ public abstract class RequestExecutorBase<G, I, O>
         protected Closeable outThreadCloseAction;
 
         protected Future<?> future;
-        // protected ExecutionContext execCxt;
 
         protected volatile AbortableIteratorPeek<T> peekIter;
 
@@ -281,7 +279,6 @@ public abstract class RequestExecutorBase<G, I, O>
                             }
                         }
                     };
-                    // tmp = QueryIterPlainWrapper.create(threadIt, execCxt);
                     tmp = AbortableIterators.wrap(threadIt);
                 } else {
                     tmp = AbortableIterators.onClose(tmp, inThreadCloseAction);
@@ -302,8 +299,6 @@ public abstract class RequestExecutorBase<G, I, O>
             Throwable throwable = task.getThrowable();
             if (throwable != null) {
                 peekIter.close();
-                // throwable.addSuppressed(new RuntimeException());
-                // Throwables.throwIfUnchecked(throwable);
                 throw new RuntimeException(throwable);
             }
 
@@ -344,7 +339,6 @@ public abstract class RequestExecutorBase<G, I, O>
 
     /* State for tracking concurrent prefetch ----------------------------- */
 
-    // private ExecutorService executorService = null;
     protected ExecutorServicePool executorServicePool;
 
     private final int maxConcurrentTasks;
@@ -543,26 +537,6 @@ public abstract class RequestExecutorBase<G, I, O>
         return result;
     }
 
-    /** Check whether the values in the given collection are consecutive. */
-    private static boolean isConsecutive(Collection<Long> ids) {
-        boolean result = true;
-        Iterator<Long> it = ids.iterator();
-        if (it.hasNext()) {
-            long start = it.next();
-            long expected = start + 1;
-            while (it.hasNext()) {
-                long actual = it.next();
-                if (actual != expected) {
-                    // throw new RuntimeException("Concurrent processor must receive input ids in consecutive order. Adjust the batching strategy accordingly.");
-                    result = false;
-                    break;
-                }
-                ++expected;
-            }
-        }
-        return result;
-    }
-
     protected void freeResources() {
         // Use closer to free as much as possible in case of failure.
         try (Closer closer = Closer.create()) {
@@ -587,5 +561,24 @@ public abstract class RequestExecutorBase<G, I, O>
     @Override
     protected void requestCancel() {
         batchIterator.cancel();
+    }
+
+    /** Check whether the values in the given collection are consecutive. */
+    public static <T extends Comparable<T>> boolean isConsecutive(Iterator<T> it, DiscreteDomain<T> domain) {
+        boolean result = true;
+        if (it.hasNext()) {
+            T start = it.next();
+            T expected = domain.next(start);
+            while (it.hasNext()) {
+                T actual = it.next();
+                if (!Objects.equals(expected, actual)) {
+                    // XXX Better return a violation report than just a boolean.
+                    result = false;
+                    break;
+                }
+                expected = domain.next(expected);
+            }
+        }
+        return result;
     }
 }

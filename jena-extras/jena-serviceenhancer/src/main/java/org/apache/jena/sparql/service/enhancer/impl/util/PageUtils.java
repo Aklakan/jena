@@ -19,9 +19,6 @@
 package org.apache.jena.sparql.service.enhancer.impl.util;
 
 import java.util.Collection;
-import java.util.NavigableSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import com.google.common.collect.ContiguousSet;

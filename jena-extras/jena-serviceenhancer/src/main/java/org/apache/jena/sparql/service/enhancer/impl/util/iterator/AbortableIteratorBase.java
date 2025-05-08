@@ -58,17 +58,14 @@ public abstract class AbortableIteratorBase<T>
     /** Argument : shared flag for cancellation. */
     protected AbortableIteratorBase(AtomicBoolean cancelSignal) {
         super(true);
-        if ( cancelSignal == null )
-            // Allows for direct cancel (not timeout).
-            cancelSignal = new AtomicBoolean(false);
-        requestingCancel = cancelSignal;
+        requestingCancel = (cancelSignal == null)
+            ? new AtomicBoolean(false) // Allows for direct cancel (not timeout).
+            : cancelSignal;
     }
 
     private boolean requestingCancel() {
         return (requestingCancel != null && requestingCancel.get()) || Thread.interrupted() ;
     }
-
-    private void haveCancelled() {}
 
     // -------- The contract with the subclasses
 
