@@ -68,7 +68,7 @@ public class ChainingServiceExecutorBulkServiceEnhancer
             switch (key) {
             case ServiceOptsSE.SO_LOOP:
                 // Loop (lateral join) is handled on the algebra level
-                // nothing to do here except for suppressing forward to
+                // nothing to do here except for suppressing its forward
                 // to the remainder of the chain
                 useLoop = true;
                 break;

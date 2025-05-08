@@ -663,7 +663,7 @@ public class QueryIterServiceBulkAndCache
                         long hi = range.hasUpperBound() ? range.upperEndpoint() : Long.MAX_VALUE;
                         long lim = hi == Long.MAX_VALUE ? Long.MAX_VALUE : hi - lo;
 
-                        if (isLoaded) {
+                        if (isLoaded) { // Implies (slice != null).
                             usesCacheRead = true;
                             // Set up a an accessor for serving the cached data from the slice.
                             // Make sure to protect the cached data from eviction.

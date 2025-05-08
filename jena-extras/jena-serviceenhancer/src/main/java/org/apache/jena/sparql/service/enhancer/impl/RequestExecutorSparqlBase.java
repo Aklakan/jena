@@ -103,8 +103,9 @@ public abstract class RequestExecutorSparqlBase
                 }
             };
         } else {
-            ExecutionContext isolatedExecCxt = new ExecutionContext(execCxt.getContext(), execCxt.getActiveGraph(), execCxt.getDataset(), execCxt.getExecutor());
-            // ExecutionContext isolatedExecCxt = ExecutionContext.create(execCxt.getDataset(), execCxt);
+            ExecutionContext isolatedExecCxt = ExecutionContext.fromFunctionEnv(execCxt);
+            // TODO Check that fromFunctionEnv is a suitable replacement for the deprecated ctor below:
+            // ExecutionContext isolatedExecCxt = new ExecutionContext(execCxt.getContext(), execCxt.getActiveGraph(), execCxt.getDataset(), execCxt.getExecutor());
             result = new IteratorCreatorWithTxn<>(isolatedExecCxt, TxnType.READ) {
                 @Override
                 public AbortableIterator<Binding> createIterator() {

@@ -165,7 +165,7 @@ public class BatchQueryRewriter {
 
         if (!omitEndMarker) {
             Op endMarker = OpExtend.create(OpLib.unit(), idxVar, NV_REMOTE_END_MARKER);
-            newOp = newOp == null ? endMarker : OpUnion.create(newOp, endMarker);
+            newOp = endMarker;
         }
 
         for (Entry<Integer, PartitionRequest<Binding>> e : es) {

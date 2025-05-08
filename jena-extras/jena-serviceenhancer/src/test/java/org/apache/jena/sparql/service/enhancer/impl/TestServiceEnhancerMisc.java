@@ -50,7 +50,6 @@ import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_JoinStrategy;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerInit;
-import org.apache.jena.sys.JenaSystem;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;

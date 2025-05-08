@@ -33,8 +33,12 @@ import org.apache.jena.sparql.service.enhancer.impl.util.iterator.QueryIterOverA
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerConstants;
 import org.apache.jena.sparql.util.Context;
 
-/** Do not register directly - use {@link ChainingServiceExecutorBulkServiceEnhancer} which gives more control over
- * when to use this in a service executor chain */
+/**
+ * Do not register this class directly in a service executor chain.
+ * Instead, register {@link ChainingServiceExecutorBulkServiceEnhancer} which
+ * internally creates appropriately configured instances of this class
+ * during query execution.
+ */
 public class ChainingServiceExecutorBulkCache
     implements ChainingServiceExecutorBulk {
 
@@ -64,24 +68,21 @@ public class ChainingServiceExecutorBulkCache
     @Override
     public QueryIterator createExecution(OpService original, QueryIterator input, ExecutionContext execCxt, ServiceExecutorBulk chain) {
         Context cxt = execCxt.getContext();
-        // int bulkSize = cxt.getInt(InitServiceEnhancer.serviceBulkMaxBindingCount, DEFAULT_BULK_SIZE);
+
         ServiceResponseCache serviceCache = CacheMode.OFF.equals(cacheMode)
-                ? null
-                : ServiceResponseCache.get(cxt);
+            ? null
+            : ServiceResponseCache.get(cxt);
 
         OpServiceInfo serviceInfo = new OpServiceInfo(original);
 
-        ServiceResultSizeCache resultSizeCache = Optional.ofNullable(cxt.<ServiceResultSizeCache>
-                get(ServiceEnhancerConstants.serviceResultSizeCache))
-                .orElseGet(ServiceResultSizeCache::new);
+        ServiceResultSizeCache resultSizeCache = Optional.ofNullable(cxt.<ServiceResultSizeCache>get(ServiceEnhancerConstants.serviceResultSizeCache))
+            .orElseGet(ServiceResultSizeCache::new);
 
         OpServiceExecutorImpl opExecutor = new OpServiceExecutorImpl(serviceInfo.getOpService(), chain);
 
         int maxOutOfBandItemCount = cxt.getInt(ServiceEnhancerConstants.serviceBulkMaxOutOfBandBindingCount, DFT_MAX_OUT_OUF_BAND_SIZE);
         Batcher<Node, Binding> scheduler = new Batcher<>(serviceInfo::getSubstServiceNode, bulkSize, maxOutOfBandItemCount);
         AbortableIterator<GroupedBatch<Node, Long, Binding>> inputBatchIterator = scheduler.batch(AbortableIterators.adapt(input));
-
-        // int concurrentReadahead = cxt.getInt(ServiceEnhancerConstants.serviceConcurrentMaxReadaheadCount, DFT_CONCURRENT_READAHEAD);
 
         RequestExecutorBulkAndCache exec = new RequestExecutorBulkAndCache(inputBatchIterator, concurrentSlotCount, concurrentSlotReadaheadCount, execCxt, opExecutor, serviceInfo, resultSizeCache, serviceCache, cacheMode);
         return new QueryIterOverAbortableIterator(execCxt, exec);
