@@ -808,5 +808,11 @@ public class QueryExecHTTP implements QueryExec {
     }
 
     @Override
+    public void close() {
+        closed = true;
+        cancelAll();
+    }
+
+    @Override
     public boolean isClosed() { return closed; }
 }

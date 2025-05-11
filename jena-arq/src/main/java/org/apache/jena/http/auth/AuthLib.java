@@ -40,6 +40,11 @@ import org.apache.jena.riot.web.HttpNames;
 import org.apache.jena.web.HttpSC;
 
 public class AuthLib {
+    /** @see #authExecuteAsync */
+    public static <T> HttpResponse<T> authExecute(HttpClient httpClient, HttpRequest httpRequest, BodyHandler<T> bodyHandler) {
+        return AsyncHttpRDF.getOrElseThrow(authExecuteAsync(httpClient, httpRequest, bodyHandler));
+    }
+
     /**
      * Call the {@link HttpClient} after applying an active {@link AuthRequestModifier}
      * to modify the {@link java.net.http.HttpRequest.Builder}.

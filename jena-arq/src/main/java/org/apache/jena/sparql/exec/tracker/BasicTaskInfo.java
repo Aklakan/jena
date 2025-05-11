@@ -59,4 +59,5 @@ public interface BasicTaskInfo {
         TaskState state = getTaskState();
         return TaskState.TERMINATED.equals(state);
     }
+
 }
