@@ -84,20 +84,21 @@ public abstract class RequestExecutorBase<G, I, O>
         protected volatile List<T> buffer;
         protected Iterator<T> currentBatch;
 
-        /** Certain objects such as TDB2 Bindings must be copied in order to detach them from
-         * resources that are free'd when the iterator is closed.
+        /**
+         * A function to detach items from the life-cycle of the iterator.
+         * For example, TDB2 Bindings must be detached from resources that are free'd when the iterator is closed.
          */
-        protected UnaryOperator<T> copyFn;
+        protected UnaryOperator<T> detachFn;
 
-        public IteratorDelegateWithWorkerThread(X delegate, ExecutorService es, UnaryOperator<T> copyFn) {
-            this(delegate, es, copyFn, 1);
+        public IteratorDelegateWithWorkerThread(X delegate, ExecutorService es, UnaryOperator<T> detachFn) {
+            this(delegate, es, detachFn, 1);
         }
 
-        public IteratorDelegateWithWorkerThread(X delegate, ExecutorService es, UnaryOperator<T> copyFn, int batchSize) {
+        public IteratorDelegateWithWorkerThread(X delegate, ExecutorService es, UnaryOperator<T> detachFn, int batchSize) {
             super();
             this.executorServiceSync = new ExecutorServiceWrapperSync(es);
             this.delegate = delegate;
-            this.copyFn = copyFn;
+            this.detachFn = detachFn;
             this.batchSize = batchSize;
 
             this.buffer = new ArrayList<>(batchSize);
@@ -119,7 +120,7 @@ public abstract class RequestExecutorBase<G, I, O>
                     X d = getDelegate();
                     for (int i = 0; i < batchSize && d.hasNext(); ++i) {
                         T rawItem = d.next();
-                        T item = copyFn.apply(rawItem);
+                        T item = detachFn.apply(rawItem);
                         buffer.add(item);
                     }
                 });
@@ -502,7 +503,7 @@ public abstract class RequestExecutorBase<G, I, O>
     protected abstract long extractInputOrdinal(O input);
     protected abstract void checkCanExecInNewThread();
 
-    protected O copy(O item) { return item; }
+    protected O detachItem(O item, boolean isInNewThread) { return item; }
 
     /** Prepare the lazy execution of the next batch and register all iterators with {@link #inputToOutputIt} */
     // seqId = sequential number injected into the request
@@ -521,10 +522,12 @@ public abstract class RequestExecutorBase<G, I, O>
 
         IteratorCreator<O> creator = processBatch(isInNewThread, groupKey, inputs, reverseMap);
 
+        UnaryOperator<O> detachItemFn = x -> detachItem(x, isInNewThread);
+
         InstanceLifeCycle<PrefetchTaskForBatch<O, AbortableIterator<O>>> result = InstanceLifeCycles.of(() -> {
             creator.begin();
             AbortableIterator<O> tmp = creator.createIterator();
-            PrefetchTaskForBatch<O, AbortableIterator<O>> task = new PrefetchTaskForBatch<>(tmp, concurrentSlotReadAheadCount, batchId, reverseMap, this::copy);
+            PrefetchTaskForBatch<O, AbortableIterator<O>> task = new PrefetchTaskForBatch<>(tmp, concurrentSlotReadAheadCount, batchId, reverseMap, detachItemFn);
             return task;
         }, task -> {
             try {

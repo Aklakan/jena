@@ -31,7 +31,6 @@ import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.Transactional;
 import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.binding.Binding;
-import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterator;
 import org.apache.jena.system.TxnOp;
@@ -85,8 +84,9 @@ public abstract class RequestExecutorSparqlBase
     }
 
     @Override
-    protected Binding copy(Binding item) {
-        return BindingFactory.copy(item);
+    protected Binding detachItem(Binding item, boolean isInNewThread) {
+        Binding result = isInNewThread ? item.detach() : item;
+        return result;
     }
 
     /** Factory method for iterators. May be invoked from different threads. */
