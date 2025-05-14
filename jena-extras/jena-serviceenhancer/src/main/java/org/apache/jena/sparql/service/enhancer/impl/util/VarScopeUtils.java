@@ -22,7 +22,9 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.apache.jena.sparql.ARQConstants;
@@ -104,6 +106,22 @@ public class VarScopeUtils {
             if (priorLevel == null || thisLevel < priorLevel) {
                 result.put(plainName, thisLevel);
             }
+        }
+        return result;
+    }
+
+    /**
+     * Map each plain variable name to the set of scope levels (ordered ascending).
+     */
+    public static Map<String, NavigableSet<Integer>> getScopeLevels(Collection<Var> vars) {
+        Map<String, NavigableSet<Integer>> result = new LinkedHashMap<>();
+        for (Var var : vars) {
+            String scopedName = var.getName();
+            String plainName = getPlainName(scopedName);
+            int level = getScopeLevel(scopedName);
+
+            NavigableSet<Integer> levels = result.computeIfAbsent(plainName, key -> new TreeSet<>());
+            levels.add(level);
         }
         return result;
     }
