@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -46,6 +47,8 @@ import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableItera
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIteratorPeek;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterators;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbstractAbortableIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.DiscreteDomain;
 import com.google.common.io.Closer;
@@ -54,6 +57,8 @@ import com.google.common.io.Closer;
 public abstract class RequestExecutorBase<G, I, O>
     extends AbstractAbortableIterator<O>
 {
+    private static final Logger logger = LoggerFactory.getLogger(RequestExecutorBase.class);
+
     /** Whether to order output across all batches by the individual items (ITEM) or whether each batch is processed as one consecutive unit (BATCH). */
     public enum Granularity {
         ITEM,
@@ -321,7 +326,7 @@ public abstract class RequestExecutorBase<G, I, O>
     }
 
     /**  Ensure that at least there are active requests to serve the next n input bindings */
-    protected int fetchAhead = 5;
+    protected int maxFetchAhead = 100; // Fetch ahead is for additional task slots once maxConcurrentTasks have completed.
     protected int maxRequestSize = 2000;
 
     /** If batch granularity is true then output is ordered according to the obtained batches.
@@ -330,9 +335,9 @@ public abstract class RequestExecutorBase<G, I, O>
     protected AbortableIterator<GroupedBatch<G, Long, I>> batchIterator;
     protected long nextBatchId = 0; // Counter of items taken from batchIterator
 
-    // Input iteration
+    // Input iteration.
     protected long currentInputId = -1;
-    protected TaskEntry<O, AbortableIterator<O>> activeTaskEntry = null;
+    protected TaskEntry<O, AbortableIterator<O>> activeTaskEntry = null; // Cached reference for inputToOutputIt.get(currentInputId).
     protected AbortableIteratorPeek<O> activeIter;
 
     /** Tasks ordered by their input id - regardless of whether they are run concurrently or not. */
@@ -345,8 +350,14 @@ public abstract class RequestExecutorBase<G, I, O>
     private final int maxConcurrentTasks;
     private final long concurrentSlotReadAheadCount;
 
-    /** The concurrently running tasks. */
-    private final Map<Long, TaskEntry<O, AbortableIterator<O>>> openConcurrentTaskEntries = new LinkedHashMap<>();
+    /** The concurrently running tasks. Indexed once by the last input id (upon which to close). */
+    private final Map<Long, TaskEntry<O, AbortableIterator<O>>> openConcurrentTaskEntriesRunning = new LinkedHashMap<>();
+
+    /**
+     * Completed tasks are moved from the running map to this one by the driver thread.
+     * This map is not needed for resource management.
+     */
+    private final Map<Long, TaskEntry<O, AbortableIterator<O>>> openConcurrentTaskEntriesCompleted = new LinkedHashMap<>();
 
     /* Actual implementation ---------------------------------------------- */
 
@@ -407,13 +418,16 @@ public abstract class RequestExecutorBase<G, I, O>
             if (isClosePoint) {
                 activeIter.close();
                 inputToOutputIt.remove(currentInputId);
-                openConcurrentTaskEntries.remove(currentInputId);
+                // FIXME Can the entry still reside in the running list? Perhaps running.remove(id) is not needed.
+                openConcurrentTaskEntriesRunning.remove(currentInputId);
+                openConcurrentTaskEntriesCompleted.remove(currentInputId);
             }
 
             // Move to the next inputId
             ++currentInputId; // TODO peekOutputId may not have matched currentInputId
 
             activeTaskEntry = inputToOutputIt.get(currentInputId);
+            // activeTaskEntry; // TODO Remove completed tasks from the executor
             if (activeTaskEntry == null) {
                 // Check if we need to load any further batches
                 prepareNextBatchExecs();
@@ -424,6 +438,9 @@ public abstract class RequestExecutorBase<G, I, O>
                 if (activeTaskEntry == null) {
                     break;
                 }
+            } else {
+                // Fill up any open executor slots
+                prepareNextBatchExecs();
             }
 
             activeIter = activeTaskEntry.stopAndGet();
@@ -470,7 +487,19 @@ public abstract class RequestExecutorBase<G, I, O>
 
         // Fill any remaining slots in the task queue for concurrent processing
         // Concurrent tasks have their own execution contexts because execCxt is not thread safe.
-        while (openConcurrentTaskEntries.size() < maxConcurrentTasks && batchIterator.hasNext() && !isCancelled()) {
+
+        drainCompletedTasks(openConcurrentTaskEntriesCompleted, openConcurrentTaskEntriesRunning);
+        int runningTasksCount = openConcurrentTaskEntriesRunning.size();
+        int freeTaskSlotCount = Math.max(maxConcurrentTasks - runningTasksCount, 0);
+        int completedTaskCount = openConcurrentTaskEntriesCompleted.size();
+
+        int usedReadAhead = Math.max(completedTaskCount - maxConcurrentTasks, 0);
+        int remainingFetchAhead = Math.max(maxFetchAhead - usedReadAhead, 0);
+
+        int freeSlots = Math.min(freeTaskSlotCount, remainingFetchAhead);
+
+        int i;
+        for (i = 0; i < freeSlots && batchIterator.hasNext() && !isCancelled(); ++i) {
 
             // InstanceLifeCycle<PrefetchTaskForBinding> taskLifeCycle = prepareNextBatchExec(isolatedExecCxt, txnType);
             InstanceLifeCycle<PrefetchTaskForBatch<O, AbortableIterator<O>>> taskLifeCycle = prepareNextBatchExec(true);
@@ -492,8 +521,32 @@ public abstract class RequestExecutorBase<G, I, O>
 
             registerTaskEntry(taskEntry);
             long closeId = getCloseId(granularity, task);
-            openConcurrentTaskEntries.put(closeId, taskEntry);
+            openConcurrentTaskEntriesRunning.put(closeId, taskEntry);
         }
+        if (logger.isDebugEnabled()) {
+            logger.debug("completedTasks: {}, runningTasks: {}, newlySubmittedTasks: {}, freeSlots: {} (freeTaskSlots: {}, freeReadAheadSlots: {})",
+                completedTaskCount, runningTasksCount, i, freeSlots, freeTaskSlotCount, remainingFetchAhead);
+        }
+    }
+
+    /**
+     * Remove completed tasks from 'running' and add them to 'completed'.
+     *
+     * @return The number of completed (and thus transferred) tasks.
+     */
+    protected static <O> int drainCompletedTasks(Map<Long, TaskEntry<O, AbortableIterator<O>>> completed, Map<Long, TaskEntry<O, AbortableIterator<O>>> running) {
+        int newCompletedTasks = 0;
+        Iterator<Entry<Long, TaskEntry<O, AbortableIterator<O>>>> it = running.entrySet().iterator();
+        while (it.hasNext()) {
+            Entry<Long, TaskEntry<O, AbortableIterator<O>>> e = it.next();
+            boolean isTerminated = e.getValue().task().getState().equals(PrefetchTaskBase.State.TERMINATED);
+            if (isTerminated) {
+                ++newCompletedTasks;
+                it.remove();
+                completed.put(e.getKey(), e.getValue());
+            }
+        }
+        return newCompletedTasks;
     }
 
     protected abstract boolean isCancelled();

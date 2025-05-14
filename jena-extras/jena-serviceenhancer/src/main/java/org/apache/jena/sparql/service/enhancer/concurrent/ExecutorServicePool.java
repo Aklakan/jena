@@ -191,6 +191,7 @@ public class ExecutorServicePool {
         if (backend == null) {
             int executorId = idPool.acquire();
             // FIXME Make sure that the executor with the next free id is not shutting down while we try to claim it
+            //   So newBackend should be synchronized with giveBack.
             backend = executorMap.computeIfAbsent(executorId, this::newBackend);
         }
 
@@ -297,7 +298,7 @@ public class ExecutorServicePool {
             }
 
             if (logger.isDebugEnabled()) {
-                logger.debug("Cleanup done - {} idle executors released.", cleanupCount);
+                logger.debug("Cleanup of idle service executors done - {} idle executors released.", cleanupCount);
             }
 
             if (delta >= 0) {
