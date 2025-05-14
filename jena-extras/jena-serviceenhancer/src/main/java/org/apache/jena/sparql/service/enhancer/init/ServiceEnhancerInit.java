@@ -18,8 +18,12 @@
 
 package org.apache.jena.sparql.service.enhancer.init;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.jena.assembler.Assembler;
 import org.apache.jena.assembler.assemblers.AssemblerGroup;
@@ -54,6 +58,8 @@ import org.apache.jena.sparql.engine.iterator.QueryIterCommonParent;
 import org.apache.jena.sparql.engine.iterator.QueryIteratorMapped;
 import org.apache.jena.sparql.engine.main.QC;
 import org.apache.jena.sparql.function.FunctionRegistry;
+import org.apache.jena.sparql.graph.NodeTransform;
+import org.apache.jena.sparql.graph.NodeTransformLib;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.apache.jena.sparql.service.ServiceExecutorRegistry;
 import org.apache.jena.sparql.service.bulk.ChainingServiceExecutorBulk;
@@ -179,24 +185,86 @@ public class ServiceEnhancerInit
             ServiceOpts so = ServiceOptsSE.getEffectiveService(opExec);
             OpService target = so.getTargetService();
 
-            // It seems that we always need to run the optimizer here
-            // in order to have property functions recognized properly
+            // Issue: Because of the service clause, the optimizer has not yet been run.
+            // - in order to have property functions recognized properly.
+            // - However: We must not touch scoping or we will break a prior SERVICE <loop:>.
+
             if (ServiceEnhancerConstants.SELF_BULK.equals(target.getService())) {
                 String optimizerMode = so.getFirstValue(ServiceOptsSE.SO_OPTIMIZE, "on", "on");
                 Op op = opExec.getSubOp();
+                Op tmpOp = op;
+                Op finalOp = tmpOp;
 
                 boolean useQc = true;
                 if (useQc) {
+
                     // Run the optimizer unless disabled
+
                     if (!"off".equals(optimizerMode)) {
+                        Collection<Var> opVars = OpVars.mentionedVars(op);
+                        Map<String, NavigableSet<Integer>> opVarLevels = VarScopeUtils.getScopeLevels(opVars);
+
+                        Map<String, Integer> opVarMinLevels = opVarLevels.entrySet().stream()
+                            .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().first()));
+
+                        // Variables that only appear on the same level may be loop vars
+                        Set<String> candidateLoopVars = opVarLevels.entrySet().stream()
+                            .filter(e -> e.getValue().size() == 1)
+                            .map(Entry::getKey)
+                            .collect(Collectors.toSet());
+
                         Context cxt = execCxt.getContext();
                         RewriteFactory rf = decideOptimizer(cxt);
                         Rewrite rw = rf.create(cxt);
-                        op = rw.rewrite(op);
+                        tmpOp = rw.rewrite(op);
+
+                        Collection<Var> newOpVars = OpVars.mentionedVars(tmpOp);
+                        Map<String, Integer> newOpVarMinLevels = VarScopeUtils.getMinimumScopeLevels(newOpVars);
+
+                        NodeTransform nf = node -> {
+                            Node rNode;
+                            if (Var.isVar(node)) {
+                                Var v = Var.alloc(node);
+                                String vn = v.getName();
+                                String plainName = VarScopeUtils.getPlainName(vn);
+                                Integer oldMinLevel = opVarMinLevels.get(plainName);
+
+                                if (oldMinLevel != null) {
+                                    if (candidateLoopVars.contains(plainName)) {
+                                        // If the variable appeared only at exactly 1 level
+                                        // then restore that level.
+                                        rNode = VarScopeUtils.allocScoped(plainName, oldMinLevel);
+                                    } else {
+                                        // Variable appeared at different scopes - subtract the delta.
+                                        Integer newMinLevel = newOpVarMinLevels.get(plainName);
+                                        if (newMinLevel != null) {
+                                            int newLevel = VarScopeUtils.getScopeLevel(vn);
+                                            int delta = newMinLevel - oldMinLevel;
+                                            int finalLevel = newLevel - delta;
+                                            rNode = VarScopeUtils.allocScoped(plainName, finalLevel);
+                                        } else {
+                                            // Variable name disappeared after rewrite - should not happen.
+                                            // But retain node as is.
+                                            rNode = node;
+                                        }
+                                    }
+                                } else {
+                                    rNode = node;
+                                }
+                            } else {
+                                rNode = node;
+                            }
+                            return rNode;
+                        };
+
+                        // BiMap<Var, Var> varMap = VarScopeUtils.normalizeVarScopesGlobal(opVars);
+                        finalOp = NodeTransformLib.transform(nf, tmpOp);
+
+                        // newOp = TransformPropertyFunction.transform(newOp, cxt);
                     }
                     // Using QC with e.g. TDB2 breaks unionDefaultGraph mode.
                     //   Issue seems to be mitigated going through QueryEngineRegistry.
-                    r = QC.execute(op, input, execCxt);
+                    r = QC.execute(finalOp, input, execCxt);
                 } else {
                     // A context copy is needed in order to isolate changes from further executions;
                     //   without a copy query engines may e.g. overwrite the context value for the NOW() function.
