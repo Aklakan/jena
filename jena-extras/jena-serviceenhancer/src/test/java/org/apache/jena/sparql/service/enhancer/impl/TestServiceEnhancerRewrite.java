@@ -18,23 +18,34 @@
 
 package org.apache.jena.sparql.service.enhancer.impl;
 
+import java.util.Map;
+
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.query.Syntax;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFParser;
+import org.apache.jena.riot.system.PrefixMap;
+import org.apache.jena.riot.system.PrefixMapFactory;
+import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.algebra.Algebra;
 import org.apache.jena.sparql.algebra.Op;
+import org.apache.jena.sparql.algebra.Table;
 import org.apache.jena.sparql.algebra.op.OpService;
+import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.exec.QueryExec;
 import org.apache.jena.sparql.graph.GraphFactory;
+import org.apache.jena.sparql.graph.PrefixMappingAdapter;
 import org.apache.jena.sparql.service.enhancer.impl.BatchQueryRewriter.SubstitutionStrategy;
 import org.apache.jena.sparql.service.enhancer.init.ServiceEnhancerInit;
 import org.apache.jena.sparql.sse.SSE;
 import org.apache.jena.sys.JenaSystem;
 import org.junit.Assert;
+import org.junit.Test;
 
 public class TestServiceEnhancerRewrite {
     // Ensure extensions are initialized
@@ -151,5 +162,50 @@ public class TestServiceEnhancerRewrite {
           String actualOpStr = newOp.toString();
           String expectedOpStr = expectedOp.toString();
           Assert.assertEquals(expectedOpStr, actualOpStr);
+    }
+
+    /**
+     * This test case used to unexpectedly fail with the following error:
+     *   - Binding already for ??P0 (different values)
+     *
+     * The reason was that the PathCompiler derived a new op with
+     * additional variables. The logic of {@code SERVICE <loop:>} would then
+     * emit bindings with those extra variables. These variables would then
+     * clash with the lhs of the join.
+     * The fix was to only project the visible variables of the original op.
+     */
+    @Test
+    public void testLoopWithOpPath() {
+        PrefixMap pm = PrefixMapFactory.create(Map.of("", "http://www.example.org/"));
+        PrefixMapping pmap = new PrefixMappingAdapter(pm);
+
+        DatasetGraph dsg = RDFParser.create()
+            .fromString("""
+              :a :p :b .
+              :b :p :c .
+              :c :p :d .
+              :d :p :e .
+            """).lang(Lang.TURTLE).prefixes(pm).toDatasetGraph();
+
+        Query query = QueryFactory.create("""
+            PREFIX : <http://www.example.org/>
+            SELECT ?c ?e {
+              :a :p/:p ?c
+              SERVICE <loop:> {
+                ?c :p/:p ?e
+              }
+            }
+            """);
+
+        // This proces an algebra with two path patterns:
+        // (project (?c ?e)
+        //   (join
+        //      (path :a (seq :p :p) ?c)      # PathCompiler introduces ??P0
+        //      (service <loop:>
+        //        (path ?c (seq :p :p) ?e)))) # PathCompiler introduces ??P0 - should no longer clash.
+
+        Table expected = SSE.parseTable("(table (vars ?c ?e) (row (?c :c) (?e :e)))", pmap);
+        Table actual = QueryExec.dataset(dsg).query(query).table();
+        Assert.assertEquals(expected, actual);
     }
 }

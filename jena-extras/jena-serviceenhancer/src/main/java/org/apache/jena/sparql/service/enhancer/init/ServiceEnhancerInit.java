@@ -18,7 +18,9 @@
 
 package org.apache.jena.sparql.service.enhancer.init;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableSet;
@@ -55,7 +57,9 @@ import org.apache.jena.sparql.engine.Rename;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.engine.iterator.QueryIterCommonParent;
+import org.apache.jena.sparql.engine.iterator.QueryIterProject;
 import org.apache.jena.sparql.engine.iterator.QueryIteratorMapped;
+import org.apache.jena.sparql.engine.iterator.QueryIteratorWrapper;
 import org.apache.jena.sparql.engine.main.QC;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.graph.NodeTransform;
@@ -361,7 +365,16 @@ public class ServiceEnhancerInit
         if (innerIter == null) {
             QueryEngineFactory qef = QueryEngineRegistry.findFactory(op, dataset, cxt);
             Plan plan = qef.create(op, dataset, BindingFactory.empty(), cxt);
+
+            // Note: The default plan implementation returns an iterator
+            // that closes the plan when closing the iterator.
             innerIter = plan.iterator();
+
+            // If the op contains an OpPath then variables such as ??P0
+            // may get introduced and projected - which we must filter out.
+            List<Var> visibleVars = new ArrayList<>(OpVars.visibleVars(op));
+            innerIter = QueryIterProject.create(innerIter, visibleVars, tracker);
+
             outerIter = innerIter;
         }
 
