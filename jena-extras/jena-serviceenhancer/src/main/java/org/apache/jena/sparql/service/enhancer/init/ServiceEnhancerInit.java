@@ -20,6 +20,7 @@ package org.apache.jena.sparql.service.enhancer.init;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -55,6 +56,7 @@ import org.apache.jena.sparql.engine.QueryEngineRegistry;
 import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.Rename;
 import org.apache.jena.sparql.engine.binding.Binding;
+import org.apache.jena.sparql.engine.binding.BindingBuilder;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.engine.iterator.QueryIterCommonParent;
 import org.apache.jena.sparql.engine.iterator.QueryIterProject;
@@ -184,14 +186,47 @@ public class ServiceEnhancerInit
     }
 
     public static void registerServiceExecutorBulkSelf(ServiceExecutorRegistry registry) {
-        ChainingServiceExecutorBulk selfExec = (opExec, input, execCxt, chain) -> {
+        ChainingServiceExecutorBulk selfExec = (opExec, rawInput, execCxt, chain) -> {
             QueryIterator r;
             ServiceOpts so = ServiceOptsSE.getEffectiveService(opExec);
             OpService target = so.getTargetService();
 
+            // Remove path variables from the input binding
+            QueryIterator input = new QueryIteratorWrapper(rawInput) {
+                @Override
+                public Binding moveToNextBinding() {
+                    Binding rawBinding = super.moveToNextBinding();
+                    Iterator<Var> it = rawBinding.vars();
+                    boolean hasPathVar = false;
+                    while (it.hasNext()) {
+                        Var v = it.next();
+                        if (v.getName().startsWith(ARQConstants.allocPathVariables)) {
+                            hasPathVar = true;
+                            break;
+                        }
+                    }
+
+                    Binding rr;
+                    if (hasPathVar) {
+                        BindingBuilder bb = BindingFactory.builder();
+                        rawBinding.forEach((v, n) -> {
+                            if (!v.getName().startsWith(ARQConstants.allocPathVariables)) {
+                                bb.add(v, n);
+                            }
+                        });
+                        rr = bb.build();
+                    } else {
+                        rr = rawBinding;
+                    }
+                    return rr;
+                }
+            };
+
             // Issue: Because of the service clause, the optimizer has not yet been run.
             // - in order to have property functions recognized properly.
             // - However: We must not touch scoping or we will break a prior SERVICE <loop:>.
+            // - Also: TransformPathFlatten may introduce new variables that clash resulting in incompatible bindings.
+            //     Current workaround: remove those variables from the input binding.
 
             if (ServiceEnhancerConstants.SELF_BULK.equals(target.getService())) {
                 String optimizerMode = so.getFirstValue(ServiceOptsSE.SO_OPTIMIZE, "on", "on");
@@ -205,6 +240,12 @@ public class ServiceEnhancerInit
                     // Run the optimizer unless disabled
 
                     if (!"off".equals(optimizerMode)) {
+                    // if (false) {
+
+                        // Here we try to protect loop variables from getting renamed
+                        // by the optimizer.
+                        // This code first saves the scope levels of variables,
+                        // then runs the optimizer, and then restores the scope levels again.
                         Collection<Var> opVars = OpVars.mentionedVars(op);
                         Map<String, NavigableSet<Integer>> opVarLevels = VarScopeUtils.getScopeLevels(opVars);
 
@@ -217,6 +258,8 @@ public class ServiceEnhancerInit
                             .map(Entry::getKey)
                             .collect(Collectors.toSet());
 
+                        // Run the optimizer.
+                        // TransformPathFlatten may introduce variables that did not exist before.
                         Context cxt = execCxt.getContext();
                         RewriteFactory rf = decideOptimizer(cxt);
                         Rewrite rw = rf.create(cxt);
@@ -261,19 +304,19 @@ public class ServiceEnhancerInit
                             return rNode;
                         };
 
-                        // BiMap<Var, Var> varMap = VarScopeUtils.normalizeVarScopesGlobal(opVars);
                         finalOp = NodeTransformLib.transform(nf, tmpOp);
-
-                        // newOp = TransformPropertyFunction.transform(newOp, cxt);
                     }
                     // Using QC with e.g. TDB2 breaks unionDefaultGraph mode.
                     //   Issue seems to be mitigated going through QueryEngineRegistry.
-                    r = QC.execute(finalOp, input, execCxt);
+
+                    // The issue now is that PathCompile may introduce clashing variables.
+                    // We could apply path transformation now and rename those vars.
+                     r = QC.execute(finalOp, input, execCxt);
                 } else {
                     // A context copy is needed in order to isolate changes from further executions;
                     //   without a copy query engines may e.g. overwrite the context value for the NOW() function.
-//                    Context cxtCopy = execCxt.getContext().copy();
-//                    r = execute(op, dataset, input, cxtCopy);
+                    // Context cxtCopy = execCxt.getContext().copy();
+                    // r = execute(op, dataset, input, cxtCopy);
                     throw new RuntimeException("Cannot go through query engine factory for bulk requests.");
                 }
             } else {
