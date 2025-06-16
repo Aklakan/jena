@@ -83,7 +83,7 @@ import org.apache.jena.sparql.service.enhancer.impl.ServiceResultSizeCache;
 import org.apache.jena.sparql.service.enhancer.impl.util.DynamicDatasetUtils;
 import org.apache.jena.sparql.service.enhancer.impl.util.Lazy;
 import org.apache.jena.sparql.service.enhancer.impl.util.VarScopeUtils;
-import org.apache.jena.sparql.service.enhancer.impl.util.iterator.QueryIteratorCollect;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.QueryIteratorMaterialize;
 import org.apache.jena.sparql.service.enhancer.pfunction.cacheLs;
 import org.apache.jena.sparql.service.single.ChainingServiceExecutor;
 import org.apache.jena.sparql.util.Context;
@@ -126,7 +126,7 @@ public class ServiceEnhancerInit
                 opts.removeKey(collectOptName);
                 OpService newOp = opts.toService();
                 QueryIterator tmp  = chain.createExecution(newOp, input, execCxt);
-                r = new QueryIteratorCollect(tmp, execCxt);
+                r = new QueryIteratorMaterialize(tmp, execCxt);
             } else {
                 r = chain.createExecution(opService, input, execCxt);
             }
