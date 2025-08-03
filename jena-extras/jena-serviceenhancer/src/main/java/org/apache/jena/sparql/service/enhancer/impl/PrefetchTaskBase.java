@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 
 /**
- * A simple runnable which consumes items from an iterator upon calling {@link #run()}
- * and does so until {@link #stop()} is called or the thread is interrupted.
+ * A task that buffers items from an iterator in a list upon calling {@link #run()}.
+ * The task runs until {@link #stop()} is called or the thread is interrupted.
  */
 public class PrefetchTaskBase<T, X extends Iterator<T>>
     implements Runnable

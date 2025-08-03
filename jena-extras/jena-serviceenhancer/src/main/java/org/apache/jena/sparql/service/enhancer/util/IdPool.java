@@ -21,12 +21,15 @@ package org.apache.jena.sparql.service.enhancer.util;
 import java.util.Iterator;
 import java.util.TreeSet;
 
-/** A pool of integer ids. Acquired ids must be eventually free'd using {@link #giveBack(int)}. */
+/**
+ * A synchronized pool of integer ids.
+ * Acquired ids must be eventually free'd using {@link #giveBack(int)}.
+ */
 public class IdPool {
     private volatile int i = 0;
     private final TreeSet<Integer> ids = new TreeSet<>();
 
-    /** Return a free id. */
+    /** Allocate and return an unused id. */
     public synchronized int acquire() {
         int result;
         if (!ids.isEmpty()) {
