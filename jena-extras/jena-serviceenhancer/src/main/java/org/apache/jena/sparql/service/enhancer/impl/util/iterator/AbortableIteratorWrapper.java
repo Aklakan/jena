@@ -25,47 +25,52 @@ import org.apache.jena.sparql.serializer.SerializationContext;
 public class AbortableIteratorWrapper<T>
     extends AbortableIteratorBase<T>
 {
-    protected AbortableIterator<T> iterator;
+    private AbortableIterator<T> delegate;
 
-    public AbortableIteratorWrapper(AbortableIterator<T> qIter) {
-        iterator = qIter;
+    public AbortableIteratorWrapper(AbortableIterator<T> delegate) {
+        this.delegate = delegate;
+    }
+
+    protected AbortableIterator<T> getDelegate() {
+        return delegate;
     }
 
     @Override
     protected boolean hasNextBinding() {
-        return iterator.hasNext();
+        return getDelegate().hasNext();
     }
 
     @Override
     protected T moveToNextBinding() {
-        return iterator.nextBinding();
+        return getDelegate().nextBinding();
     }
 
     @Override
     protected void closeIterator() {
-        if ( iterator != null ) {
-            iterator.close();
-            iterator = null;
+        AbortableIterator<T> d = getDelegate();
+        if (d != null) {
+            d.close();
         }
     }
 
     @Override
     protected void requestCancel() {
-        if ( iterator != null ) {
-            iterator.cancel();
+        AbortableIterator<T> d = getDelegate();
+        if (d != null) {
+            d.cancel();
         }
     }
 
     @Override
     public void output(IndentedWriter out) {
-        iterator.output(out);
+        getDelegate().output(out);
     }
 
     @Override
     public void output(IndentedWriter out, SerializationContext sCxt) {
-        out.println(Lib.className(this) + "/" + Lib.className(iterator));
+        out.println(Lib.className(this) + "/" + Lib.className(getDelegate()));
         out.incIndent();
-        iterator.output(out, sCxt);
+        getDelegate().output(out, sCxt);
         out.decIndent();
         // out.println(Utils.className(this)+"/"+Utils.className(iterator)) ;
     }
