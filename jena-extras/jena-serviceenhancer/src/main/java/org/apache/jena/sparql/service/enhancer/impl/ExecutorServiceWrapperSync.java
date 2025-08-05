@@ -57,6 +57,7 @@ public class ExecutorServiceWrapperSync {
         return result;
     }
 
+    /** Execute the callable on the executor service and return its result. */
     public static <T> T submit(ExecutorService executorService, Callable<T> callable) {
         try {
             Future<T> future = executorService.submit(callable);

@@ -36,11 +36,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.ForwardingExecutorService;
 
 /**
- * A factory for single thread executors.
- * The returned executor services are wrappers.
- * Calling {@link ExecutorService#shutdown()} or {@link ExecutorService#shutdownNow()}
- * on the wrapper returns its underlying executor service back to the pool.
- *
+ * A factory for single thread executors. The returned executor services are wrappers.
+ * You must eventually call {@link ExecutorService#shutdown()} or {@link ExecutorService#shutdownNow()}
+ * on the wrapper in order to return the underlying executor service back to the pool.
  */
 public class ExecutorServicePool {
 

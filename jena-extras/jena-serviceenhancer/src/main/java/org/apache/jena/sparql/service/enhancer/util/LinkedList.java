@@ -29,6 +29,7 @@ import java.util.Objects;
 /**
  * A doubly linked list for keeping track of a sequence of items,
  * with O(1) insertion and deletion (using {@link LinkedListNode#unlink()}).
+ * Nodes are created with {@link #newNode()} and are owned by the creating list.
  *
  * Use {@link #append(Object)} to add an item at the end of the list and obtain a corresponding {@link LinkedListNode} instance.
  * Use {@link LinkedListNode#unlink()} to remove a specific node from the list
