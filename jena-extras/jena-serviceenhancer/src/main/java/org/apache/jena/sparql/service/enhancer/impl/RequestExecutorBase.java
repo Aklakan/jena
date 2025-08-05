@@ -294,6 +294,41 @@ public abstract class RequestExecutorBase<G, I, O>
             return task().getState().equals(PrefetchTaskBase.State.TERMINATED);
         }
 
+        public void start() {
+            // FIXME Should we add start here?
+            InstanceLifeCycle<PrefetchTaskForBatch<O, AbortableIterator<O>>> taskLifeCycle = prepareNextBatchExec(true);
+            ExecutorService executorService = executorServicePool.acquireExecutor();
+
+            // Create the task through the execution thread such that thread locals (e.g. for transactions)
+            // are initialized on the correct thread
+            PrefetchTaskForBatch<O, AbortableIterator<O>> task = ExecutorServiceWrapperSync.submit(executorService, taskLifeCycle::newInstance);
+
+//            // In the task thread, if the run method completes then check whether any further tasks can be scheduled.
+//            task.addAfterRunAction(() -> {
+//                // If the iterator was consumed then free a slot.
+//                if (!task.getIterator().hasNext()) {
+//                    freeTaskSlotCount.inc();
+//                }
+//            });
+
+            long closeId = getCloseId(granularity, task);
+
+            // Submit the task which immediately starts concurrent retrieval.
+            // Retrieval happens on the same thread on which the task was created.
+            Future<?> future = executorService.submit(task);
+            TaskEntry<O, AbortableIterator<O>> taskEntry = new TaskEntry<>(
+                task,
+                () -> taskLifeCycle.closeInstance(task),
+                executorService,
+                () -> {
+                    // This action returns the acquired executor service back to the pool
+                    executorService.shutdown();
+                },
+                future);
+
+        }
+
+
         /**
          * Stop the task and return an iterator over the buffered items and the remaining ones.
          * Closing the returned iterator also closes the iterator over the remaining items.
@@ -409,8 +444,8 @@ public abstract class RequestExecutorBase<G, I, O>
      */
     protected Map<Long, TaskEntry<O, AbortableIterator<O>>> inputToOutputIt = new LinkedHashMap<>();
 
-    // FIXME The InstanceLifeCycle can start a task but it does not provide the metadata of its task its.
-    protected BlockingQueue<InternalBatch<G, I>> taskQueue;
+    /** The task queue is used to submit the tasks in "inputToOutputIt" to executors. */
+    protected BlockingQueue<TaskEntry<O, AbortableIterator<O>> > taskQueue;
 
     /* State for tracking concurrent prefetch ----------------------------- */
 
@@ -553,36 +588,23 @@ public abstract class RequestExecutorBase<G, I, O>
         }
     }
 
-    /** Method called from worker threads to start execution. */
-    protected void startNextTasks() {
-        // If there are more than 0 free slots then decrement the count; otherwise stay at 0.
-        int freeSlots = freeTaskSlots.getAndUpdate(i -> Math.max(0, i - 1));
-        while (freeSlots > 0) {
-            // Need to ensure the queue is not empty.
-            // startableTasks.
-            Object task = startableTasks.poll();
-            if (task == null) {
-                // Nothing to execute - free the slot again
-                freeTaskSlots.incrementAndGet();
-            }
-
-            // launch the task
-        }
-    }
-
     public void prepareNextBatchExecs() {
+        // FIXME There may be a task in the task queue.
+        // Ideally the driver would already create the entry in inputToOutputMap.
+        // and the executors would just call a start() method on the tasks.
+
         if (!inputToOutputIt.containsKey(currentInputId)) {
             // We need the task's iterator right away - do not start concurrent retrieval
             if (batchIterator.hasNext()) {
-                InternalBatch<G, I> batch = nextBatch(false);
-                InstanceLifeCycle<PrefetchTaskForBatch<O, AbortableIterator<O>>> taskLifeCycle = prepareNextBatchExec(batch);
+                InstanceLifeCycle<PrefetchTaskForBatch<O, AbortableIterator<O>>> taskLifeCycle = prepareNextBatchExec(false);
                 PrefetchTaskForBatch<O, AbortableIterator<O>> task = taskLifeCycle.newInstance();
-                 TaskEntry<O, AbortableIterator<O>> taskEntry = TaskEntry.completed(task, () -> taskLifeCycle.closeInstance(task));
+                TaskEntry<O, AbortableIterator<O>> taskEntry = TaskEntry.completed(task, () -> taskLifeCycle.closeInstance(task));
                 registerTaskEntry(taskEntry);
             }
         }
 
         // TODO Allow preparation of tasks without starting them
+        fillTaskQueue();
 
 
         // Give the implementation a chance to reject concurrent execution via an exception.
@@ -636,7 +658,11 @@ public abstract class RequestExecutorBase<G, I, O>
                 },
                 future);
 
+            InstanceLifeCycle<PrefetchTaskForBatch<O, AbortableIterator<O>>> taskLifeCycle = prepareNextBatchExec(batch);
+            PrefetchTaskForBatch<O, AbortableIterator<O>> task = taskLifeCycle.newInstance();
+            TaskEntry<O, AbortableIterator<O>> taskEntry = TaskEntry.completed(task, () -> taskLifeCycle.closeInstance(task));
             registerTaskEntry(taskEntry);
+
             openConcurrentTaskEntriesRunning.put(closeId, taskEntry);
         }
         if (logger.isDebugEnabled()) {
@@ -645,10 +671,29 @@ public abstract class RequestExecutorBase<G, I, O>
         }
     }
 
+    /** */
     protected void fillTaskQueue() {
         while (batchIterator.hasNext()) {
+            // Make sure there is capacity left in the task queue
             InternalBatch<G, I> batch = nextBatch(true);
-            taskQueue.add(batch);
+            taskQueue.offer(batch);
+        }
+    }
+
+    /** Method called from worker threads to start execution. */
+    protected void processTaskQueue() {
+        // If there are more than 0 free slots then decrement the count; otherwise stay at 0.
+        int freeSlots = freeTaskSlots.getAndUpdate(i -> Math.max(0, i - 1));
+        while (freeSlots > 0) {
+            // Need to ensure the queue is not empty.
+            // startableTasks.
+            InternalBatch<G, I> batch = taskQueue.poll();
+            if (batch == null) {
+                // Nothing to execute - free the slot again
+                freeTaskSlots.incrementAndGet();
+            }
+
+            // launch the task
         }
     }
 
@@ -682,7 +727,7 @@ public abstract class RequestExecutorBase<G, I, O>
     protected I detachInput(I item, boolean isInNewThread) { return item; }
     protected O detachOutput(O item, boolean isInNewThread) { return item; }
 
-    /** Consume the next batch from */
+    /** Consume the next batch from the batchIterator. */
     protected InternalBatch<G, I> nextBatch(boolean isInNewThread) {
         GroupedBatch<G, Long, I> batchRequest = batchIterator.next();
         long batchId = nextBatchId++;
@@ -708,28 +753,31 @@ public abstract class RequestExecutorBase<G, I, O>
     // inputId = id (index) of the input binding
     // rangeId = id of the range w.r.t. to the input binding
     // partitionKey = (inputId, rangeId)
-    protected InstanceLifeCycle<PrefetchTaskForBatch<O, AbortableIterator<O>>> prepareNextBatchExec(InternalBatch<G, I> batch) {
-//        GroupedBatch<G, Long, I> batchRequest = batchIterator.next();
-//        long batchId = nextBatchId++;
-//        Batch<Long, I> batch = batchRequest.getBatch();
-//        NavigableMap<Long, I> batchItems = batch.getItems();
-//
-//        G groupKey = batchRequest.getGroupKey();
-//
-//        // Detach inputs.
-//        Collection<I> rawInputs = batchItems.values();
-//        List<I> detachedInputs = new ArrayList<>(rawInputs.size());
-//        rawInputs.forEach(rawInput -> detachedInputs.add(detachInput(rawInput, isInNewThread)));
-//        List<I> inputs = Collections.unmodifiableList(detachedInputs);
-//
-//        List<Long> reverseMap = List.copyOf(batchItems.keySet());
-//
-//        InternalBatch<G, I> internalBatch = new InternalBatch<>(groupKey, inputs, reverseMap);
+    // protected InstanceLifeCycle<PrefetchTaskForBatch<O, AbortableIterator<O>>> prepareNextBatchExec(InternalBatch<G, I> batch) {
+    protected InstanceLifeCycle<PrefetchTaskForBatch<O, AbortableIterator<O>>> prepareNextBatchExec(boolean isInNewThread) {
+        /*
         long batchId = batch.batchId();
         boolean isInNewThread = batch.isInNewThread();
         G groupKey = batch.groupKey();
         List<I> inputs = batch.batch();
         List<Long> reverseMap = batch.reverseMap();
+        */
+
+        GroupedBatch<G, Long, I> batchRequest = batchIterator.next();
+        long batchId = nextBatchId++;
+        Batch<Long, I> batch = batchRequest.getBatch();
+        NavigableMap<Long, I> batchItems = batch.getItems();
+
+        G groupKey = batchRequest.getGroupKey();
+
+        // Detach inputs.
+        Collection<I> rawInputs = batchItems.values();
+        List<I> detachedInputs = new ArrayList<>(rawInputs.size());
+        rawInputs.forEach(rawInput -> detachedInputs.add(detachInput(rawInput, isInNewThread)));
+        List<I> inputs = Collections.unmodifiableList(detachedInputs);
+
+        List<Long> reverseMap = List.copyOf(batchItems.keySet());
+
 
         IteratorCreator<O> creator = processBatch(isInNewThread, groupKey, inputs, reverseMap);
 
@@ -747,6 +795,10 @@ public abstract class RequestExecutorBase<G, I, O>
                 creator.end();
             }
         });
+
+//        PrefetchTaskForBatch<O, AbortableIterator<O>> task = taskLifeCycle.newInstance();
+//        TaskEntry<O, AbortableIterator<O>> taskEntry = TaskEntry.completed(task, () -> taskLifeCycle.closeInstance(task));
+//        registerTaskEntry(taskEntry);
 
         return result;
     }
