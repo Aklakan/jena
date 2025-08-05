@@ -96,13 +96,19 @@ public class PrefetchTaskBase<T, X extends Iterator<T>>
         } catch (Throwable t) {
             this.throwable = t;
         } finally {
-            state = State.TERMINATED;
+            try {
+                afterRun();
+            } finally {
+                state = State.TERMINATED;
+            }
         }
     }
 
+    protected void afterRun() {}
+
     protected void runActual() {
+        state = State.RUNNING;
         while (!isStopRequested && !Thread.interrupted() && iterator.hasNext() && bufferedItems.size() < maxBufferedItemsCount) {
-            state = State.RUNNING;
             T item = iterator.next();
             T copy = itemCopyFn == null ? item : itemCopyFn.apply(item);
             bufferedItems.add(copy);

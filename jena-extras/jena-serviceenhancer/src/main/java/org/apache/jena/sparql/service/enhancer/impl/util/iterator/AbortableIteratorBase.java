@@ -213,7 +213,10 @@ public abstract class AbortableIteratorBase<T>
         iter.close();
     }
 
-    /** cancel an iterator */
+    /**
+     * Cancel an iterator. Best-effort for non-blocking concurrent cancel because
+     * iter may longer be in-use when cancel() is called on it.
+     */
     protected static void performRequestCancel(AbortableIterator<?> iter) {
         if ( iter == null )
             return;

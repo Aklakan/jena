@@ -84,7 +84,7 @@ public abstract class RequestExecutorSparqlBase
     }
 
     @Override
-    protected Binding detachItem(Binding item, boolean isInNewThread) {
+    protected Binding detachOutput(Binding item, boolean isInNewThread) {
         Binding result = isInNewThread ? item.detach() : item;
         return result;
     }
