@@ -23,13 +23,16 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -38,13 +41,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 
 import org.apache.jena.atlas.io.IndentedWriter;
-import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.atlas.lib.Closeable;
 import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.service.enhancer.concurrent.ExecutorServicePool;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterator;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIteratorBase;
-import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIteratorConcat;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIteratorPeek;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterators;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbstractAbortableIterator;
@@ -83,98 +84,217 @@ public abstract class RequestExecutorBase<G, I, O>
         default void end() {}
     }
 
-    static class IteratorWrapperViaThread<T, X extends Iterator<T>>
+    static class EnqueTask<T>
+    	implements Runnable
+    {
+        public static final Object POISON = new Object();
+        // public static record ExceptionHolder(Throwable throwable) {}
+
+    	private final IteratorCreator<T> iteratorCreator;
+    	private final UnaryOperator<T> detacher;
+        private final BlockingQueue<Object> queue;
+        private final Runnable onThreadEnd;
+
+    	private AbortableIterator<T> iterator;
+    	private Throwable throwable;
+    	private boolean hasBegun = false;
+    	private boolean isFinished = false;
+
+    	private boolean dataConsumed = false;
+    	private volatile boolean isCancelled = false;
+
+        public EnqueTask(IteratorCreator<T> iteratorCreator, UnaryOperator<T> detacher, BlockingQueue<Object> queue, Runnable onThreadEnd) {
+    		this.iteratorCreator = iteratorCreator;
+    		this.detacher = detacher;
+    		this.queue = queue;
+    		this.onThreadEnd = onThreadEnd;
+    	}
+
+    	/** Cancelling the task only pauses it. Call abort() before cancel to really abort the task. */
+    	public void abort() {
+    		this.isCancelled = true;
+    	}
+
+    	private void enquePoison() {
+    		while (true) {
+				try {
+	        		queue.put(POISON);
+	        		break;
+				} catch (InterruptedException e) {
+
+				}
+    		}
+    	}
+
+    	protected void setException(Throwable throwable) {
+    		this.throwable = throwable;
+    	}
+
+    	public Throwable getThrowable() {
+			return throwable;
+		}
+
+		@Override
+		public void run() {
+			if (!hasBegun) {
+				hasBegun = true;
+				iteratorCreator.begin();
+			}
+
+			if (iterator == null) {
+				iterator = iteratorCreator.createIterator();
+			}
+
+    		try {
+    			// Always reserve one slot for the poison.
+	        	while (!Thread.interrupted() && iterator.hasNext()) {
+	        		if (queue.remainingCapacity() <= 1) {
+	        			synchronized (queue) {
+	        				while (queue.remainingCapacity() <= 1) {
+	        					queue.wait();
+	        				}
+	        			}
+	        		}
+
+	        		T item = iterator.next();
+        			T detachedItem = detacher == null ? item : detacher.apply(item);
+					queue.put(detachedItem);
+	        	}
+	        	if (!iterator.hasNext()) {
+		        	enquePoison();
+	        		dataConsumed = true;
+	        	}
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			} catch (Throwable t) {
+				setException(t);
+				enquePoison();
+			}
+
+        	if (!isFinished) {
+        		if (isCancelled || throwable != null || dataConsumed) {
+            		isFinished = true;
+            		try {
+            			iterator.close();
+            		} finally {
+            			try {
+            				iteratorCreator.end();
+            			} finally {
+                			onThreadEnd.run();
+            			}
+            		}
+        		}
+        	}
+		}
+    }
+
+    static class IteratorWrapperViaThread<T>
         extends AbstractAbortableIterator<T>
     {
-        protected ExecutorServiceWrapperSync executorServiceSync;
+    	protected EnqueTask<T> enqueTask;
 
-        /** Number of items to transfer in batch from the worker thread to the calling thread */
-        protected int batchSize;
-        protected X delegate;
-
-        protected volatile List<T> buffer;
-        protected Iterator<T> currentBatch;
-
-        /**
+    	/**
          * A function to detach items from the life-cycle of the iterator.
          * For example, TDB2 Bindings must be detached from resources that are free'd when the iterator is closed.
          */
         protected UnaryOperator<T> detachFn;
 
-        public IteratorWrapperViaThread(X delegate, ExecutorService es, UnaryOperator<T> detachFn) {
-            this(delegate, es, detachFn, 1);
-        }
 
-        public IteratorWrapperViaThread(X delegate, ExecutorService es, UnaryOperator<T> detachFn, int batchSize) {
-            super();
-            this.executorServiceSync = new ExecutorServiceWrapperSync(es);
-            this.delegate = delegate;
-            this.detachFn = detachFn;
-            this.batchSize = batchSize;
-
-            this.buffer = new ArrayList<>(batchSize);
-            this.currentBatch = buffer.iterator();
-        }
-
-        public X getDelegate() {
-            return delegate;
-        }
-
-        @Override
-        protected T moveToNext() {
-            T result;
-            if (currentBatch.hasNext()) {
-                result = currentBatch.next();
-            } else {
-                buffer.clear();
-                executorServiceSync.submit(() -> {
-                    X d = getDelegate();
-                    for (int i = 0; i < batchSize && d.hasNext(); ++i) {
-                        T rawItem = d.next();
-                        T item = detachFn.apply(rawItem);
-                        buffer.add(item);
-                    }
-                });
-                currentBatch = buffer.iterator();
-
-                result = currentBatch.hasNext()
-                    ? currentBatch.next()
-                    : endOfData();
-            }
-            return result;
-        }
+        // protected ExecutorServicePool executorServicePool;
+    	protected ExecutorService executorService;
+    	protected Future<?> future;
 
         /**
-         * Close the iterator.
-         * Note that the worker is blocked while retrieving so in that case any close signal won't get through.
+         * Deque item type is of type Object in order to be capabable of holding the POISON.
+         * All other items are of type T.
          */
-        @Override
-        public final void closeIteratorActual() {
-            try {
-                executorServiceSync.submit(this::inThreadCloseAction);
-            } finally {
-                outThreadCloseAction();
-            }
+        protected BlockingQueue<Object> queue;
+        protected volatile Throwable throwable = null;
+        protected volatile List<T> buffer;
+
+        public IteratorWrapperViaThread(
+        		ExecutorService executorSerivce, int maxQueueSize, IteratorCreator<T> iteratorCreator, UnaryOperator<T> detacher,
+        		Runnable onThreadEnd) {
+        	if (maxQueueSize < 1) {
+        		throw new IllegalArgumentException("Queue size must be at least 1.");
+        	}
+
+        	this.executorService = executorSerivce;
+        	this.queue = new ArrayBlockingQueue<>(maxQueueSize + 1); // Internally add one for the poison.
+        	this.enqueTask = new EnqueTask<>(iteratorCreator, detacher, queue, onThreadEnd);
+        	// TODO Probably we need a lambda for when the thread exits
+        	//   Need to hand the executor service back.
+        }
+
+        private void run() {
+        	if (!isFinished()) {
+        		if (future == null) {
+        			future = executorService.submit(enqueTask);
+        		}
+        	}
+        }
+
+        @SuppressWarnings("unchecked")
+		@Override
+        public T moveToNext() {
+        	Object item;
+        	try {
+        		item = queue.take();
+        	} catch (InterruptedException e) {
+        		throw new RuntimeException(e);
+        	}
+
+        	T result;
+        	if (item == EnqueTask.POISON) {
+        		result = endOfData();
+
+        		Throwable t = enqueTask.getThrowable();
+        		if (t != null) {
+        			throw new RuntimeException(t);
+        		}
+        	} else {
+        		result = (T)item;
+        	}
+        	return result;
         }
 
         @Override
-        protected void requestCancel() {}
-
-        /** Close action that is submitted to the executor service. */
-        protected void inThreadCloseAction() {
-            Iter.close(getDelegate());
+        protected void requestCancel() {
+        	if (future != null) {
+        		future.cancel(true);
+        	}
         }
 
-        /** Close action that is run by the calling thread. */
-        protected void outThreadCloseAction() {}
+        public void pause() {
+        	stop();
+        }
 
         @Override
-        public void output(IndentedWriter out, SerializationContext sCxt) {
-            // FIXME Auto-generated method stub
+        protected void closeIteratorActual() {
+        	enqueTask.abort();
+        	run(); // Ensure to restart a paused task
+        	stop();
         }
+
+        private void stop() {
+        	future.cancel(true);
+        	try {
+				future.get();
+			} catch (InterruptedException | ExecutionException | CancellationException e) {
+				// Ignore
+        	} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
+        	future = null;
+        }
+
+		@Override
+		public void output(IndentedWriter out, SerializationContext sCxt) {
+			// TODO Auto-generated method stub
+		}
     }
 
-    protected long getCloseId(Granularity granularity, TaskEntry<?> taskEntry) {
+    protected static long getCloseId(Granularity granularity, TaskEntry<?> taskEntry) {
         long result = switch (granularity) {
             case ITEM -> taskEntry.getServedInputIds().get(taskEntry.getServedInputIds().size() - 1);
             case BATCH -> taskEntry.getBatchId();
@@ -284,77 +404,36 @@ public abstract class RequestExecutorBase<G, I, O>
     class TaskEntryAsync
         extends TaskEntryBatchBase
     {
-        public TaskEntryAsync(InternalBatch<G, I> batch) {
-            super(batch);
-        }
+        protected final ExecutorService executorService;
 
-        protected volatile IteratorCreator<O> creator;
-
-        protected volatile PrefetchTaskBase<O, AbortableIterator<O>> task;
-        protected volatile ExecutorService executorService;
-        protected volatile Future<?> future;
-
+        // Volatile because iterator can be created by any thread.
         protected volatile AbortableIteratorPeek<O> peekIter;
 
-        protected volatile boolean isFreed = false;
-
-        public PrefetchTaskBase<O, AbortableIterator<O>> task() {
-            return task;
+        public TaskEntryAsync(InternalBatch<G, I> batch, ExecutorService executorService) {
+            super(batch);
+            this.executorService = executorService;
         }
 
-        public Future<?> future() {
-            return future;
-        }
-
-        public boolean isTerminated() {
-            return task().getState().equals(PrefetchTaskBase.State.TERMINATED);
-        }
-
+        // protected volatile boolean isFreed = false;
         public synchronized void startInNewThread() {
-        	if (task != null) {
-        		// Task already started.
-        		return;
+        	if (peekIter == null) {
+	            boolean isInNewThread = true;
+
+	            IteratorCreator<O> creator = processBatch(batch);
+	            UnaryOperator<O> detacher = x -> detachOutput(x, isInNewThread);
+	            // ExecutorService executorService = executorServicePool.acquireExecutor();
+	            IteratorWrapperViaThread<O> threadIt = new IteratorWrapperViaThread<>(
+	        		executorService, maxBufferAhead, creator, detacher,
+	        		() -> {
+	        			// On thread end: start remaining tasks and hand back the executor.
+	        	        processTaskQueue();
+	        			executorService.shutdown();
+	    	            freeTaskSlots.incrementAndGet();
+	    	            taskQueueCapacity.incrementAndGet();
+	        		});
+	            threadIt.run();
+	            peekIter = new AbortableIteratorPeek<>(threadIt);
         	}
-
-            boolean isInNewThread = true;
-
-            creator = processBatch(batch);
-            UnaryOperator<O> detachItemFn = x -> detachOutput(x, isInNewThread);
-
-            Callable<PrefetchTaskBase<O, AbortableIterator<O>>> createOutputIt = () -> {
-                creator.begin();
-                AbortableIterator<O> tmp = creator.createIterator();
-
-                PrefetchTaskBase<O, AbortableIterator<O>> task = new PrefetchTaskBase<>(tmp, concurrentSlotReadAheadCount, detachItemFn) {
-                    @Override
-                    protected void afterRun() {
-                        // If all data was consumed then free resources.
-                    	// Especially returning the executor to the pool makes it
-                    	// immediately available for processing of further tasks.
-                        if (!iterator.hasNext()) {
-                            freeResources();
-                            creator.end();
-                        }
-                        fillTaskQueue();
-                    }
-                };
-
-                return task;
-            };
-
-            executorService = executorServicePool.acquireExecutor();
-
-            // Create the task through the execution thread such that thread locals (e.g. for transactions)
-            // are initialized on the correct thread
-            try {
-            	task = ExecutorServiceWrapperSync.submit(executorService, createOutputIt::call);
-            } catch (Throwable t) {
-            	// Task creation failed.
-            	// FIXME free resources - report error on stopAndGet().
-            	t.printStackTrace();
-            }
-
-            future = executorService.submit(task);
         }
 
 
@@ -368,69 +447,14 @@ public abstract class RequestExecutorBase<G, I, O>
         // that task was started from the taskQueue.
         @Override
         public synchronized AbortableIteratorPeek<O> stopAndGet() {
-        	// If the task was not started yet we need to do so now.
-        	if (task == null) {
-        		startInNewThread();
-        	}
-
-            if (peekIter == null) {
-                // Send the abort signal
-                task.stop();
-
-                // Wait for the task to complete
-                try {
-                    future.get();
-                } catch (InterruptedException | ExecutionException e) {
-                    // Tasks should never fail but instead set task.getThrowable()
-                    throw new RuntimeException("Should not happen", e);
-                }
-
-                AbortableIterator<O> tmp = task.getIterator();
-
-                // If there is an executorService then make sure the iterator is accessed through it.
-                // Closing the iterator below submits the inThreadCloseAction to the worker thread.
-                // After the worker thread has terminated the outThreadCloseAction is run.
-                AbortableIterator<O> threadIt = new IteratorWrapperViaThread<>(tmp, executorService, task.getCopyFn());
-
-                // If there are buffered items then prepend them to 'tmp'
-                List<O> bufferedItems = task.getBufferedItems();
-                if (!bufferedItems.isEmpty()) {
-                    @SuppressWarnings("resource") // 'concat' will eventually be closed by the calling thread
-                    AbortableIteratorConcat<O> concat = new AbortableIteratorConcat<>();
-                    concat.add(AbortableIterators.wrap(bufferedItems.iterator()));
-                    concat.add(threadIt);
-                    tmp = concat;
-                }
-                peekIter = new AbortableIteratorPeek<>(tmp);
-            }
-
-            Throwable throwable = task.getThrowable();
-            if (throwable != null) {
-                peekIter.close();
-                throw new RuntimeException(throwable);
-            }
-
+        	startInNewThread();
             return peekIter;
-        }
-
-        protected synchronized void freeResources() {
-        	if (!isFreed) {
-        		isFreed = true;
-	            // TODO Skip if already freed.
-	            executorService.submit(() -> creator.end());
-
-	            executorService.shutdown();
-
-	            // XXX I don't really like having the dependency on the taskSlots here - Can we do better?
-	            freeTaskSlots.incrementAndGet();
-        	}
         }
 
         @Override
         public void close() {
-            freeResources();
+        	// Make sure to close peekIter.
         }
-
     }
 
     /**  Ensure that at least there are active requests to serve the next n input bindings */
@@ -463,7 +487,8 @@ public abstract class RequestExecutorBase<G, I, O>
     protected Map<Long, TaskEntry<O>> inputToOutputIt = new LinkedHashMap<>();
 
     /** The task queue is used to submit the tasks in "inputToOutputIt" to executors. */
-    protected AdaptiveDeque<TaskEntryAsync> taskQueue = new AdaptiveDeque<>(new ArrayDeque<>());
+    protected AtomicInteger taskQueueCapacity;
+    protected Deque<TaskEntryAsync> taskQueue = new ArrayDeque<>();
 
     /* State for tracking concurrent prefetch ----------------------------- */
 
@@ -515,7 +540,7 @@ public abstract class RequestExecutorBase<G, I, O>
         this.executorServicePool = new ExecutorServicePool();
 
         this.freeTaskSlots.set(maxConcurrentTasks);
-        this.taskQueue.setCapacity(maxConcurrentTasks * 2);
+        this.taskQueueCapacity = new AtomicInteger(maxConcurrentTasks * 2);
     }
 
     @Override
@@ -641,12 +666,18 @@ public abstract class RequestExecutorBase<G, I, O>
     /** This method is only called from the driver. */
     protected void fillTaskQueue() {
         while (batchIterator.hasNext()) {
-        	// Set up tasks that will be run asynchronously.
-            InternalBatch<G, I> batch = nextBatch(true);
-            TaskEntryAsync taskEntry = new TaskEntryAsync(batch);
-            if (!taskQueue.offer(taskEntry)) {
+        	// Check the capacity of the task queue before .
+            int remainingCapacity = taskQueueCapacity.getAndUpdate(i -> Math.max(0, i - 1));
+            if (remainingCapacity == 0) {
             	break;
             }
+
+        	// Set up tasks that will be run asynchronously.
+            InternalBatch<G, I> batch = nextBatch(true);
+            ExecutorService executorService = executorServicePool.acquireExecutor();
+            TaskEntryAsync taskEntry = new TaskEntryAsync(batch, executorService);
+            registerTaskEntry(taskEntry);
+            taskQueue.add(taskEntry);
         }
 
         System.err.println("Task queue size: " + taskQueue.size());

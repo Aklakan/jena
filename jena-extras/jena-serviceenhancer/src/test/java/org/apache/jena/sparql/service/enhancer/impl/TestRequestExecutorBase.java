@@ -17,9 +17,14 @@ import org.junit.Test;
 public class TestRequestExecutorBase {
 	@Test
 	public void test() {
+		int outer = 100000;
+		int inner = 100;
 
-		Iterator<Entry<String, String>> plainIt = IntStream.range(0, 1000).boxed()
-			.flatMap(i -> IntStream.range(0, 5).mapToObj(j -> Map.entry("group" + i, "item" + j)))
+		int taskSlots = 20;
+		int readAhead = 100000;
+
+		Iterator<Entry<String, String>> plainIt = IntStream.range(9, outer).boxed()
+			.flatMap(i -> IntStream.range(0, inner).mapToObj(j -> Map.entry("group" + i, "item" + j)))
 			.iterator();
 
 		Batcher<String, Entry<String, String>> batcher = new Batcher<>(Entry::getKey, 3, 10);
@@ -30,8 +35,8 @@ public class TestRequestExecutorBase {
 				new AtomicBoolean(),
 				Granularity.ITEM,
 				batchedIt,
-				10,
-				1000) {
+				taskSlots,
+				readAhead) {
 
 					@Override
 					public void output(IndentedWriter out, SerializationContext sCxt) {
