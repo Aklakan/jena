@@ -63,6 +63,8 @@ public abstract class RequestExecutorBase<G, I, O>
     /**
      * Whether to order output across all batches by the individual items (ITEM)
      * or whether each batch is processed as one consecutive unit (BATCH).
+     *
+     * For item-level ordering each item must have an ordinal.
      */
     public enum Granularity {
         ITEM,
@@ -88,7 +90,6 @@ public abstract class RequestExecutorBase<G, I, O>
     	implements Runnable
     {
         public static final Object POISON = new Object();
-        // public static record ExceptionHolder(Throwable throwable) {}
 
     	private final IteratorCreator<T> iteratorCreator;
     	private final UnaryOperator<T> detacher;
@@ -96,7 +97,10 @@ public abstract class RequestExecutorBase<G, I, O>
         private final Runnable onThreadEnd;
 
     	private AbortableIterator<T> iterator;
-    	private Throwable throwable;
+
+    	// If an error occurs then it is tracked in this field.
+    	private volatile Throwable throwable;
+
     	private boolean hasBegun = false;
     	private boolean isFinished = false;
 
@@ -121,10 +125,20 @@ public abstract class RequestExecutorBase<G, I, O>
 	        		queue.put(POISON);
 	        		break;
 				} catch (InterruptedException e) {
-
+					// Poison must land on the queue!
 				}
     		}
     	}
+
+//    	protected void terminateExceptionally(Throwable throwable) {
+//			setException(throwable);
+//			enquePoison();
+//			try {
+//				onThreadEnd.run();
+//			} finally {
+//				throw new RuntimeException(throwable);
+//			}
+//    	}
 
     	protected void setException(Throwable throwable) {
     		this.throwable = throwable;
@@ -134,54 +148,77 @@ public abstract class RequestExecutorBase<G, I, O>
 			return throwable;
 		}
 
+
 		@Override
 		public void run() {
+			if (isFinished) {
+				return;
+			}
+
+			runInternal();
+
+			if (isFinished) {
+				if (onThreadEnd != null) {
+					onThreadEnd.run();
+				}
+			}
+		}
+
+		public void runInternal() {
+			// Abort if there already is an error.
+			if (throwable != null) {
+				throw new RuntimeException(throwable);
+			}
+
 			if (!hasBegun) {
 				hasBegun = true;
-				iteratorCreator.begin();
+				try {
+					iteratorCreator.begin();
+				} catch (Throwable t) {
+					setException(t);
+					enquePoison();
+					return;
+				}
 			}
 
 			if (iterator == null) {
-				iterator = iteratorCreator.createIterator();
+				try {
+					iterator = iteratorCreator.createIterator();
+				} catch (Throwable t) {
+					setException(t);
+					enquePoison();
+					iteratorCreator.end();
+					throw new RuntimeException(t);
+				}
 			}
 
-    		try {
-    			// Always reserve one slot for the poison.
-	        	while (!Thread.interrupted() && iterator.hasNext()) {
-	        		if (queue.remainingCapacity() <= 1) {
-	        			synchronized (queue) {
-	        				while (queue.remainingCapacity() <= 1) {
-	        					queue.wait();
-	        				}
-	        			}
-	        		}
+			if (!isFinished) {
+	    		try {
+	    			// Always reserve one slot for the poison.
+		        	while (!Thread.interrupted() && !isCancelled && iterator.hasNext()) {
+		        		T item = iterator.next();
+	        			T detachedItem = detacher == null ? item : detacher.apply(item);
+						queue.put(detachedItem);
+		        	}
+		        	if (isCancelled || !iterator.hasNext()) {
+			        	enquePoison();
+		        		dataConsumed = true;
+		        	}
+				} catch (InterruptedException e) {
+					// Interruption does not place the poison on the queue.
+					throw new RuntimeException(e);
+				} catch (Throwable t) {
+					setException(t);
+					enquePoison();
+					// Fall through to clean up resources.
+				}
 
-	        		T item = iterator.next();
-        			T detachedItem = detacher == null ? item : detacher.apply(item);
-					queue.put(detachedItem);
-	        	}
-	        	if (!iterator.hasNext()) {
-		        	enquePoison();
-	        		dataConsumed = true;
-	        	}
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			} catch (Throwable t) {
-				setException(t);
-				enquePoison();
-			}
-
-        	if (!isFinished) {
         		if (isCancelled || throwable != null || dataConsumed) {
             		isFinished = true;
             		try {
             			iterator.close();
             		} finally {
-            			try {
-            				iteratorCreator.end();
-            			} finally {
-                			onThreadEnd.run();
-            			}
+        				iteratorCreator.end();
             		}
         		}
         	}
@@ -226,7 +263,7 @@ public abstract class RequestExecutorBase<G, I, O>
         	//   Need to hand the executor service back.
         }
 
-        private void run() {
+        private void start() {
         	if (!isFinished()) {
         		if (future == null) {
         			future = executorService.submit(enqueTask);
@@ -247,7 +284,6 @@ public abstract class RequestExecutorBase<G, I, O>
         	T result;
         	if (item == EnqueTask.POISON) {
         		result = endOfData();
-
         		Throwable t = enqueTask.getThrowable();
         		if (t != null) {
         			throw new RuntimeException(t);
@@ -272,7 +308,7 @@ public abstract class RequestExecutorBase<G, I, O>
         @Override
         protected void closeIteratorActual() {
         	enqueTask.abort();
-        	run(); // Ensure to restart a paused task
+        	start(); // Ensure to restart a paused task
         	stop();
         }
 
@@ -282,6 +318,7 @@ public abstract class RequestExecutorBase<G, I, O>
 				future.get();
 			} catch (InterruptedException | ExecutionException | CancellationException e) {
 				// Ignore
+				e.printStackTrace();
         	} catch (Throwable e) {
 				throw new RuntimeException(e);
 			}
@@ -405,13 +442,15 @@ public abstract class RequestExecutorBase<G, I, O>
         extends TaskEntryBatchBase
     {
         protected final ExecutorService executorService;
+        protected final Runnable onThreadEnd;
 
         // Volatile because iterator can be created by any thread.
         protected volatile AbortableIteratorPeek<O> peekIter;
 
-        public TaskEntryAsync(InternalBatch<G, I> batch, ExecutorService executorService) {
+        public TaskEntryAsync(InternalBatch<G, I> batch, ExecutorService executorService, Runnable onThreadEnd) {
             super(batch);
             this.executorService = executorService;
+            this.onThreadEnd = onThreadEnd;
         }
 
         // protected volatile boolean isFreed = false;
@@ -421,21 +460,14 @@ public abstract class RequestExecutorBase<G, I, O>
 
 	            IteratorCreator<O> creator = processBatch(batch);
 	            UnaryOperator<O> detacher = x -> detachOutput(x, isInNewThread);
-	            // ExecutorService executorService = executorServicePool.acquireExecutor();
 	            IteratorWrapperViaThread<O> threadIt = new IteratorWrapperViaThread<>(
-	        		executorService, maxBufferAhead, creator, detacher,
-	        		() -> {
-	        			// On thread end: start remaining tasks and hand back the executor.
-	        	        processTaskQueue();
-	        			executorService.shutdown();
-	    	            freeTaskSlots.incrementAndGet();
-	    	            taskQueueCapacity.incrementAndGet();
-	        		});
-	            threadIt.run();
+	        		executorService, maxBufferAhead, creator, detacher, onThreadEnd);
+
+	            // Start the thread on the iterator.
+	            threadIt.start();
 	            peekIter = new AbortableIteratorPeek<>(threadIt);
         	}
         }
-
 
         /**
          * Stop the task and return an iterator over the buffered items and the remaining ones.
@@ -452,8 +484,12 @@ public abstract class RequestExecutorBase<G, I, O>
         }
 
         @Override
-        public void close() {
+        public synchronized void close() {
+        	startInNewThread();
         	// Make sure to close peekIter.
+        	// if (peekIter != null) {
+	        	peekIter.close();
+        	// }
         }
     }
 
@@ -499,7 +535,7 @@ public abstract class RequestExecutorBase<G, I, O>
 
     // Whenever a task is started, the count is incremented.
     // Tasks decrement the count themselves just before exiting.
-    private final AtomicInteger freeTaskSlots = new AtomicInteger();
+    private final AtomicInteger freeWorkerSlots = new AtomicInteger();
 
     private Meter throughputMeter = new Meter(5);
     // private Deque<Entry<Long, Integer>> throughputHistory = new ArrayDeque<>(5);
@@ -539,7 +575,7 @@ public abstract class RequestExecutorBase<G, I, O>
 
         this.executorServicePool = new ExecutorServicePool();
 
-        this.freeTaskSlots.set(maxConcurrentTasks);
+        this.freeWorkerSlots.set(maxConcurrentTasks);
         this.taskQueueCapacity = new AtomicInteger(maxConcurrentTasks * 2);
     }
 
@@ -650,12 +686,9 @@ public abstract class RequestExecutorBase<G, I, O>
         if (!inputToOutputIt.containsKey(currentInputId)) {
             // We need the task's iterator right away - do not start concurrent retrieval
             if (batchIterator.hasNext()) {
-                // InstanceLifeCycle<PrefetchTaskForBatch<O, AbortableIterator<O>>> taskLifeCycle = prepareNextBatchExec(false);
                 InternalBatch<G, I> batch = nextBatch(false);
                 TaskEntry<O> taskEntry = new TaskEntryDirect(batch);
                 registerTaskEntry(taskEntry);
-                // TaskEntry<O> taskEntry = prepareNextBatchExec(false);
-                // taskEntry.startCompleted();
             }
         }
 
@@ -663,7 +696,7 @@ public abstract class RequestExecutorBase<G, I, O>
         processTaskQueue();
     }
 
-    /** This method is only called from the driver. */
+    /** This method is only called from the driver - but worker threads may take items from the queue. */
     protected void fillTaskQueue() {
         while (batchIterator.hasNext()) {
         	// Check the capacity of the task queue before .
@@ -675,31 +708,44 @@ public abstract class RequestExecutorBase<G, I, O>
         	// Set up tasks that will be run asynchronously.
             InternalBatch<G, I> batch = nextBatch(true);
             ExecutorService executorService = executorServicePool.acquireExecutor();
-            TaskEntryAsync taskEntry = new TaskEntryAsync(batch, executorService);
+            Runnable onThreadEnd = () -> {
+    	        processTaskQueue();
+    	        // Note: This lambda is run from the executor.
+    	        //   Shutting the executor down hands it back to the executor pool.
+    	        //   If the executor is meanwhile re-acquired it will be briefly blocked
+    	        //   until this method exits. This should be harmless.
+    			executorService.shutdown();
+	            freeWorkerSlots.incrementAndGet();
+	            taskQueueCapacity.incrementAndGet();
+
+	            // System.out.println("freeWorkerSlots: " + freeWorkerSlots.get());
+	            // System.out.println("taskQueueCapacity: " + taskQueueCapacity.get());
+            };
+
+            TaskEntryAsync taskEntry = new TaskEntryAsync(batch, executorService, onThreadEnd);
             registerTaskEntry(taskEntry);
             taskQueue.add(taskEntry);
         }
-
-        System.err.println("Task queue size: " + taskQueue.size());
     }
 
-    /** Method called from worker threads to start execution. */
+    /** Method called from driver or worker threads to start execution of tasks in the queue. */
     protected void processTaskQueue() {
+    	// System.err.println("Task queue size: " + taskQueue.size());
         // If there are more than 0 free slots then decrement the count; otherwise stay at 0.
         int freeSlots;
-        while ((freeSlots = freeTaskSlots.getAndUpdate(i -> Math.max(0, i - 1))) > 0) {
+        while ((freeSlots = freeWorkerSlots.getAndUpdate(i -> Math.max(0, i - 1))) > 0) {
             // Need to ensure the queue is not empty.
             TaskEntryAsync taskEntry = taskQueue.poll();
             if (taskEntry == null) {
                 // Nothing to execute - free the slot again
-                freeTaskSlots.incrementAndGet();
+                freeWorkerSlots.incrementAndGet();
                 break;
-            } else {
-                checkCanExecInNewThread();
-
-                // Launch the task. The task is set up to call "freeTaskSlots.incrementAndGet()" upon completion.
-                taskEntry.startInNewThread();
             }
+
+            checkCanExecInNewThread();
+
+            // Launch the task. The task is set up to call "freeTaskSlots.incrementAndGet()" upon completion.
+            taskEntry.startInNewThread();
         }
     }
 
@@ -752,6 +798,7 @@ public abstract class RequestExecutorBase<G, I, O>
             for (TaskEntry<O> taskEntry : inputToOutputIt.values()) {
                 Closeable closable = taskEntry.stopAndGet();
                 closer.register(closable::close);
+                closer.register(taskEntry::close);
             }
 
             closer.register(batchIterator::close);
@@ -763,6 +810,8 @@ public abstract class RequestExecutorBase<G, I, O>
     @Override
     protected void closeIteratorActual() {
         freeResources();
+        System.out.println("final freeWorkerSlots: " + freeWorkerSlots.get());
+        System.out.println("final taskQueueCapacity: " + taskQueueCapacity.get());
     }
 
     @Override

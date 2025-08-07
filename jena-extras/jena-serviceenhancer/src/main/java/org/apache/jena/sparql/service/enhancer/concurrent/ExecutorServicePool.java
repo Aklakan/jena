@@ -235,7 +235,9 @@ public class ExecutorServicePool {
         node.getValue().idleTimestamp = System.currentTimeMillis();
         // Note: Even if there are more than maxIdleExecutors executors right now then
         // we still only clean them up after the idle delay.
-        node.moveToEnd();
+        synchronized (actions) {
+        	node.moveToEnd();
+        }
         scheduleCleanup();
     }
 
