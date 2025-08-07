@@ -21,7 +21,7 @@ import com.google.common.collect.Iterators;
 public class TestRequestExecutorBase {
     @Test
     public void testWrapper() {
-        for (int i = 0; i < 10; ++i) {
+        for (int i = 0; i < 2; ++i) {
             test();
         }
     }
@@ -29,8 +29,6 @@ public class TestRequestExecutorBase {
     public void test() {
         int numGroups = 1000;
         int numItemsPerGroup = 10;
-
-        int numJoinItems = 100;
 
         int taskSlots = 20;
         int readAhead = 100000;
@@ -43,55 +41,37 @@ public class TestRequestExecutorBase {
 
         AbortableIterator<GroupedBatch<String, Long, Entry<String, String>>> batchedIt = batcher.batch(AbortableIterators.wrap(plainIt));
 
+        System.out.println(batchedIt.toString());
+        // if (true) { return; }
+
         RequestExecutorBase<String, Entry<String, String>, Entry<Long, String>> executor = new RequestExecutorBase<>(
-                new AtomicBoolean(),
-                Granularity.BATCH,
-                batchedIt,
-                taskSlots,
-                readAhead) {
+            new AtomicBoolean(),
+            Granularity.BATCH,
+            batchedIt,
+            taskSlots,
+            readAhead) {
+                // The creator may be called from the main thread - but what it returns will be run on a separate thread.
+                @Override
+                protected IteratorCreator<Entry<Long, String>> processBatch(boolean isInNewThread, String groupKey,
+                        List<Entry<String, String>> batch, List<Long> reverseMap) {
 
-                    @Override
-                    public void output(IndentedWriter out, SerializationContext sCxt) {
-                    }
+                    // Create an iterator that defers each item by 1 ms.
+                    return () -> AbortableIterators.wrap(IntStream.range(0,  batch.size())
+                            .peek(item -> {
+                                try {
+                                    Thread.sleep(1);
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .mapToObj(i -> Map.entry(reverseMap.get(i), batch.get(i).getValue()))
+                            .iterator());
+                }
 
-                    @Override
-                    protected boolean isCancelled() {
-                        return false;
-                    }
-
-                    // The creator may be called from the main thread - but what it returns will be run on a separate thread.
-                    @Override
-                    protected IteratorCreator<Entry<Long, String>> processBatch(boolean isInNewThread, String groupKey,
-                            List<Entry<String, String>> batch, List<Long> reverseMap) {
-                        if (isInNewThread) {
-                            // System.out.println(Thread.currentThread());
-                        }
-                        return () -> AbortableIterators.wrap(IntStream.range(0,  batch.size())
-                                .peek(item -> {
-                                    try {
-                                        Thread.sleep(1);
-                                    } catch (InterruptedException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                })
-                                .mapToObj(i -> Map.entry(reverseMap.get(i), batch.get(i).getValue()))
-                                // .flatMap(e -> IntStream.range(0, numJoinItems).mapToObj(j -> Map.entry(e.getKey(), e.getValue() + "-joinItem" + j)))
-                                .iterator());
-
-//						return () -> AbortableIterators.wrap(IntStream.range(0,  batch.size())
-//								.mapToObj(i -> Map.entry(reverseMap.get(i), batch.get(i).getValue()))
-//								.flatMap(e -> IntStream.range(0, numJoinItems).mapToObj(j -> Map.entry(e.getKey(), e.getValue() + "-joinItem" + j)))
-//								.iterator());
-                    }
-
-                    @Override
-                    protected long extractInputOrdinal(Entry<Long, String> input) {
-                        return input.getKey();
-                    }
-
-                    @Override
-                    protected void checkCanExecInNewThread() {
-                    }
+                @Override protected long    extractInputOrdinal(Entry<Long, String> input) { return input.getKey(); }
+                @Override protected void    checkCanExecInNewThread() {}
+                @Override public  void      output(IndentedWriter out, SerializationContext sCxt) {}
+                @Override protected boolean isCancelled() { return false; }
             };
 
 

@@ -57,6 +57,11 @@ public abstract class AbortableIterator1<I, O>
      */
     protected abstract void closeSubIterator();
 
+    @Override
+    public void output(IndentedWriter out) {
+        output(out, null);
+    }
+
     // Do better
     @Override
     public void output(IndentedWriter out, SerializationContext sCxt) {

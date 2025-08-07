@@ -29,6 +29,7 @@ import java.util.TreeMap;
 import java.util.function.Function;
 
 import org.apache.jena.atlas.io.IndentedWriter;
+import org.apache.jena.atlas.lib.Lib;
 import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterator;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbstractAbortableIterator;
@@ -95,6 +96,10 @@ public class Batcher<G, I> {
             super();
             this.inputIterator = inputIterator;
             this.inputIteratorOffset = inputIteratorOffset;
+        }
+
+        protected AbortableIterator<I> getInput() {
+            return inputIterator;
         }
 
         @Override
@@ -221,10 +226,26 @@ public class Batcher<G, I> {
             inputIterator.cancel();
         }
 
+        @Override
+        public void output(IndentedWriter out) {
+            output(out, null);
+        }
 
         @Override
         public void output(IndentedWriter out, SerializationContext sCxt) {
-            // FIXME Implement this - probably we need a AbortableIterator1 base class
+            // Linear form.
+            if ( getInput() != null )
+                // Closed
+                getInput().output(out, sCxt);
+            else
+                out.println("Closed");
+            out.ensureStartOfLine();
+            details(out, sCxt);
+            out.ensureStartOfLine();
+        }
+
+        protected void details(IndentedWriter out, SerializationContext sCxt) {
+            out.println(Lib.className(this));
         }
     }
 }
