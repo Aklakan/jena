@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +40,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 
 import org.apache.jena.atlas.io.IndentedWriter;
+import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.atlas.lib.Closeable;
+import org.apache.jena.atlas.lib.Creator;
 import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.service.enhancer.concurrent.ExecutorServicePool;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterator;
@@ -80,157 +81,161 @@ public abstract class RequestExecutorBase<G, I, O>
      * Each method is only invoked once and all methods are always invoked on the same thread.
      * The end method will be invoked upon closing the iterator or if iterator creation fails.
      */
-    public interface IteratorCreator<T> {
-        default void begin() {}
-        AbortableIterator<T> createIterator();
-        default void end() {}
-    }
+    public interface IteratorCreator<T> extends Creator<AbortableIterator<T>> {}
 
     static class EnqueTask<T>
-    	implements Runnable
+        implements Runnable
     {
         public static final Object POISON = new Object();
 
-    	private final IteratorCreator<T> iteratorCreator;
-    	private final UnaryOperator<T> detacher;
+        // FIXME Iterator creator might be better replaced by a Creator<AbortableIterator<T>>.
+        //
+        private final IteratorCreator<T> iteratorCreator;
+        private final UnaryOperator<T> detacher;
         private final BlockingQueue<Object> queue;
         private final Runnable onThreadEnd;
 
-    	private AbortableIterator<T> iterator;
+        // The iterator is obtained from the iteratorCreator during run().
+        private AbortableIterator<T> iterator;
+        // private CountDownLatch terminationLatch = new CountDownLatch(1);
 
-    	// If an error occurs then it is tracked in this field.
-    	private volatile Throwable throwable;
+        // If an error occurs then it is tracked in this field.
+        private volatile Throwable throwable;
 
-    	private boolean hasBegun = false;
-    	private boolean isFinished = false;
-
-    	private boolean dataConsumed = false;
-    	private volatile boolean isCancelled = false;
+        private volatile boolean isAborted = false;
+        private volatile boolean poisonEnqeued = false;
+        private boolean isTerminated = false;
 
         public EnqueTask(IteratorCreator<T> iteratorCreator, UnaryOperator<T> detacher, BlockingQueue<Object> queue, Runnable onThreadEnd) {
-    		this.iteratorCreator = iteratorCreator;
-    		this.detacher = detacher;
-    		this.queue = queue;
-    		this.onThreadEnd = onThreadEnd;
-    	}
+            this.iteratorCreator = iteratorCreator;
+            this.detacher = detacher;
+            this.queue = queue;
+            this.onThreadEnd = onThreadEnd;
+        }
 
-    	/** Cancelling the task only pauses it. Call abort() before cancel to really abort the task. */
-    	public void abort() {
-    		this.isCancelled = true;
-    	}
+//        public CountDownLatch getTerminationLatch() {
+//            return terminationLatch;
+//        }
 
-    	private void enquePoison() {
-    		while (true) {
-				try {
-	        		queue.put(POISON);
-	        		break;
-				} catch (InterruptedException e) {
-					// Poison must land on the queue!
-				}
-    		}
-    	}
+        /**
+         * Set the flag that the task is considered cancelled.
+         * Upon the next interrupt all resources will be freed.
+         * Note that you MUST interrupt the thread to abort it prematurely.
+         */
+        public void setAbortFlag() {
+            this.isAborted = true;
+        }
 
-//    	protected void terminateExceptionally(Throwable throwable) {
-//			setException(throwable);
-//			enquePoison();
-//			try {
-//				onThreadEnd.run();
-//			} finally {
-//				throw new RuntimeException(throwable);
-//			}
-//    	}
+        private void enquePoison() {
+            if (!poisonEnqeued) {
+                while (true) {
+                    try {
+                        queue.put(POISON);
+                        poisonEnqeued = true;
+                        break;
+                    // } catch (InterruptedException e) {
+                    } catch (Throwable t) {
+                        // Poison must land on the queue!
+                        logger.warn("Iterrupted while attempting to place POISON on the queue.", t);
+                    }
+                }
+            }
+        }
 
-    	protected void setException(Throwable throwable) {
-    		this.throwable = throwable;
-    	}
+        public boolean isPoisonEnqueued() {
+            return poisonEnqeued;
+        }
 
-    	public Throwable getThrowable() {
-			return throwable;
-		}
+        protected void setException(Throwable throwable) {
+            this.throwable = throwable;
+        }
 
+        public Throwable getThrowable() {
+            return throwable;
+        }
 
-		@Override
-		public void run() {
-			if (isFinished) {
-				return;
-			}
+        @Override
+        public void run() {
+            // Abort if there already was an error.
+            if (throwable != null) {
+                throw new RuntimeException(throwable);
+            }
 
-			runInternal();
+            // If the poison was enqueued then all processing is complete -
+            // regardless whether normally or exceptionally.
+            if (isPoisonEnqueued()) {
+                return;
+            }
 
-			if (isFinished) {
-				if (onThreadEnd != null) {
-					onThreadEnd.run();
-				}
-			}
-		}
+            boolean isPaused = false;
+            try {
+                runInternal();
+            } catch (InterruptedException e) {
+                if (!isAborted) {
+                    // Exit without exception if interrupted without abort.
+                    isPaused = true;
+                } else {
+                    setException(new CancellationException());
+                }
+            } catch (Throwable t) {
+                setException(t);
+            } finally {
+                if (!isPaused) {
+                    terminate();
+                }
+            }
+        }
 
-		public void runInternal() {
-			// Abort if there already is an error.
-			if (throwable != null) {
-				throw new RuntimeException(throwable);
-			}
+        public void runInternal() throws InterruptedException {
+            // If cancelled then don't start the iterator.
+            if (isAborted) {
+                throw new CancellationException();
+            }
 
-			if (!hasBegun) {
-				hasBegun = true;
-				try {
-					iteratorCreator.begin();
-				} catch (Throwable t) {
-					setException(t);
-					enquePoison();
-					return;
-				}
-			}
+            if (iterator == null) {
+                iterator = iteratorCreator.create();
+            }
 
-			if (iterator == null) {
-				try {
-					iterator = iteratorCreator.createIterator();
-				} catch (Throwable t) {
-					setException(t);
-					enquePoison();
-					iteratorCreator.end();
-					throw new RuntimeException(t);
-				}
-			}
+            // Always reserve one slot for the poison.
+            while (iterator.hasNext()) { // Rely on the queue's InterruptedException - no Thread.interrupted() here.
+                T item = iterator.next();
+                T detachedItem = detacher == null ? item : detacher.apply(item);
 
-			if (!isFinished) {
-	    		try {
-	    			// Always reserve one slot for the poison.
-		        	while (!Thread.interrupted() && !isCancelled && iterator.hasNext()) {
-		        		T item = iterator.next();
-	        			T detachedItem = detacher == null ? item : detacher.apply(item);
-						queue.put(detachedItem);
-		        	}
-		        	if (isCancelled || !iterator.hasNext()) {
-			        	enquePoison();
-		        		dataConsumed = true;
-		        	}
-				} catch (InterruptedException e) {
-					// Interruption does not place the poison on the queue.
-					throw new RuntimeException(e);
-				} catch (Throwable t) {
-					setException(t);
-					enquePoison();
-					// Fall through to clean up resources.
-				}
+                // Rely on InterruptedException here.
+                queue.put(detachedItem);
+            }
+        }
 
-        		if (isCancelled || throwable != null || dataConsumed) {
-            		isFinished = true;
-            		try {
-            			iterator.close();
-            		} finally {
-        				iteratorCreator.end();
-            		}
-        		}
-        	}
-		}
+        protected void terminate() {
+            if (!isTerminated) {
+                isTerminated = true;
+                try {
+                    if (iterator != null) {
+                        iterator.close();
+                    }
+                } finally {
+                    try {
+                        enquePoison();
+                    } finally {
+                        onThreadEnd.run();
+                    }
+                }
+
+                // terminationLatch.countDown();
+
+                if (throwable != null) {
+                    throw new RuntimeException(throwable);
+                }
+            }
+        }
     }
 
     static class IteratorWrapperViaThread<T>
         extends AbstractAbortableIterator<T>
     {
-    	protected EnqueTask<T> enqueTask;
+        protected EnqueTask<T> enqueTask;
 
-    	/**
+        /**
          * A function to detach items from the life-cycle of the iterator.
          * For example, TDB2 Bindings must be detached from resources that are free'd when the iterator is closed.
          */
@@ -238,8 +243,8 @@ public abstract class RequestExecutorBase<G, I, O>
 
 
         // protected ExecutorServicePool executorServicePool;
-    	protected ExecutorService executorService;
-    	protected Future<?> future;
+        protected ExecutorService executorService;
+        protected Future<?> future;
 
         /**
          * Deque item type is of type Object in order to be capabable of holding the POISON.
@@ -250,85 +255,97 @@ public abstract class RequestExecutorBase<G, I, O>
         protected volatile List<T> buffer;
 
         public IteratorWrapperViaThread(
-        		ExecutorService executorSerivce, int maxQueueSize, IteratorCreator<T> iteratorCreator, UnaryOperator<T> detacher,
-        		Runnable onThreadEnd) {
-        	if (maxQueueSize < 1) {
-        		throw new IllegalArgumentException("Queue size must be at least 1.");
-        	}
+                ExecutorService executorSerivce, int maxQueueSize, IteratorCreator<T> iteratorCreator, UnaryOperator<T> detacher,
+                Runnable onThreadEnd) {
+            if (maxQueueSize < 1) {
+                throw new IllegalArgumentException("Queue size must be at least 1.");
+            }
 
-        	this.executorService = executorSerivce;
-        	this.queue = new ArrayBlockingQueue<>(maxQueueSize + 1); // Internally add one for the poison.
-        	this.enqueTask = new EnqueTask<>(iteratorCreator, detacher, queue, onThreadEnd);
-        	// TODO Probably we need a lambda for when the thread exits
-        	//   Need to hand the executor service back.
+            this.executorService = executorSerivce;
+            this.queue = new ArrayBlockingQueue<>(maxQueueSize + 1); // Internally add one for the poison.
+            this.enqueTask = new EnqueTask<>(iteratorCreator, detacher, queue, onThreadEnd);
+            // TODO Probably we need a lambda for when the thread exits
+            //   Need to hand the executor service back.
         }
 
         private void start() {
-        	if (!isFinished()) {
-        		if (future == null) {
-        			future = executorService.submit(enqueTask);
-        		}
-        	}
+            if (!isFinished()) {
+                if (future == null) {
+                    future = executorService.submit(enqueTask);
+                }
+            }
         }
 
         @SuppressWarnings("unchecked")
-		@Override
+        @Override
         public T moveToNext() {
-        	Object item;
-        	try {
-        		item = queue.take();
-        	} catch (InterruptedException e) {
-        		throw new RuntimeException(e);
-        	}
+            Object item;
+            try {
+                item = queue.take();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
 
-        	T result;
-        	if (item == EnqueTask.POISON) {
-        		result = endOfData();
-        		Throwable t = enqueTask.getThrowable();
-        		if (t != null) {
-        			throw new RuntimeException(t);
-        		}
-        	} else {
-        		result = (T)item;
-        	}
-        	return result;
+            T result;
+            if (item == EnqueTask.POISON) {
+                result = endOfData();
+                Throwable t = enqueTask.getThrowable();
+                if (t != null) {
+                    throw new RuntimeException(t);
+                }
+            } else {
+                result = (T)item;
+            }
+            return result;
         }
 
         @Override
         protected void requestCancel() {
-        	if (future != null) {
-        		future.cancel(true);
-        	}
+            enqueTask.setAbortFlag();
+            if (future != null) {
+                future.cancel(true);
+            }
         }
 
         public void pause() {
-        	stop();
+            stop();
         }
 
         @Override
         protected void closeIteratorActual() {
-        	enqueTask.abort();
-        	start(); // Ensure to restart a paused task
-        	stop();
+            // Without the abort flag non-terminated task would only pause and retain their resources.
+            // Setting the abort flag ensures that the task terminates upon interruption and frees its resources.
+            enqueTask.setAbortFlag();
+            stop();
         }
 
         private void stop() {
-        	future.cancel(true);
-        	try {
-				future.get();
-			} catch (InterruptedException | ExecutionException | CancellationException e) {
-				// Ignore
-				e.printStackTrace();
-        	} catch (Throwable e) {
-				throw new RuntimeException(e);
-			}
-        	future = null;
+            if (future != null) {
+                // XXX Java limitation: future.cancel(true) followed by future.get() does not
+                // wait for the thread to exit.
+                future.cancel(true);
+                try {
+                    future.get();
+                } catch (InterruptedException | ExecutionException | CancellationException e) {
+                    // Ignore
+                } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                }
+                /*
+                try {
+                    enqueTask.getTerminationLatch().await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                */
+                future = null;
+            }
         }
 
-		@Override
-		public void output(IndentedWriter out, SerializationContext sCxt) {
-			// TODO Auto-generated method stub
-		}
+        @Override
+        public void output(IndentedWriter out, SerializationContext sCxt) {
+            // TODO Auto-generated method stub
+        }
     }
 
     protected static long getCloseId(Granularity granularity, TaskEntry<?> taskEntry) {
@@ -414,20 +431,17 @@ public abstract class RequestExecutorBase<G, I, O>
         public AbortableIteratorPeek<O> stopAndGet() {
             if (iteratorCreator == null) {
                 iteratorCreator = processBatch(batch);
-                iteratorCreator.begin();
-                createdIterator = new AbortableIteratorPeek<>(iteratorCreator.createIterator());
+                AbortableIterator<O> it = iteratorCreator.create();
+                createdIterator = new AbortableIteratorPeek<>(it);
             }
             return createdIterator;
         }
 
         @Override
         public void close() {
-            if (iteratorCreator != null) {
-                iteratorCreator.end();
-            }
+            Iter.close(createdIterator);
         }
     }
-
 
     // There are three ways to execute sub-iterators:
     // EmptyTask - a dummy task that has a closeId but does not produce items
@@ -455,18 +469,18 @@ public abstract class RequestExecutorBase<G, I, O>
 
         // protected volatile boolean isFreed = false;
         public synchronized void startInNewThread() {
-        	if (peekIter == null) {
-	            boolean isInNewThread = true;
+            if (peekIter == null) {
+                boolean isInNewThread = true;
 
-	            IteratorCreator<O> creator = processBatch(batch);
-	            UnaryOperator<O> detacher = x -> detachOutput(x, isInNewThread);
-	            IteratorWrapperViaThread<O> threadIt = new IteratorWrapperViaThread<>(
-	        		executorService, maxBufferAhead, creator, detacher, onThreadEnd);
+                IteratorCreator<O> creator = processBatch(batch);
+                UnaryOperator<O> detacher = x -> detachOutput(x, isInNewThread);
+                IteratorWrapperViaThread<O> threadIt = new IteratorWrapperViaThread<>(
+                    executorService, maxBufferAhead, creator, detacher, onThreadEnd);
 
-	            // Start the thread on the iterator.
-	            threadIt.start();
-	            peekIter = new AbortableIteratorPeek<>(threadIt);
-        	}
+                // Start the thread on the iterator.
+                threadIt.start();
+                peekIter = new AbortableIteratorPeek<>(threadIt);
+            }
         }
 
         /**
@@ -479,17 +493,17 @@ public abstract class RequestExecutorBase<G, I, O>
         // that task was started from the taskQueue.
         @Override
         public synchronized AbortableIteratorPeek<O> stopAndGet() {
-        	startInNewThread();
+            startInNewThread();
             return peekIter;
         }
 
         @Override
         public synchronized void close() {
-        	startInNewThread();
-        	// Make sure to close peekIter.
-        	// if (peekIter != null) {
-	        	peekIter.close();
-        	// }
+            startInNewThread();
+            // Make sure to close peekIter.
+            // if (peekIter != null) {
+                peekIter.close();
+            // }
         }
     }
 
@@ -698,28 +712,29 @@ public abstract class RequestExecutorBase<G, I, O>
 
     /** This method is only called from the driver - but worker threads may take items from the queue. */
     protected void fillTaskQueue() {
+        // TODO Do not fill the task queue when aborted.
         while (batchIterator.hasNext()) {
-        	// Check the capacity of the task queue before .
+            // Check the capacity of the task queue before .
             int remainingCapacity = taskQueueCapacity.getAndUpdate(i -> Math.max(0, i - 1));
             if (remainingCapacity == 0) {
-            	break;
+                break;
             }
 
-        	// Set up tasks that will be run asynchronously.
+            // Set up tasks that will be run asynchronously.
             InternalBatch<G, I> batch = nextBatch(true);
             ExecutorService executorService = executorServicePool.acquireExecutor();
             Runnable onThreadEnd = () -> {
-    	        processTaskQueue();
-    	        // Note: This lambda is run from the executor.
-    	        //   Shutting the executor down hands it back to the executor pool.
-    	        //   If the executor is meanwhile re-acquired it will be briefly blocked
-    	        //   until this method exits. This should be harmless.
-    			executorService.shutdown();
-	            freeWorkerSlots.incrementAndGet();
-	            taskQueueCapacity.incrementAndGet();
+                processTaskQueue();
+                // Note: This lambda is run from the executor.
+                //   Shutting the executor down hands it back to the executor pool.
+                //   If the executor is meanwhile re-acquired it will be briefly blocked
+                //   until this method exits. This should be harmless.
+                executorService.shutdown();
+                freeWorkerSlots.incrementAndGet();
+                taskQueueCapacity.incrementAndGet();
 
-	            // System.out.println("freeWorkerSlots: " + freeWorkerSlots.get());
-	            // System.out.println("taskQueueCapacity: " + taskQueueCapacity.get());
+//                System.out.println("freeWorkerSlots: " + freeWorkerSlots.get());
+//                System.out.println("taskQueueCapacity: " + taskQueueCapacity.get());
             };
 
             TaskEntryAsync taskEntry = new TaskEntryAsync(batch, executorService, onThreadEnd);
@@ -730,7 +745,7 @@ public abstract class RequestExecutorBase<G, I, O>
 
     /** Method called from driver or worker threads to start execution of tasks in the queue. */
     protected void processTaskQueue() {
-    	// System.err.println("Task queue size: " + taskQueue.size());
+        // System.err.println("Task queue size: " + taskQueue.size());
         // If there are more than 0 free slots then decrement the count; otherwise stay at 0.
         int freeSlots;
         while ((freeSlots = freeWorkerSlots.getAndUpdate(i -> Math.max(0, i - 1))) > 0) {
@@ -795,6 +810,8 @@ public abstract class RequestExecutorBase<G, I, O>
         try (Closer closer = Closer.create()) {
             closer.register(activeIter::close);
 
+            // TODO The some object may get closed multiple times - because the same task may be registered under multiple
+            // input ids - use a IdentityHashSet(values())???
             for (TaskEntry<O> taskEntry : inputToOutputIt.values()) {
                 Closeable closable = taskEntry.stopAndGet();
                 closer.register(closable::close);
@@ -810,8 +827,11 @@ public abstract class RequestExecutorBase<G, I, O>
     @Override
     protected void closeIteratorActual() {
         freeResources();
-        System.out.println("final freeWorkerSlots: " + freeWorkerSlots.get());
-        System.out.println("final taskQueueCapacity: " + taskQueueCapacity.get());
+        if (false) {
+            System.out.println("final taskQueueSize: " + taskQueue.size());
+            System.out.println("final freeWorkerSlots: " + freeWorkerSlots.get());
+            System.out.println("final taskQueueCapacity: " + taskQueueCapacity.get());
+        }
     }
 
     @Override

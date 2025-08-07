@@ -33,6 +33,7 @@ import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterator;
+import org.apache.jena.sparql.service.enhancer.impl.util.iterator.AbortableIterators;
 import org.apache.jena.system.TxnOp;
 
 /** Adaption of the generic {@link RequestExecutorBase} base class to Jena's QueryIterator machinery. */
@@ -98,7 +99,7 @@ public abstract class RequestExecutorSparqlBase
         if (!runsOnNewThread) {
             result = new IteratorCreator<>() {
                 @Override
-                public AbortableIterator<Binding> createIterator() {
+                public  AbortableIterator<Binding> create() {
                     return buildIterator(runsOnNewThread, groupKey, inputs, reverseMap, execCxt);
                 }
             };
@@ -108,7 +109,7 @@ public abstract class RequestExecutorSparqlBase
             // ExecutionContext isolatedExecCxt = new ExecutionContext(execCxt.getContext(), execCxt.getActiveGraph(), execCxt.getDataset(), execCxt.getExecutor());
             result = new IteratorCreatorWithTxn<>(isolatedExecCxt, TxnType.READ) {
                 @Override
-                public AbortableIterator<Binding> createIterator() {
+                protected AbortableIterator<Binding> createIterator() {
                     // Note: execCxt in here is assigned to isolatedExecCxt!
                     return buildIterator(runsOnNewThread, groupKey, inputs, reverseMap, execCxt);
                 }
@@ -130,13 +131,20 @@ public abstract class RequestExecutorSparqlBase
         }
 
         @Override
-        public void begin() {
+        public final AbortableIterator<T> create() {
+            begin();
+            AbortableIterator<T> it = createIterator();
+            return AbortableIterators.onClose(it, this::end);
+        }
+
+        protected abstract AbortableIterator<T> createIterator();
+
+        protected void begin() {
             DatasetGraph dsg = execCxt.getDataset();
             txnBegin(dsg, txnType);
         }
 
-        @Override
-        public void end() {
+        protected void end() {
             DatasetGraph dsg = execCxt.getDataset();
             txnEnd(dsg);
         }
