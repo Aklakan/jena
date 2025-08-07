@@ -712,6 +712,9 @@ public abstract class RequestExecutorBase<G, I, O>
 
     /** This method is only called from the driver - but worker threads may take items from the queue. */
     protected void fillTaskQueue() {
+        // Fail to schedule tasks if promoted to a write transaction.
+        checkCanExecInNewThread();
+
         // TODO Do not fill the task queue when aborted.
         while (batchIterator.hasNext()) {
             // Check the capacity of the task queue before .
@@ -756,8 +759,6 @@ public abstract class RequestExecutorBase<G, I, O>
                 freeWorkerSlots.incrementAndGet();
                 break;
             }
-
-            checkCanExecInNewThread();
 
             // Launch the task. The task is set up to call "freeTaskSlots.incrementAndGet()" upon completion.
             taskEntry.startInNewThread();

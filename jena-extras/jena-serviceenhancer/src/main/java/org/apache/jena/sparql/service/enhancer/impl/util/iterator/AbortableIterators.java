@@ -31,12 +31,9 @@ public class AbortableIterators {
         return wrap(Collections.<T>emptyIterator());
     }
 
+    /** Bridge between {@code QueryIterator} and {@code AbortableIterator}. */
     public static AbortableIterator<Binding> adapt(QueryIterator qIter) {
         return new AbortableIteratorOverQueryIterator(qIter);
-    }
-
-    public static <T> AbortableIterator<T> wrap(Iterable<T> iterable) {
-        return new AbortableIteratorOverIterator<>(iterable.iterator());
     }
 
     public static <T> AbortableIterator<T> wrap(Iterator<T> it) {
@@ -58,8 +55,7 @@ public class AbortableIterators {
         return result;
     }
 
-    /** Wrap a given {@link QueryIterator} with an additional close action. */
-    // XXX This static util method could be moved to QueryIter
+    /** Wrap an {@link AbortableIterator} with an additional close action. */
     public static <T> AbortableIterator<T> onClose(AbortableIterator<T> qIter, Closeable action) {
         Objects.requireNonNull(qIter);
         AbortableIterator<T> result = action == null
@@ -76,32 +72,4 @@ public class AbortableIterators {
             };
         return result;
     }
-
-    /** Wrap a given {@link QueryIterator} with an additional close action. */
-    // XXX This static util method could be moved to QueryIter
-//    private static QueryIterator onClose(QueryIterator qIter, Closeable action) {
-//        Objects.requireNonNull(qIter);
-//        QueryIterator result = action == null
-//            ? qIter
-//            : new QueryIteratorWrapper(qIter) {
-//                @Override
-//                protected void closeIterator() {
-//                    try {
-//                        action.close();
-//                    } finally {
-//                        super.closeIterator();
-//                    }
-//                }
-//            };
-//        return result;
-//    }
-
-
-//    public static map() {
-//
-//    }
-//
-//    public static flatMap() {
-//
-//    }
 }
