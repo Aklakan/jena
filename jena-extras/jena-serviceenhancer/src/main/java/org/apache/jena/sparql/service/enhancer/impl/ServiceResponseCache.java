@@ -130,7 +130,7 @@ public class ServiceResponseCache {
     }
 
     public static void set(Context cxt, ServiceResponseCache cache) {
-        cxt.put(ServiceEnhancerConstants.serviceCache, Lazy.of(cache));
+        cxt.put(ServiceEnhancerConstants.serviceCache, Lazy.ofInstance(cache));
     }
 
     public static void set(Context cxt, Lazy<ServiceResponseCache> cache) {

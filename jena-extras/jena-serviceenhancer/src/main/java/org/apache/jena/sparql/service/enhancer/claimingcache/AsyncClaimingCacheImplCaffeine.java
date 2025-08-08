@@ -50,7 +50,7 @@ import com.google.common.collect.Sets;
 
 /**
  * Implementation of async claiming cache.
- * Claimed entries will never be evicted. Conversely, unclaimed items remain are added to a cache such that timely re-claiming
+ * Claimed entries will never be evicted. Conversely, unclaimed items are added to a cache such that timely re-claiming
  * will be fast.
  *
  * Use cases:
@@ -59,8 +59,6 @@ import com.google.common.collect.Sets;
  *   may remain on standby for a while.
  *
  * Another way to view this class is as a mix of a map with weak values and a cache.
- *
- * @author raven
  *
  * @param <K>
  * @param <V>

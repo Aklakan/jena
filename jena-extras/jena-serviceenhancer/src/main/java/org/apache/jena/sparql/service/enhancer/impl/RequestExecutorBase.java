@@ -88,8 +88,6 @@ public abstract class RequestExecutorBase<G, I, O>
     {
         public static final Object POISON = new Object();
 
-        // FIXME Iterator creator might be better replaced by a Creator<AbortableIterator<T>>.
-        //
         private final IteratorCreator<T> iteratorCreator;
         private final UnaryOperator<T> detacher;
         private final BlockingQueue<Object> queue;
@@ -113,10 +111,6 @@ public abstract class RequestExecutorBase<G, I, O>
             this.onThreadEnd = onThreadEnd;
         }
 
-//        public CountDownLatch getTerminationLatch() {
-//            return terminationLatch;
-//        }
-
         /**
          * Set the flag that the task is considered cancelled.
          * Upon the next interrupt all resources will be freed.
@@ -133,9 +127,7 @@ public abstract class RequestExecutorBase<G, I, O>
                         queue.put(POISON);
                         poisonEnqeued = true;
                         break;
-                    // } catch (InterruptedException e) {
                     } catch (Throwable t) {
-                        // Poison must land on the queue!
                         logger.warn("Iterrupted while attempting to place POISON on the queue.", t);
                     }
                 }
@@ -220,8 +212,6 @@ public abstract class RequestExecutorBase<G, I, O>
                         onThreadEnd.run();
                     }
                 }
-
-                // terminationLatch.countDown();
 
                 if (throwable != null) {
                     throw new RuntimeException(throwable);
@@ -593,13 +583,33 @@ public abstract class RequestExecutorBase<G, I, O>
         this.taskQueueCapacity = new AtomicInteger(maxConcurrentTasks * 2);
     }
 
+
+    protected void autoScale() {
+        // XXX Scale the task queue size based on the number of processed items since last time coming here.
+        // I think we want the maximum number of threads that finish per tick (in a window).
+        // throughputMeter.tick();
+
+        // If the task queue is empty then scale up the size of it.
+        if (taskQueue.isEmpty()) {
+            // TODO get current max capacity and double it.
+            // taskQueueCapacity.
+        }
+
+        // If the task queue is non-empty then we can measure the number of
+        // We can actually measure the min/max/avg time spent per concurrent thread until it was finished.
+        // We can use this to scale the task queue and the threads at the same time
+        // If more threads make it slower then we scale the thread count down again
+        // through we might need to take into account whether a producer thread was blocked on the queue...
+
+
+    }
+
     @Override
     protected O moveToNext() {
         O result = null;
 
-        // XXX Scale the task queue size based on the number of processed items since last time coming here.
-        // I think we want the maximum number of threads that finish per tick (in a window).
-        // throughputMeter.tick();
+        // Check whether to scale up or down the size of the task queue or the number of workers.
+        autoScale();
 
         boolean didAdvanceActiveIter = false;
         // Peek the next binding on the active iterator and verify that it maps to the current
@@ -667,7 +677,7 @@ public abstract class RequestExecutorBase<G, I, O>
         } else {
             if (!didAdvanceActiveIter) {
                 // Check whether to schedule any further concurrent tasks.
-                // Check is redundant if activeIter was advanced.
+                // Check was already performed if activeIter was advanced.
                 prepareNextBatchExecs();
             }
         }
@@ -811,7 +821,7 @@ public abstract class RequestExecutorBase<G, I, O>
         try (Closer closer = Closer.create()) {
             closer.register(activeIter::close);
 
-            // TODO The some object may get closed multiple times - because the same task may be registered under multiple
+            // TODO The some objects may get closed multiple times - because the same task may be registered under multiple
             // input ids - use a IdentityHashSet(values())???
             for (TaskEntry<O> taskEntry : inputToOutputIt.values()) {
                 Closeable closable = taskEntry.stopAndGet();

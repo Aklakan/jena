@@ -109,7 +109,7 @@ public class DatasetAssemblerServiceEnhancer
                 Preconditions.checkArgument(maxPageCount > 0, ServiceEnhancerVocab.cacheMaxPageCount.getURI() + " requires a value greater than 0");
 
                 ServiceResponseCache cache = new ServiceResponseCache(maxEntryCount, pageSize, maxPageCount);
-                ServiceResponseCache.set(cxt, Lazy.of(cache));
+                ServiceResponseCache.set(cxt, Lazy.ofInstance(cache));
             }
 
             // Transfer values from the RDF model to the context
