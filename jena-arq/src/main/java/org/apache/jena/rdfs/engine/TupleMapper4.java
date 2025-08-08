@@ -16,12 +16,8 @@
  * limitations under the License.
  */
 
-package org.apache.jena.geosparql.query;
+package org.apache.jena.rdfs.engine;
 
-public interface SpatialQueryTask {
-    void setData(String trigString) throws Exception;
-    void setInferenceMode(boolean enableInferences, boolean materialize, int variant) throws Exception;
-    void setQuery(String queryString) throws Exception;
-    void setIndex(boolean isEnabled);
-    long exec();
+public interface TupleMapper4<X, T> {
+    T create(X g, X s, X p, X o);
 }

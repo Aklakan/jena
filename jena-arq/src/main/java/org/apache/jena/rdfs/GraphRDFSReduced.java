@@ -16,12 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.jena.geosparql.query;
+package org.apache.jena.rdfs;
 
-public interface SpatialQueryTask {
-    void setData(String trigString) throws Exception;
-    void setInferenceMode(boolean enableInferences, boolean materialize, int variant) throws Exception;
-    void setQuery(String queryString) throws Exception;
-    void setIndex(boolean isEnabled);
-    long exec();
+import org.apache.jena.graph.Graph;
+import org.apache.jena.graph.Node;
+import org.apache.jena.rdfs.engine.GraphMatch;
+import org.apache.jena.rdfs.engine.Mappers;
+import org.apache.jena.rdfs.engine.MatchGraph;
+import org.apache.jena.rdfs.setup.ConfigRDFS;
+
+public class GraphRDFSReduced
+    extends GraphMatch
+{
+    public GraphRDFSReduced(Graph graph, ConfigRDFS<Node> setup) {
+        super(graph, MatchRDFSReduced.create(setup, Mappers.mapperTriple(), new MatchGraph(graph)));
+    }
 }

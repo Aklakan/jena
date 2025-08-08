@@ -16,12 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.jena.geosparql.query;
+package org.apache.jena.atlas.iterator;
 
-public interface SpatialQueryTask {
-    void setData(String trigString) throws Exception;
-    void setInferenceMode(boolean enableInferences, boolean materialize, int variant) throws Exception;
-    void setQuery(String queryString) throws Exception;
-    void setIndex(boolean isEnabled);
-    long exec();
+import java.util.function.Predicate;
+
+import org.apache.jena.atlas.lib.Cache;
+import org.apache.jena.atlas.lib.CacheFactory;
+
+public class FilterUniqueCache<T> implements Predicate<T> {
+    private final Cache<T, Object> seen;
+
+    public FilterUniqueCache(int size) {
+        super();
+        this.seen = CacheFactory.createCache(size);
+    }
+
+    @Override
+    public boolean test(T item) {
+        boolean wasSeen = seen.getIfPresent(item) != null;
+        seen.put(item, Boolean.TRUE);
+        return !wasSeen;
+    }
 }

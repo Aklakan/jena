@@ -16,12 +16,36 @@
  * limitations under the License.
  */
 
-package org.apache.jena.geosparql.query;
+package org.apache.jena.rdfs.engine;
 
-public interface SpatialQueryTask {
-    void setData(String trigString) throws Exception;
-    void setInferenceMode(boolean enableInferences, boolean materialize, int variant) throws Exception;
-    void setQuery(String queryString) throws Exception;
-    void setIndex(boolean isEnabled);
-    long exec();
+import java.util.stream.Stream;
+
+public class MatchWrapper<X, T, D extends Match<X, T>>
+    implements Match<X, T>
+{
+    protected D delegate;
+
+    public MatchWrapper(D delegate) {
+        super();
+        this.delegate = delegate;
+    }
+
+    public D getDelegate() {
+        return delegate;
+    }
+
+    @Override
+    public Stream<T> match(X s, X p, X o) {
+        return getDelegate().match(s, p, o);
+    }
+
+    @Override
+    public MapperX<X, T> getMapper() {
+        return getDelegate().getMapper();
+    }
+
+    @Override
+    public TupleMapper3<X, T> getTupleMapper() {
+        return getDelegate().getTupleMapper();
+    }
 }

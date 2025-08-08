@@ -16,12 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.jena.geosparql.query;
+package org.apache.jena.rdfs;
 
-public interface SpatialQueryTask {
-    void setData(String trigString) throws Exception;
-    void setInferenceMode(boolean enableInferences, boolean materialize, int variant) throws Exception;
-    void setQuery(String queryString) throws Exception;
-    void setIndex(boolean isEnabled);
-    long exec();
+import org.apache.jena.graph.Node;
+import org.apache.jena.rdfs.setup.ConfigRDFS;
+import org.apache.jena.sparql.core.DatasetGraph;
+
+/**
+ * Tests <b>ALL</b> possible access patterns for find(g, s, p, o)
+ * {@link DatasetGraphRDFSReduced} via comparison to DatasetGraphRDFS.
+ */
+public class TestDatasetGraphFindRDFS_Reduced
+    extends AbstractTestRDFS_Extra
+{
+     public TestDatasetGraphFindRDFS_Reduced() {
+        super("RDFS-Reduced");
+     }
+
+     @Override
+     protected DatasetGraph applyRdfs(DatasetGraph dsg, ConfigRDFS<Node> configRDFS) {
+         return new DatasetGraphRDFSReduced(dsg, configRDFS);
+     }
 }

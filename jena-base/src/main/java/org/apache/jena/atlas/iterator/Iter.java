@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.apache.jena.atlas.io.IO;
+import org.apache.jena.atlas.lib.CacheFactory;
 import org.apache.jena.atlas.lib.Closeable;
 import org.apache.jena.atlas.lib.Sink;
 
@@ -111,6 +112,10 @@ public class Iter<T> implements IteratorCloseable<T> {
 
     public static<T> Iter<T> ofNullable(T t) {
         return t == null ? Iter.empty() : Iter.of(t);
+    }
+
+    public static <T> Iterator<T> ofStream(Stream<T> stream) {
+        return Iter.onClose(stream.iterator(), stream::close);
     }
 
     /**
@@ -528,6 +533,13 @@ public class Iter<T> implements IteratorCloseable<T> {
      */
     public static <T> Iterator<T> distinct(Iterator<T> iter) {
         return filter(iter, new FilterUnique<T>());
+    }
+
+    /** Return an iterator that will see each element of the underlying iterator only once.
+     * Note that this need working memory to remember the elements already seen.
+     */
+    public static <T> Iterator<T> distinctReduced(Iterator<T> iter, int cacheMaxSize) {
+        return filter(iter, new FilterUniqueCache<T>(cacheMaxSize));
     }
 
     /** Remove adjacent duplicates. This operation does not need

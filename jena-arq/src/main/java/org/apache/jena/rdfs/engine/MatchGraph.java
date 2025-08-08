@@ -20,26 +20,40 @@ package org.apache.jena.rdfs.engine;
 
 import java.util.stream.Stream;
 
+import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
+import org.apache.jena.graph.Triple;
 
 /**
- * Match by S/P/O where {@code X} is the RDF term representation (Node, NodeId) and
- * {@code T} is the tuple (triple, quad, tuple) representation.
+ * A {@link Match} view over a {@link Graph}.
+ * This class is final. Use {@link MatchWrapper} to modify match behavior.
  */
-public interface Match<X, T> {
-    public Stream<T> match(X s, X p, X o);
+public final class MatchGraph
+    implements Match<Node, Triple>
+{
+    private Graph base;
 
-    public default boolean contains(X s, X p, X o) {
-        return match(s, p, o).findFirst().isPresent();
+    public MatchGraph(Graph base) {
+        super();
+        this.base = base;
     }
 
-    /**
-     * The mapper for reuse with wrappers.
-     * Note that this indirectly ties the {@link Match} interface to the {@link Node} realm:
-     * One can use the mapper to obtain X for e.g. RDF.Nodes.type.
-     */
-    MapperX<X, T> getMapper();
+    public Graph getGraph() {
+        return base;
+    }
 
-    /** Expose the tuple creation mechanism for reuse with wrappers. */
-    TupleMapper3<X, T> getTupleMapper();
+    @Override
+    public Stream<Triple> match(Node s, Node p, Node o) {
+        return base.stream(s, p, o);
+    }
+
+    @Override
+    public MapperX<Node, Triple> getMapper() {
+        return Mappers.mapperTriple();
+    }
+
+    @Override
+    public TupleMapper3<Node, Triple> getTupleMapper() {
+        return TupleMappers.mapperTriple();
+    }
 }

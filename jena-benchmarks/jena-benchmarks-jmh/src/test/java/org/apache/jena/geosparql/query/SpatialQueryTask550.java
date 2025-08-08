@@ -18,12 +18,14 @@
 
 package org.apache.jena.geosparql.query;
 
-import java.util.stream.Stream;
+import java.util.Iterator;
 
+import org.apache.shadedJena550.atlas.iterator.Iter;
 import org.apache.shadedJena550.geosparql.configuration.GeoSPARQLOperations;
 import org.apache.shadedJena550.geosparql.spatial.SpatialIndexException;
 import org.apache.shadedJena550.geosparql.spatial.index.v2.SpatialIndexLib;
 import org.apache.shadedJena550.graph.Graph;
+import org.apache.shadedJena550.graph.Node;
 import org.apache.shadedJena550.rdfs.RDFSFactory;
 import org.apache.shadedJena550.riot.Lang;
 import org.apache.shadedJena550.riot.RDFParser;
@@ -50,20 +52,33 @@ public class SpatialQueryTask550
         this.query = queryString;
     }
 
+    protected static Iterator<Quad> fixedFind(DatasetGraph dsg) {
+        return Iter.filter(dsg.find(Node.ANY, Node.ANY, Node.ANY, Node.ANY), q -> !q.getSubject().isLiteral());
+    }
+
+    /** Variant has no effect on 550. */
     @Override
-    public void setInferenceMode(boolean enableInferences, boolean materialize) {
+    public void setInferenceMode(boolean enableInferences, boolean materialize, int variant) {
+        if (variant != 0) {
+            effectiveDsg = DatasetGraphFactory.empty();
+            return;
+        }
+
         if (enableInferences) {
             Graph vocab = GeoSPARQLOperations.loadGeoSPARQLSchema().getGraph();
             DatasetGraph virtualDsg = RDFSFactory.datasetRDFS(baseDsg, vocab);
+
+            if (true) {
+                System.out.println("Number of quads in virtual dataset: " + Iter.count(fixedFind(virtualDsg)));
+                System.out.println("Number of unique quads in virtual dataset: " + Iter.count(Iter.distinct(fixedFind(virtualDsg))));
+            }
+
             if (materialize) {
                 effectiveDsg = DatasetGraphFactory.create();
 
-                // Bugged in 5.5.0 because find() is not overridden to yield inferences:
-                // effectiveDsg.addAll(virtualDsg);
-
-                try (Stream<Quad> stream = virtualDsg.stream(null, null, null, null)) {
-                    stream.forEach(effectiveDsg::add);
-                }
+                // Bugged in 5.5.0 because find() is not overridden to yield inferences.
+                //   Therefore can't use effectiveDsg.addAll(virtualDsg);
+                Iter.forEach(fixedFind(virtualDsg), effectiveDsg::add);
             } else {
                 effectiveDsg = virtualDsg;
             }

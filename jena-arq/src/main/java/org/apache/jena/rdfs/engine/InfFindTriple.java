@@ -52,7 +52,7 @@ public class InfFindTriple extends MatchRDFS<Node, Triple> {
     }
 
     @Override
-    protected Triple dstCreate(Node s, Node p, Node o) {
-        return Triple.create(s, p, o);
+    public TupleMapper3<Node, Triple> getTupleMapper() {
+        return TupleMappers.mapperTriple();
     }
 }

@@ -18,11 +18,14 @@
 
 package org.apache.jena.geosparql.query;
 
+import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.geosparql.configuration.GeoSPARQLOperations;
 import org.apache.jena.geosparql.spatial.SpatialIndexException;
 import org.apache.jena.geosparql.spatial.index.v2.SpatialIndexLib;
 import org.apache.jena.graph.Graph;
+import org.apache.jena.rdfs.DatasetGraphRDFS;
 import org.apache.jena.rdfs.RDFSFactory;
+import org.apache.jena.rdfs.SetupRDFS;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.sparql.core.DatasetGraph;
@@ -48,10 +51,22 @@ public class SpatialQueryTaskCurrent
     }
 
     @Override
-    public void setInferenceMode(boolean enableInferences, boolean materialize) {
+    public void setInferenceMode(boolean enableInferences, boolean materialize, int variant) {
         if (enableInferences) {
-            Graph vocab = GeoSPARQLOperations.loadGeoSPARQLSchema().getGraph();
-            DatasetGraph virtualDsg = RDFSFactory.datasetRDFS(baseDsg, vocab);
+            Graph schemaGraph = GeoSPARQLOperations.loadGeoSPARQLSchema().getGraph();
+            SetupRDFS setup = RDFSFactory.setupRDFS(schemaGraph);
+
+            DatasetGraph virtualDsg = switch (variant) {
+            case 0 -> RDFSFactory.datasetRDFS(baseDsg, setup); // Use the current default.
+            case 1 -> new DatasetGraphRDFS(baseDsg, setup); // Specifically use DatasetGraphRDFS.
+            default -> DatasetGraphFactory.empty();
+            };
+
+            if (true) {
+                System.out.println("Number of quads in virtual dataset: " + Iter.count(virtualDsg.find()));
+                System.out.println("Number of unique quads in virtual dataset: " + Iter.count(Iter.distinct(virtualDsg.find())));
+            }
+
             if (materialize) {
                 effectiveDsg = DatasetGraphFactory.create();
                 effectiveDsg.addAll(virtualDsg);
@@ -59,7 +74,11 @@ public class SpatialQueryTaskCurrent
                 effectiveDsg = virtualDsg;
             }
         } else {
-            effectiveDsg = baseDsg;
+            if (variant == 0) {
+                effectiveDsg = baseDsg;
+            } else {
+                effectiveDsg = DatasetGraphFactory.empty();
+            }
         }
     }
 

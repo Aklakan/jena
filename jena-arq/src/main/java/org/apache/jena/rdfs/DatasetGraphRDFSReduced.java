@@ -18,22 +18,26 @@
 
 package org.apache.jena.rdfs;
 
+import org.apache.jena.graph.Node;
 import org.apache.jena.rdfs.engine.DatasetGraphWithGraphTransform;
+import org.apache.jena.rdfs.engine.GraphMatchTransforms;
+import org.apache.jena.rdfs.engine.Mappers;
+import org.apache.jena.rdfs.setup.ConfigRDFS;
 import org.apache.jena.sparql.core.DatasetGraph;
-import org.apache.jena.sparql.core.DatasetGraphWrapperView;
 import org.apache.jena.sparql.util.Context;
 
-public class DatasetGraphRDFS extends DatasetGraphWithGraphTransform implements DatasetGraphWrapperView {
-    // Do not unwrap for query execution.
-    private final SetupRDFS setup;
-
-    public DatasetGraphRDFS(DatasetGraph dsg, SetupRDFS setup) {
-        super(dsg, g -> new GraphRDFS(g, setup));
-        this.setup = setup;
+/**
+ * A DatasetGraph with an RDFS reasoning core aimed to improved over
+ * {@link DatasetGraphRDFS}.
+ */
+public class DatasetGraphRDFSReduced
+    extends DatasetGraphWithGraphTransform
+{
+    public DatasetGraphRDFSReduced(DatasetGraph dsg, ConfigRDFS<Node> setup) {
+        super(dsg, GraphMatchTransforms.asGraphTransform(tf -> MatchRDFSReduced.create(setup, Mappers.mapperTriple(), tf)));
     }
 
-    public DatasetGraphRDFS(DatasetGraph dsg, SetupRDFS setup, Context cxt) {
-        super(dsg, cxt, g -> new GraphRDFS(g, setup));
-        this.setup = setup;
+    public DatasetGraphRDFSReduced(DatasetGraph dsg, Context cxt, ConfigRDFS<Node> setup) {
+        super(dsg, cxt, GraphMatchTransforms.asGraphTransform(tf -> MatchRDFSReduced.create(setup, Mappers.mapperTriple(), tf)));
     }
 }

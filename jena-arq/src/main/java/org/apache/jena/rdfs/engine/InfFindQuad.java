@@ -60,9 +60,13 @@ public class InfFindQuad extends MatchRDFS<Node, Quad> {
         return dsg.contains(graph, s, p, o);
     }
 
-    @Override
-    protected Quad dstCreate(Node s, Node p, Node o) {
+    public Quad dstCreate(Node s, Node p, Node o) {
         // Must be concrete for this quad creation.
         return Quad.create(graph, s, p, o);
+    }
+
+    @Override
+    public TupleMapper3<Node, Quad> getTupleMapper() {
+        return this::dstCreate;
     }
 }

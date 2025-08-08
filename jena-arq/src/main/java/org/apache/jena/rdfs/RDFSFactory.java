@@ -45,24 +45,24 @@ public class RDFSFactory {
      * Create an RDFS inference graph over a graph according to an {@link SetupRDFS}.
      */
     public static Graph graphRDFS(Graph data, SetupRDFS setup) {
-        return new GraphRDFS(data, setup);
+        return new GraphRDFSReduced(data, setup);
     }
 
     /** Create an RDFS inference dataset. */
     public static DatasetGraph datasetRDFS(DatasetGraph data, SetupRDFS setup) {
-        return new DatasetGraphRDFS(data, setup);
+        return new DatasetGraphRDFSReduced(data, setup);
     }
 
     /** Create an RDFS inference dataset. */
     public static DatasetGraph datasetRDFS(DatasetGraph data, Graph vocab ) {
         SetupRDFS setup = setupRDFS(vocab);
-        return new DatasetGraphRDFS(data, setup);
+        return datasetRDFS(data, setup);
     }
 
     /** Create an RDFS inference dataset. */
     public static Dataset datasetRDFS(Dataset data, Graph vocab ) {
         SetupRDFS setup = setupRDFS(vocab);
-        return DatasetFactory.wrap(new DatasetGraphRDFS(data.asDatasetGraph(), setup));
+        return DatasetFactory.wrap(datasetRDFS(data.asDatasetGraph(), setup));
     }
 
     /** Create an {@link SetupRDFS} */

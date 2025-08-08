@@ -18,28 +18,22 @@
 
 package org.apache.jena.rdfs.engine;
 
-import java.util.stream.Stream;
-
 import org.apache.jena.graph.Node;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.sparql.core.Quad;
 
-/**
- * Match by S/P/O where {@code X} is the RDF term representation (Node, NodeId) and
- * {@code T} is the tuple (triple, quad, tuple) representation.
- */
-public interface Match<X, T> {
-    public Stream<T> match(X s, X p, X o);
+public class TupleMappers {
+    private static TupleMapper3<Node, Triple> mapperSingletonTriple = new TupleMapperTriple();
+    private static TupleMapper4<Node, Quad> mapperSingletonQuad = new TupleMapperQuad();
 
-    public default boolean contains(X s, X p, X o) {
-        return match(s, p, o).findFirst().isPresent();
+    public static TupleMapper3<Node, Triple> mapperTriple() { return mapperSingletonTriple; }
+    public static TupleMapper4<Node, Quad> mapperQuad() { return mapperSingletonQuad; }
+
+    private static class TupleMapperTriple implements TupleMapper3<Node, Triple> {
+        @Override public Triple create(Node s, Node p, Node o) { return Triple.create(s, p, o); }
     }
 
-    /**
-     * The mapper for reuse with wrappers.
-     * Note that this indirectly ties the {@link Match} interface to the {@link Node} realm:
-     * One can use the mapper to obtain X for e.g. RDF.Nodes.type.
-     */
-    MapperX<X, T> getMapper();
-
-    /** Expose the tuple creation mechanism for reuse with wrappers. */
-    TupleMapper3<X, T> getTupleMapper();
+    private static class TupleMapperQuad implements TupleMapper4<Node, Quad> {
+        @Override public Quad create(Node g, Node s, Node p, Node o) { return Quad.create(g, s, p, o); }
+    }
 }

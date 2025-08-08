@@ -51,6 +51,8 @@ import org.junit.platform.suite.api.Suite;
     , TestInfSPARQL.class
 
     , TestAssemblerRDFS.class
+
+    , TestDatasetGraphFindRDFS_Reduced.class
 })
 
 public class TS_InfRdfs { }

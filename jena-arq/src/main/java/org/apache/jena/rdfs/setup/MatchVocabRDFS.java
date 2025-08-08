@@ -31,7 +31,10 @@ import java.util.stream.Stream;
 
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
+import org.apache.jena.rdfs.engine.MapperX;
+import org.apache.jena.rdfs.engine.Mappers;
 import org.apache.jena.rdfs.engine.Match;
+import org.apache.jena.rdfs.engine.TupleMapper3;
 
 /**
  *  The vocabulary, with transitive closure of subClass and subProperty, as a {@link Match}.
@@ -77,7 +80,7 @@ public class MatchVocabRDFS implements Match<Node, Triple>{
                 return Stream.empty();
             }
             // s unbound
-            return set.stream().map(x->Triple.create(x,p,o));
+            return set.stream().map(x->dstCreate(x,p,o));
         }
 
         // p is defined, o is not, s maybe
@@ -101,15 +104,29 @@ public class MatchVocabRDFS implements Match<Node, Triple>{
             if ( x == null )
                 return Stream.empty();
             if ( o.isConcrete() ) {
-                return ( x.contains(o) ) ? Stream.of(Triple.create(s,p,o)) : Stream.empty();
+                return ( x.contains(o) ) ? Stream.of(dstCreate(s,p,o)) : Stream.empty();
             } else {
-                return x.stream().map(ox->Triple.create(s,p,ox));
+                return x.stream().map(ox->dstCreate(s,p,ox));
             }
         }
 
         // (ANY p ANY)
         return map.entrySet()
                 .stream()
-                .flatMap( e->e.getValue().stream().map(obj->Triple.create(e.getKey(), p, obj)) );
+                .flatMap( e->e.getValue().stream().map(obj->dstCreate(e.getKey(), p, obj)) );
+    }
+
+    @Override
+    public MapperX<Node, Triple> getMapper() {
+        return Mappers.mapperTriple();
+    }
+
+    public Triple dstCreate(Node s, Node p, Node o) {
+        return Triple.create(s, p, o);
+    }
+
+    @Override
+    public TupleMapper3<Node, Triple> getTupleMapper() {
+        return this::dstCreate;
     }
 }

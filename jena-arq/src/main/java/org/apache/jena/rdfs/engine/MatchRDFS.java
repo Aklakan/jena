@@ -18,7 +18,14 @@
 
 package org.apache.jena.rdfs.engine;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -74,6 +81,11 @@ public abstract class MatchRDFS<X, T> extends CxtInf<X, T> implements Match<X,T>
     }
 
     @Override
+    public MapperX<X, T> getMapper() {
+        return mapper;
+    }
+
+    @Override
     public final Stream<T> match(X s, X p, X o) { return matchWithInf(s, p ,o); }
 
     /*
@@ -84,7 +96,6 @@ public abstract class MatchRDFS<X, T> extends CxtInf<X, T> implements Match<X,T>
     // Access data.
     protected abstract boolean sourceContains(X s, X p, X o);
     protected abstract Stream<T> sourceFind(X s, X p, X o);
-    protected abstract T dstCreate(X s, X p, X o);
 
     protected final X subject(T tuple)        { return mapper.subject(tuple); }
     protected final X predicate(T tuple)      { return mapper.predicate(tuple); }
@@ -284,10 +295,19 @@ public abstract class MatchRDFS<X, T> extends CxtInf<X, T> implements Match<X,T>
             acc.add(triple);
             X subject = subject(triple);
             X object = object(triple);
+            // predicates.forEach(p->withRdfTypeSuperClasses(acc, subject, p, object));
             predicates.forEach(p->acc.add(dstCreate(subject, p, object)));
             return acc.stream();
         });
     }
+
+//    private void withRdfTypeSuperClasses(Collection<T> acc, X s, X p, X o) {
+//        acc.add(dstCreate(s, p, o));
+//        if (rdfType.equals(p)) {
+//            Set<X> superTypes = setup.getSuperClasses(o);
+//            superTypes.forEach(type -> acc.add(dstCreate(s, p, type)));
+//        }
+//    }
 
     /**
      * Apply super classes on a data stream (no interpretation of rdfs:subClassOf).
@@ -458,6 +478,16 @@ public abstract class MatchRDFS<X, T> extends CxtInf<X, T> implements Match<X,T>
 
     private static <S> boolean isEmpty(Map<S, ?> map) {
         return map == null || map.isEmpty();
+    }
+
+    protected T dstCreate(X s, X p, X o) {
+        return getTupleMapper().create(s, p, o);
+    }
+
+    @Override
+    public TupleMapper3<X, T> getTupleMapper() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 //  private void print(Map<X, Set<X>> map) {

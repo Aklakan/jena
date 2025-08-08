@@ -50,7 +50,6 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -111,6 +110,7 @@ public class BenchmarkSpatialQueries {
     @Param({
         "off",
         "virtual",
+        // "virtual-original",
         "materialized"
     })
     public String p3_inferences;
@@ -195,9 +195,10 @@ public class BenchmarkSpatialQueries {
         task.setData(data);
 
         switch (p3_inferences) {
-        case "off": task.setInferenceMode(false, false); break;
-        case "virtual": task.setInferenceMode(true, false); break;
-        case "materialized": task.setInferenceMode(true, true); break;
+        case "off": task.setInferenceMode(false, false, 0); break;
+        case "virtual": task.setInferenceMode(true, false, 0); break;
+        case "virtual-original": task.setInferenceMode(true, false, 1); break;
+        case "materialized": task.setInferenceMode(true, true, 0); break;
         default:
             throw new IllegalArgumentException("Unsupported inference mode: " + p3_inferences);
         }
@@ -206,10 +207,6 @@ public class BenchmarkSpatialQueries {
 
         String queryString = idToQuery.get(p2_queryId);
         task.setQuery(queryString);
-    }
-
-    @TearDown(Level.Trial)
-    public void tearDownTrial() throws Exception {
     }
 
     public static ChainedOptionsBuilder getDefaults(Class<?> c) {

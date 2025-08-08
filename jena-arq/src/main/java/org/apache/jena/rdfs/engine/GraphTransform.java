@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.jena.geosparql.query;
+package org.apache.jena.rdfs.engine;
 
-public interface SpatialQueryTask {
-    void setData(String trigString) throws Exception;
-    void setInferenceMode(boolean enableInferences, boolean materialize, int variant) throws Exception;
-    void setQuery(String queryString) throws Exception;
-    void setIndex(boolean isEnabled);
-    long exec();
+import java.util.function.Function;
+
+import org.apache.jena.graph.Graph;
+
+public interface GraphTransform
+    extends Function<Graph, Graph>
+{
 }

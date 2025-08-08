@@ -28,4 +28,8 @@ public interface MapperX<X,T> {
     public abstract X subject(T tuple);
     public abstract X predicate(T tuple);
     public abstract X object(T tuple);
+
+    public default boolean isLiteral(X x) {
+        return toNode(x).isLiteral();
+    }
 }
