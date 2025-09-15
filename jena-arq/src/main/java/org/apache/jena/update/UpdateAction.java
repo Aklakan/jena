@@ -19,6 +19,7 @@
 package org.apache.jena.update;
 
 import java.io.InputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.jena.atlas.io.IO;
 import org.apache.jena.graph.Graph;
@@ -32,6 +33,7 @@ import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingLib;
 import org.apache.jena.sparql.exec.UpdateExec;
+import org.apache.jena.sparql.exec.tracker.TaskEventBroker;
 import org.apache.jena.sparql.lang.UpdateParser;
 import org.apache.jena.sparql.modify.UpdateSink;
 import org.apache.jena.sparql.modify.UsingList;
@@ -452,19 +454,78 @@ public class UpdateAction {
         if ( uProc == null )
             throw new ARQException("No suitable update procesors are registered/able to execute your updates");
 
-        uProc.startRequest();
-        try {
-            UpdateSink sink = new UsingUpdateSink(uProc.getUpdateSink(), usingList);
-            try {
-                UpdateParser parser = UpdateFactory.setupParser(uProc.getPrologue(), baseURI, syntax);
-                parser.parse(sink, uProc.getPrologue(), input);
-            }
-            finally {
-                sink.close();
-            }
-        }
-        finally {
-            uProc.finishRequest();
-        }
+    	UpdateExec uExec = new UpdateExecStreaming(usingList, dataset, input, inputBinding, baseURI, syntax, context);
+
+    	// FIXME Instead of the dispatcher system, exec tracking could be handled by more lightweight exec-post-processors. 
+    	UpdateExec result = TaskEventBroker.track(context, uExec);
+        // Remove event broker from dispatcher context as to avoid tracking possible nested executions.
+        TaskEventBroker.remove(context);
+        result.execute();
+    }
+    
+    private static class UpdateExecStreaming
+    	implements UpdateExec {
+
+    	private UsingList usingList;
+    	private DatasetGraph dataset;
+    	private InputStream input;
+    	private Binding inputBinding;
+    	private String baseURI;
+        private Syntax syntax;
+        private Context context;
+        
+        /** InputStream is not owned by this class - must be closed externally. */
+		public UpdateExecStreaming(UsingList usingList, DatasetGraph dataset, InputStream input, Binding inputBinding,
+				String baseURI, Syntax syntax, Context context) {
+			super();
+			this.usingList = usingList;
+			this.dataset = dataset;
+			this.input = input;
+			this.inputBinding = inputBinding;
+			this.baseURI = baseURI;
+			this.syntax = syntax;
+			this.context = context;
+		}
+
+		@Override
+		public String getUpdateRequestString() {
+			//  Options to provide more information about the request:
+			// - Use a BufferedInputStream to peek the beginning of the request
+			// - Use an InputStreamWrapper that appends read bytes (up to some cap) to the string returned by this methods.
+			return "# streaming update.";
+		}
+		
+		@Override
+		public void abort() {
+			// Could improve abort by aborting the parser and uProc.
+			// Could also call inputStream.close() but that'd kill the parser with EOF - ugly.
+			AtomicBoolean cancelSignal = Context.getCancelSignal(context);
+			if (cancelSignal != null) {
+				cancelSignal.set(true);
+			}
+		}
+		
+		@Override
+		public void execute() {
+	        @SuppressWarnings("removal")
+	        UpdateProcessorStreaming uProc = UpdateStreaming.makeStreaming(dataset, inputBinding, context);
+	        if ( uProc == null )
+	            throw new ARQException("No suitable update procesors are registered/able to execute your updates");
+
+	        uProc.startRequest();
+	        try {
+	            UpdateSink sink = new UsingUpdateSink(uProc.getUpdateSink(), usingList);
+	            try {
+	                UpdateParser parser = UpdateFactory.setupParser(uProc.getPrologue(), baseURI, syntax);
+	                parser.parse(sink, uProc.getPrologue(), input);
+	            }
+	            finally {
+	                sink.close();
+	            }
+	        }
+	        finally {
+	            uProc.finishRequest();
+	        }
+		}    	
     }
 }
