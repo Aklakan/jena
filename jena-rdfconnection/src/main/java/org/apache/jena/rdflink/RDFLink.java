@@ -43,7 +43,6 @@ import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.exec.UpdateExecBuilder;
 import org.apache.jena.system.Txn;
 import org.apache.jena.update.Update;
-import org.apache.jena.update.UpdateFactory;
 import org.apache.jena.update.UpdateRequest;
 
 /**

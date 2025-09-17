@@ -69,7 +69,7 @@ public class RDFLinkDataset implements RDFLink {
         this(dataset, Isolation.NONE);
     }
 
-    /*package*/ RDFLinkDataset(DatasetGraph dataset, Isolation isolation) {
+    /*package*/ public RDFLinkDataset(DatasetGraph dataset, Isolation isolation) {
         this.dataset = dataset;
         this.isolation = isolation;
     }

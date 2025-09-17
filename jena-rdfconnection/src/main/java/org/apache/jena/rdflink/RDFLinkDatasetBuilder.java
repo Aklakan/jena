@@ -21,6 +21,7 @@ package org.apache.jena.rdflink;
 import java.util.Objects;
 
 import org.apache.jena.rdflink.RDFLinkDatasetBuilder;
+import org.apache.jena.rdflink.connector.ConnectorRegistry;
 import org.apache.jena.rdfconnection.Isolation;
 import org.apache.jena.sparql.core.DatasetGraph;
 
@@ -55,7 +56,8 @@ public class RDFLinkDatasetBuilder  {
 
     public RDFLink build() {
         Objects.requireNonNull(dataset, "No dataset for RDFLinkDataset");
-        return new RDFLinkDataset(dataset, isolation);
+        RDFLink result = ConnectorRegistry.connect(dataset, isolation);
+        return result;
     }
 
 }
