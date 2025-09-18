@@ -19,6 +19,7 @@
 package org.apache.jena.rdflink.dataset;
 
 import org.apache.jena.rdflink.dataset.assembler.VocabAssemblerHTTP;
+import org.apache.jena.sparql.engine.connect.ARQLinkProviderRegistry;
 import org.apache.jena.sparql.engine.dispatch.SparqlDispatcherRegistry;
 import org.apache.jena.sparql.system.InitARQ;
 import org.apache.jena.sparql.system.InitExecTracking;
@@ -49,8 +50,9 @@ public class InitDatasetGraphOverRDFLink implements JenaSubsystemLifecycle {
         if (!initialized) {
             initialized = true;
 
-            SparqlDispatcherRegistry.addDispatcher(new ChainingQueryDispatcherForDatasetGraphOverRDFLink());
-            SparqlDispatcherRegistry.addDispatcher(new ChainingUpdateDispatcherForDatasetGraphOverRDFLink());
+            ARQLinkProviderRegistry.addProvider(new ARQLinkProviderFromDatasetGraphOverRDFLink());
+            // SparqlDispatcherRegistry.addDispatcher(new ChainingQueryDispatcherForDatasetGraphOverRDFLink());
+            // SparqlDispatcherRegistry.addDispatcher(new ChainingUpdateDispatcherForDatasetGraphOverRDFLink());
 
             VocabAssemblerHTTP.init();
         }
