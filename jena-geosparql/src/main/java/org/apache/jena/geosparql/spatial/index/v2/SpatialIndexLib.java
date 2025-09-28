@@ -203,6 +203,7 @@ public class SpatialIndexLib {
             txn.commit();
             logger.info("Building Spatial Index - Completed");
         } catch (Throwable t) {
+            logger.error("Building Spatial Index - Failed", t);
             throw new SpatialIndexException("Building Spatial Index - Failed", t);
         }
 
