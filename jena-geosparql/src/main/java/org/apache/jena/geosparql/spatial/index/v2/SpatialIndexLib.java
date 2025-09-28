@@ -201,8 +201,10 @@ public class SpatialIndexLib {
         try (AutoTxn txn = Txn.autoTxn(datasetGraph, TxnType.READ)) {
             treePerGraph = STRtreeUtils.buildSpatialIndexTree(datasetGraph, srsURI);
             txn.commit();
+            logger.info("Building Spatial Index - Completed");
+        } catch (Throwable t) {
+            throw new SpatialIndexException("Building Spatial Index - Failed", t);
         }
-        logger.info("Building Spatial Index - Completed");
 
         SRSInfo srsInfo = SRSRegistry.getSRSInfo(srsURI);
         SpatialIndexPerGraph index = new SpatialIndexPerGraph(srsInfo, treePerGraph, null);

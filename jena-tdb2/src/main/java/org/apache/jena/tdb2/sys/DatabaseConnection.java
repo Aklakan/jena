@@ -139,7 +139,7 @@ public class DatabaseConnection {
         Path path = Path.of(lockFilename);
         try {
             path.toFile().createNewFile();
-        } catch(IOException ex) { IO.exception(ex); return null; }
+        } catch(IOException ex) { IO.exception("Failed to create lock file: " + path, ex); return null; }
         return ProcessFileLock.create(lockFilename);
     }
 
