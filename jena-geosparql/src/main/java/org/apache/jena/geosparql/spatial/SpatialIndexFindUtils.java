@@ -22,14 +22,13 @@ import java.util.Iterator;
 
 import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.atlas.iterator.IteratorCloseable;
+import org.apache.jena.geosparql.access.AccessGeoSparql;
+import org.apache.jena.geosparql.access.AccessWgs84;
 import org.apache.jena.geosparql.implementation.GeometryWrapper;
-import org.apache.jena.geosparql.implementation.vocabulary.Geo;
-import org.apache.jena.geosparql.implementation.vocabulary.SpatialExtension;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.sparql.core.DatasetGraph;
-import org.apache.jena.system.G;
 import org.locationtech.jts.geom.Envelope;
 import org.opengis.geometry.MismatchedDimensionException;
 import org.opengis.referencing.operation.TransformException;
@@ -60,9 +59,8 @@ public class SpatialIndexFindUtils {
             });
             itemsIter = Iter.iter(itemsIter).append(namedGraphItemsIt);
         } catch(Throwable t) {
-            t.addSuppressed(new RuntimeException("Failure during findSpatialIndexItems.", t));
             Iter.close(itemsIter);
-            throw t;
+            throw new RuntimeException(t);
         }
         return itemsIter;
     }
@@ -77,32 +75,14 @@ public class SpatialIndexFindUtils {
     public static final IteratorCloseable<SpatialIndexItem> findSpatialIndexItems(Graph graph, String srsURI) {
         IteratorCloseable<SpatialIndexItem> result;
         // Only add one set of statements as a converted dataset will duplicate the same info.
-        if (graph.contains(null, Geo.HAS_GEOMETRY_NODE, null)) {
-            // LOGGER.info("Feature-hasGeometry-Geometry statements found.");
-            // if (graph.contains(null, SpatialExtension.GEO_LAT_NODE, null)) {
-            //     LOGGER.warn("Lat/Lon Geo predicates also found but will not be added to index.");
-            // }
-            result = findGeometryIndexItems(graph, srsURI);
-        } else if (graph.contains(null, SpatialExtension.GEO_LAT_NODE, null)) {
-            // LOGGER.info("Geo predicate statements found.");
-            result = findGeoPredicateIndexItems(graph, srsURI);
+        if (AccessGeoSparql.hasGeometries(graph)) {
+            result = findGeoSparqlIndexItems(graph, srsURI);
+        } else if (AccessWgs84.hasGeometries(graph)) {
+            result = findWgs84IndexItems(graph, srsURI);
         } else {
             result = Iter.empty();
         }
         return result;
-    }
-
-    /** Print out log messages for what type of spatial data is found in the given graph. */
-    public static final void checkSpatialIndexItems(Graph graph) {
-        // Only add one set of statements as a converted dataset will duplicate the same info.
-        if (graph.contains(null, Geo.HAS_GEOMETRY_NODE, null)) {
-            LOGGER.info("Feature-hasGeometry-Geometry statements found.");
-            if (graph.contains(null, SpatialExtension.GEO_LAT_NODE, null)) {
-                LOGGER.warn("Lat/Lon Geo predicates also found but will not be added to index.");
-            }
-        } else if (graph.contains(null, SpatialExtension.GEO_LAT_NODE, null)) {
-            LOGGER.info("Geo predicate statements found.");
-        }
     }
 
     /**
@@ -111,32 +91,14 @@ public class SpatialIndexFindUtils {
      * @param srsURI
      * @return SpatialIndexItem items prepared for adding to SpatialIndex.
      */
-    public static IteratorCloseable<SpatialIndexItem> findGeometryIndexItems(Graph graph, String srsURI) {
-        Iterator<Triple> stmtIter = graph.find(null, Geo.HAS_GEOMETRY_NODE, null);
+    public static IteratorCloseable<SpatialIndexItem> findGeoSparqlIndexItems(Graph graph, String srsURI) {
+        Iterator<Triple> stmtIter = AccessGeoSparql.findSpecificGeoResources(graph);
         IteratorCloseable<SpatialIndexItem> result = Iter.iter(stmtIter).flatMap(stmt -> {
             Node feature = stmt.getSubject();
             Node geometry = stmt.getObject();
-
-            Iterator<Node> nodeIter = G.iterSP(graph, geometry, Geo.HAS_SERIALIZATION_NODE);
-
-            // XXX If there is a super-property then the concrete serializations are not tried.
-            try {
-                if (!nodeIter.hasNext()) {
-                    Iter.close(nodeIter);
-
-                    Iterator<Node> wktNodeIter = G.iterSP(graph, geometry, Geo.AS_WKT_NODE);
-                    nodeIter = wktNodeIter;
-
-                    Iterator<Node> gmlNodeIter = G.iterSP(graph, geometry, Geo.AS_GML_NODE);
-                    nodeIter = Iter.append(wktNodeIter, gmlNodeIter);
-                }
-            } catch (Throwable t) {
-                t.addSuppressed(new RuntimeException("Error encountered.", t));
-                Iter.close(nodeIter);
-                throw t;
-            }
-
-            Iterator<SpatialIndexItem> itemIter = Iter.map(nodeIter, geometryNode -> {
+            Iterator<Triple> serializationIter = AccessGeoSparql.findSpecificGeoLiterals(graph, geometry);
+            Iterator<SpatialIndexItem> itemIter = Iter.map(serializationIter, triple -> {
+                Node geometryNode = triple.getObject();
                 GeometryWrapper geometryWrapper = GeometryWrapper.extract(geometryNode);
                 SpatialIndexItem item = makeSpatialIndexItem(feature, geometryWrapper, srsURI);
                 return item;
@@ -148,41 +110,18 @@ public class SpatialIndexFindUtils {
 
     /**
      *
+     *
      * @param graph
      * @param srsURI
      * @return Geo predicate objects prepared for adding to SpatialIndex.
      */
-    public static IteratorCloseable<SpatialIndexItem> findGeoPredicateIndexItems(Graph graph, String srsURI) {
-        // Warn about multiple lat/lon combinations only at most once per graph.
-        boolean enableWarnings = false;
-        boolean[] loggedMultipleLatLons = { false };
-        Iterator<Triple> latIt = graph.find(Node.ANY, SpatialExtension.GEO_LAT_NODE, Node.ANY);
-        IteratorCloseable<SpatialIndexItem> result = Iter.iter(latIt).flatMap(triple -> {
-            Node feature = triple.getSubject();
-            Node lat = triple.getObject();
-
-            // Create the cross-product between lats and lons.
-            Iterator<Node> lons = G.iterSP(graph, feature, SpatialExtension.GEO_LON_NODE);
-
-            // On malformed data this can cause lots of log output. Perhaps it's better to keep validation separate from indexing.
-            int[] lonCounter = {0};
-            Iterator<SpatialIndexItem> r = Iter.iter(lons).map(lon -> {
-                if (enableWarnings) {
-                    if (lonCounter[0] == 1) {
-                        if (!loggedMultipleLatLons[0]) {
-                            LOGGER.warn("Geo predicates: multiple longitudes detected on feature " + feature + ". Further warnings will be omitted.");
-                            loggedMultipleLatLons[0] = true;
-                        }
-                    }
-                    ++lonCounter[0];
-                }
-                GeometryWrapper geometryWrapper = ConvertLatLon.toGeometryWrapper(lat, lon);
-                SpatialIndexItem item = makeSpatialIndexItem(feature, geometryWrapper, srsURI);
-                return item;
-            });
-            return r;
+    public static IteratorCloseable<SpatialIndexItem> findWgs84IndexItems(Graph graph, String srsURI) {
+        return Iter.iter(AccessWgs84.findWgs84Geometries(graph, null)).map(e -> {
+            Node feature = e.getKey();
+            GeometryWrapper geometryWrapper = e.getValue();
+            SpatialIndexItem item = makeSpatialIndexItem(feature, geometryWrapper, srsURI);
+            return item;
         });
-        return result;
     }
 
     public static SpatialIndexItem makeSpatialIndexItem(Node feature, GeometryWrapper geometryWrapper, String srsURI) {
