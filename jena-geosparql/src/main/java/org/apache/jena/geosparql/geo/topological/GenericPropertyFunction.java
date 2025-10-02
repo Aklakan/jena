@@ -21,11 +21,10 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.jena.atlas.iterator.Iter;
+import org.apache.jena.geosparql.access.AccessGeoSparql;
 import org.apache.jena.geosparql.geof.topological.GenericFilterFunction;
 import org.apache.jena.geosparql.implementation.GeometryWrapper;
 import org.apache.jena.geosparql.implementation.index.QueryRewriteIndex;
-import org.apache.jena.geosparql.implementation.vocabulary.Geo;
-import org.apache.jena.geosparql.implementation.vocabulary.SpatialExtension;
 import org.apache.jena.geosparql.spatial.SpatialIndex;
 import org.apache.jena.geosparql.spatial.SpatialIndexException;
 import org.apache.jena.geosparql.spatial.index.v2.SpatialIndexLib;
@@ -47,7 +46,6 @@ import org.apache.jena.sparql.pfunction.PFuncSimple;
 import org.apache.jena.sparql.util.FmtUtils;
 import org.apache.jena.system.G;
 import org.apache.jena.util.iterator.ExtendedIterator;
-import org.apache.jena.vocabulary.RDF;
 import org.locationtech.jts.geom.Envelope;
 import org.opengis.geometry.MismatchedDimensionException;
 import org.opengis.referencing.operation.TransformException;
@@ -96,7 +94,7 @@ public abstract class GenericPropertyFunction extends PFuncSimple {
 
     private QueryIterator bothBound(Binding binding, Node subject, Node predicate, Node object, ExecutionContext execCxt) {
         Graph graph = execCxt.getActiveGraph();
-        QueryRewriteIndex queryRewriteIndex = QueryRewriteIndex.retrieve(execCxt);
+        QueryRewriteIndex queryRewriteIndex = QueryRewriteIndex.getOrCreate(execCxt);
         Boolean isPositiveResult = queryRewrite(graph, subject, predicate, object, queryRewriteIndex);
         if (isPositiveResult) {
             //Filter function test succeded so retain binding.
@@ -144,14 +142,10 @@ public abstract class GenericPropertyFunction extends PFuncSimple {
             isSubjectBound = false;
         }
 
-        if (!(boundNode.isLiteral() ||
-                graph.contains(boundNode, RDF.type.asNode(), Geo.SPATIAL_OBJECT_NODE) ||
-                graph.contains(boundNode, RDF.type.asNode(), Geo.FEATURE_NODE) ||
-                graph.contains(boundNode, RDF.type.asNode(), Geo.GEOMETRY_NODE))) {
-            if (!graph.contains(boundNode, SpatialExtension.GEO_LAT_NODE, null)) {
-                //Bound node is not a Feature or a Geometry or has Geo predicates so exit.
-                return QueryIterNullIterator.create(execCxt);
-            }
+        // If the bound node can't match in the first place then bail out early.
+        // Otherwise, the whole unbound side would be scanned and tested against the bound node.
+        if (!(boundNode.isLiteral() || AccessGeoSparql.isSpatialObjectByProperties(graph, boundNode))) {
+            return QueryIterNullIterator.create(execCxt);
         }
 
         boolean isSpatialIndex = SpatialIndexLib.isDefined(execCxt);
@@ -189,18 +183,7 @@ public abstract class GenericPropertyFunction extends PFuncSimple {
     }
 
     private static ExtendedIterator<Triple> findSpatialTriples(Graph graph) {
-        ExtendedIterator<Triple> spatialTriples;
-        if (graph.contains(null, RDF.type.asNode(), Geo.SPATIAL_OBJECT_NODE)) {
-            spatialTriples = graph.find(null, RDF.type.asNode(), Geo.SPATIAL_OBJECT_NODE);
-        } else if (graph.contains(null, RDF.type.asNode(), Geo.FEATURE_NODE) || graph.contains(null, RDF.type.asNode(), Geo.GEOMETRY_NODE)) {
-            ExtendedIterator<Triple> featureTriples = graph.find(null, RDF.type.asNode(), Geo.FEATURE_NODE);
-            ExtendedIterator<Triple> geometryTriples = graph.find(null, RDF.type.asNode(), Geo.GEOMETRY_NODE);
-            spatialTriples = featureTriples.andThen(geometryTriples);
-        } else {
-            //Check for Geo Predicate Features in the Graph if no GeometryLiterals found.
-            spatialTriples = graph.find(null, SpatialExtension.GEO_LAT_NODE, null);
-        }
-        return spatialTriples;
+        return AccessGeoSparql.findSpatialTriplesByProperties(graph);
     }
 
     private QueryIterator findIndex(Graph graph, Node boundNode, Node unboundNode, Binding binding, boolean isSubjectBound, Node predicate, ExecutionContext execCxt) throws ExprEvalException {
@@ -230,7 +213,7 @@ public abstract class GenericPropertyFunction extends PFuncSimple {
             Node geometryLiteral = boundGeometryLiteral.getGeometryLiteral();
 
             // Perform the search of the Spatial Index of the Dataset.
-            SpatialIndex spatialIndex = SpatialIndexLib.retrieve(execCxt);
+            SpatialIndex spatialIndex = SpatialIndexLib.require(execCxt);
             GeometryWrapper geom = GeometryWrapper.extract(geometryLiteral);
             GeometryWrapper transformedGeom = geom.transform(spatialIndex.getSrsInfo());
 
@@ -272,7 +255,8 @@ public abstract class GenericPropertyFunction extends PFuncSimple {
         }
 
         // Also test all Geometry of the Features. All, some or one Geometry may have matched.
-        ExtendedIterator<Node> featureGeometries = G.iterSP(graph, featureNode, Geo.HAS_GEOMETRY_NODE);
+        // ExtendedIterator<Node> featureGeometries = G.iterSP(graph, featureNode, Geo.HAS_GEOMETRY_NODE);
+        ExtendedIterator<Node> featureGeometries = AccessGeoSparql.findSpecificGeoResources(graph, featureNode).mapWith(Triple::getObject);
         QueryIterator geometriesQueryIterator = QueryIterPlainWrapper.create(
             Iter.map(
                 Iter.filter( // omit asserted

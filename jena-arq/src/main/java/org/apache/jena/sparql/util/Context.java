@@ -455,6 +455,7 @@ public class Context {
         return (V)obj;
     }
 
+    /** Get the context's cancel signal. Create and set one if needed. Context must not be null. */
     public static AtomicBoolean getOrSetCancelSignal(Context context) {
         try {
             AtomicBoolean result = context.computeIfAbsent(ARQConstants.symCancelQuery, sym -> new AtomicBoolean(false));
