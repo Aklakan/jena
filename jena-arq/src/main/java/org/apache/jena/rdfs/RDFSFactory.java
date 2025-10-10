@@ -45,12 +45,12 @@ public class RDFSFactory {
      * Create an RDFS inference graph over a graph according to an {@link SetupRDFS}.
      */
     public static Graph graphRDFS(Graph data, SetupRDFS setup) {
-        return new GraphRDFSReduced(data, setup);
+        return new GraphRDFS(data, setup);
     }
 
     /** Create an RDFS inference dataset. */
     public static DatasetGraph datasetRDFS(DatasetGraph data, SetupRDFS setup) {
-        return new DatasetGraphRDFSReduced(data, setup);
+        return new DatasetGraphRDFS(data, setup);
     }
 
     /** Create an RDFS inference dataset. */

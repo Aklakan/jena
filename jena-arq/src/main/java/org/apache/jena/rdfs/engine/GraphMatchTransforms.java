@@ -57,7 +57,7 @@ public class GraphMatchTransforms {
     }
 
     public static <X, T> Graph asGraph(Graph baseGraph, Match<X, T> inMatch, MapperX<X, T> mapper) {
-        Match<Node, Triple> graphOut = new MappedMatchDomainView<>(inMatch, mapper);
+        Match<Node, Triple> graphOut = new MatchDomainView<>(inMatch, mapper);
         Graph result = new GraphMatch(null, graphOut);
         return result;
     }

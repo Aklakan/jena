@@ -27,13 +27,13 @@ import org.apache.jena.graph.Triple;
 /**
  * This is the bridge between the Node/Triple level and some lower level such as one based on NodeIds.
  */
-public class MappedMatchDomainView<DX, DT>
+public class MatchDomainView<DX, DT>
     implements Match<Node, Triple>
 {
     private Match<DX, DT> below;
     private MapperX<DX, DT> mapper;
 
-    public MappedMatchDomainView(Match<DX, DT> below, MapperX<DX, DT> mapper) {
+    public MatchDomainView(Match<DX, DT> below, MapperX<DX, DT> mapper) {
         super();
         this.mapper = Objects.requireNonNull(mapper);
         this.below = Objects.requireNonNull(below);
