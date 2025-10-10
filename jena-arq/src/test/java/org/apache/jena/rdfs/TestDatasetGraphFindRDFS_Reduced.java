@@ -22,6 +22,8 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.rdfs.setup.ConfigRDFS;
 import org.apache.jena.sparql.core.DatasetGraph;
 
+// FIXME WIP
+
 /**
  * Tests <b>ALL</b> possible access patterns for find(g, s, p, o)
  * {@link DatasetGraphRDFSReduced} via comparison to DatasetGraphRDFS.
