@@ -26,6 +26,8 @@ import org.apache.jena.rdfs.setup.ConfigRDFS;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.util.Context;
 
+// FIXME WIP
+
 /**
  * A DatasetGraph with an RDFS reasoning core aimed to improved over
  * {@link DatasetGraphRDFS}.

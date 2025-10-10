@@ -25,6 +25,7 @@ import org.apache.jena.rdfs.engine.Mappers;
 import org.apache.jena.rdfs.engine.MatchGraph;
 import org.apache.jena.rdfs.setup.ConfigRDFS;
 
+// FIXME WIP
 public class GraphRDFSReduced
     extends GraphMatch
 {

@@ -46,6 +46,8 @@ import org.apache.jena.rdfs.engine.MatchWrapper;
 import org.apache.jena.rdfs.engine.TupleMapper3;
 import org.apache.jena.rdfs.setup.ConfigRDFS;
 
+// FIXME WIP
+
 /**
  * RDFS stream reasoner engine that builds upon Jena's {@link MatchRDFS} but handles
  * the X_ANY_ANY and ANY_ANY_ANY cases differently in order to produce fewer duplicates.
