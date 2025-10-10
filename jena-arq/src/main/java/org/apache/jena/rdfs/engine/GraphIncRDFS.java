@@ -28,7 +28,7 @@ import org.apache.jena.atlas.lib.StreamOps;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
-import org.apache.jena.rdfs.GraphRDFSReduced;
+import org.apache.jena.rdfs.GraphRDFS;
 import org.apache.jena.rdfs.setup.ConfigRDFS;
 import org.apache.jena.rdfs.setup.MatchVocabRDFS;
 import org.apache.jena.util.iterator.ExtendedIterator;
@@ -38,9 +38,9 @@ import org.apache.jena.util.iterator.WrappedIterator;
  * RDFS graph over a base graph.
  * Also include the vocabulary and vocabulary-derived triples.
  *
- * @see GraphRDFSReduced
+ * @see GraphRDFS
  */
-public class GraphIncRDFS extends GraphRDFSReduced {
+public class GraphIncRDFS extends GraphRDFS {
     private final MatchVocabRDFS vocab;
     private Set<Triple> extra;
 

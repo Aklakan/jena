@@ -48,7 +48,7 @@ public class GraphMatchTransforms {
         return r;
     }
 
-    /** Low level transform on some backing model via mapping. */
+    /** Low level transform on some backing X/T model via mapping. */
     public static <X, T> Graph transform(Graph base, Function<Graph, Match<X, T>> graphToMatch, MapperX<X, T> mapper, MatchTransform<X, T> matchTransform) {
         Match<X, T> inMatch = graphToMatch.apply(base);
         Match<X, T> outMatch = matchTransform.apply(inMatch);
@@ -57,8 +57,8 @@ public class GraphMatchTransforms {
     }
 
     public static <X, T> Graph asGraph(Graph baseGraph, Match<X, T> inMatch, MapperX<X, T> mapper) {
-        Match<Node, Triple> graphOut = new MatchDomainView<>(inMatch, mapper);
-        Graph result = new GraphMatch(null, graphOut);
+        Match<Node, Triple> match = new MatchDomainView<>(inMatch, mapper);
+        Graph result = new GraphMatch(baseGraph, match);
         return result;
     }
 }
