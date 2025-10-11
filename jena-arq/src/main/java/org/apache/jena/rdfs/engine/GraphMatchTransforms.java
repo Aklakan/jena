@@ -49,15 +49,20 @@ public class GraphMatchTransforms {
     }
 
     /** Low level transform on some backing X/T model via mapping. */
-    public static <X, T> Graph transform(Graph base, Function<Graph, Match<X, T>> graphToMatch, MapperX<X, T> mapper, MatchTransform<X, T> matchTransform) {
+    public static <X, T> Graph transform(Graph base, Function<Graph, Match<X, T>> graphToMatch,  MatchTransform<X, T> matchTransform) {
         Match<X, T> inMatch = graphToMatch.apply(base);
         Match<X, T> outMatch = matchTransform.apply(inMatch);
-        Graph result = asGraph(base, outMatch, mapper);
+        Graph result = asGraph(base, outMatch);
         return result;
     }
 
+<<<<<<< Updated upstream
     public static <X, T> Graph asGraph(Graph baseGraph, Match<X, T> inMatch, MapperX<X, T> mapper) {
         Match<Node, Triple> match = new MatchDomainView<>(inMatch, mapper);
+=======
+    public static <X, T> Graph asGraph(Graph baseGraph, Match<X, T> inMatch) {
+        Match<Node, Triple> match = new MatchAdapter<>(inMatch, inMatch.getMapper());
+>>>>>>> Stashed changes
         Graph result = new GraphMatch(baseGraph, match);
         return result;
     }
