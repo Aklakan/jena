@@ -18,6 +18,8 @@
 
 package org.apache.jena.rdfs;
 
+// FIXME wip
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
