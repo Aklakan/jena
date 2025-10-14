@@ -47,6 +47,7 @@ import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.Prologue;
 import org.apache.jena.sparql.engine.Timeouts;
 import org.apache.jena.sparql.exec.QueryExec;
+import org.apache.jena.sparql.exec.QueryExecBuilder;
 import org.apache.jena.sparql.exec.QueryExecDatasetBuilder;
 import org.apache.jena.sparql.exec.QueryExecResult;
 import org.apache.jena.sparql.exec.RowSet;
@@ -318,8 +319,7 @@ public abstract class SPARQLQueryProcessor extends ActionService
      * @return QueryExec
      */
     protected QueryExec createQueryExec(HttpAction action, Query query, DatasetGraph dataset) {
-        QueryExecDatasetBuilder builder = QueryExec.newBuilder()
-                .dataset(dataset)
+        QueryExecBuilder builder = QueryExec.dataset(dataset)
                 .query(query)
                 .context(action.getContext())
                 ;
@@ -332,7 +332,7 @@ public abstract class SPARQLQueryProcessor extends ActionService
      * Set the timeouts. The context timeout, which is the system settings, provides
      * an upper bound to setting by protocol ?timeout.
      */
-    private static void setTimeouts(QueryExecDatasetBuilder builder, HttpAction action) {
+    private static void setTimeouts(QueryExecBuilder builder, HttpAction action) {
         // Protocol settings.
         long protocolInitialTimeout = -1;
         long protocolOverallTimeout = -1;

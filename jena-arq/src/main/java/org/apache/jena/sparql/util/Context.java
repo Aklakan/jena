@@ -455,6 +455,11 @@ public class Context {
         return (V)obj;
     }
 
+    /** Atomic forEach. Passes all key-value pairs in no particular order to the given consumer. */
+    public void forEach(BiConsumer<Symbol, Object> action) {
+        context.forEach(action);
+    }
+
     /** Get the context's cancel signal. Create and set one if needed. Context must not be null. */
     public static AtomicBoolean getOrSetCancelSignal(Context context) {
         try {
