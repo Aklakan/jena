@@ -177,7 +177,7 @@ public class ExecutorServicePool {
         ExecutorServiceWithKey backend = null;
         synchronized (actions) {
             LinkedListNode<ExecutorState> node;
-            node = actions.getFirst();
+            node = actions.getFirstNode();
             if (node != null) {
                 // Synchronized unlinking of the node prevents accidental concurrent cleanup
                 node.unlink();
@@ -236,7 +236,7 @@ public class ExecutorServicePool {
         // Note: Even if there are more than maxIdleExecutors executors right now then
         // we still only clean them up after the idle delay.
         synchronized (actions) {
-        	node.moveToEnd();
+            node.moveToEnd();
         }
         scheduleCleanup();
     }
@@ -278,7 +278,7 @@ public class ExecutorServicePool {
                 logger.debug("Cleanup of idle service executors starting.");
             }
             int cleanupCount = 0;
-            LinkedListNode<ExecutorState> node = actions.getFirst();
+            LinkedListNode<ExecutorState> node = actions.getFirstNode();
             long delta = -1;
             if (node != null) {
                 long currentTime = System.currentTimeMillis();

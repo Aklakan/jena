@@ -114,10 +114,10 @@ public class LinkedList<T>
         items.forEach(this::append);
     }
 
-    public LinkedListNode<T> getFirst() {
+    public LinkedListNode<T> getFirstNode() {
         return first;
     }
-    public LinkedListNode<T> getLast() {
+    public LinkedListNode<T> getLastNode() {
         return last;
     }
 
@@ -258,7 +258,7 @@ public class LinkedList<T>
         ListIterator<T> result;
         int s = size();
         if (index == s) { // Special case to position after the last element
-            LinkedListNode<T> node = getLast();
+            LinkedListNode<T> node = getLastNode();
             result = new LinkedListIterator(node, s, false);
         } else {
             LinkedListNode<T> node = findNode(index);
