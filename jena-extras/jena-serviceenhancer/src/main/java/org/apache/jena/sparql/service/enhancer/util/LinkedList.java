@@ -117,6 +117,7 @@ public class LinkedList<T>
     public LinkedListNode<T> getFirstNode() {
         return first;
     }
+
     public LinkedListNode<T> getLastNode() {
         return last;
     }
