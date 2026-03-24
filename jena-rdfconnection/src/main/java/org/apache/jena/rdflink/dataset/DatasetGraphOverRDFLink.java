@@ -116,7 +116,7 @@ public class DatasetGraphOverRDFLink
         private Creator<RDFLink> rdfLinkCreator;
 
         // --- SPARQL Strategies ---
-        private DsgSparqlExecutor execution = DsgSparqlExecutor.DEFAULT;
+        private DsgSparqlExecutor executor = DsgSparqlExecutor.DEFAULT;
 
         // --- Transaction Settings ---
         private boolean supportsTransactions;
@@ -129,8 +129,8 @@ public class DatasetGraphOverRDFLink
             return this;
         }
 
-        public Builder execution(DsgSparqlExecutor execution) {
-            this.execution = Objects.requireNonNull(execution);
+        public Builder executor(DsgSparqlExecutor executor) {
+            this.executor = Objects.requireNonNull(executor);
             return this;
         }
 
@@ -146,16 +146,16 @@ public class DatasetGraphOverRDFLink
 
         public DatasetGraphOverRDFLink build() {
             Objects.requireNonNull(rdfLinkCreator);
-            return new DatasetGraphOverRDFLink(rdfLinkCreator, execution, supportsTransactions, supportsTransactionAbort);
+            return new DatasetGraphOverRDFLink(rdfLinkCreator, executor, supportsTransactions, supportsTransactionAbort);
         }
     }
 
-    public static Builder newBuilder(Creator<RDFLink> rdfLinkCreator) {
-        return new Builder().linkCreator(rdfLinkCreator);
+    public static Builder newBuilder() {
+        return new Builder();
     }
 
     public static DatasetGraphOverRDFLink create(Creator<RDFLink> rdfLinkCreator) {
-        return newBuilder(rdfLinkCreator).build();
+        return newBuilder().linkCreator(rdfLinkCreator).build();
     }
 }
 

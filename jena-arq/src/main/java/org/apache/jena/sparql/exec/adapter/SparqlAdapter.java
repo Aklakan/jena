@@ -26,13 +26,25 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.apache.jena.graph.Node;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.Syntax;
 import org.apache.jena.sparql.ARQConstants;
 import org.apache.jena.sparql.core.DatasetGraph;
+import org.apache.jena.sparql.core.DatasetGraphOne;
+import org.apache.jena.sparql.core.GraphView;
 import org.apache.jena.sparql.exec.QueryExecBuilder;
+import org.apache.jena.sparql.exec.QueryExecBuilderDeferredBase;
 import org.apache.jena.sparql.exec.QueryExecDatasetBuilderImpl;
 import org.apache.jena.sparql.exec.UpdateExecBuilder;
+import org.apache.jena.sparql.exec.UpdateExecBuilderDeferredBase;
 import org.apache.jena.sparql.exec.UpdateExecDatasetBuilderImpl;
+import org.apache.jena.sparql.syntax.Element;
+import org.apache.jena.sparql.syntax.ElementNamedGraph;
+import org.apache.jena.sparql.syntax.ElementVisitorBase;
+import org.apache.jena.sparql.syntax.ElementWalker;
 import org.apache.jena.sparql.util.Context;
+import org.apache.jena.update.Update;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,6 +150,9 @@ import org.slf4j.LoggerFactory;
 
         registry.add(getDefaultQueryProvider());
         registry.add(getDefaultUpdateProvider());
+
+        registry.add(QueryExecBuilderProviderUnwrapDsgSparql.get());
+        registry.add(UpdateExecBuilderProviderUnwrapDsgSparql.get());
     }
 
     // ----- Query -----
@@ -209,6 +224,93 @@ import org.slf4j.LoggerFactory;
         }
     }
 
+    /**
+     * Adapter for queries against GraphViews over DatasetGraphSparql.
+     * The GraphViews are expected to be wrapped as a DatasetGraph via DatasetGraphOne.
+     */
+    private static class QueryExecBuilderProviderUnwrapDsgSparql implements QueryExecBuilderProvider {
+        private static final QueryExecBuilderProvider INSTANCE = new QueryExecBuilderProviderUnwrapDsgSparql();
+        public static QueryExecBuilderProvider get() { return INSTANCE; }
+
+        private QueryExecBuilderProviderUnwrapDsgSparql() {}
+
+        static class ElementVisitorNamedGraph extends ElementVisitorBase {
+            boolean foundNamedGraph = false;
+            @Override public void visit(ElementNamedGraph el) { foundNamedGraph = true; }
+        }
+
+        static boolean hasNamedGraphElt(Query query) {
+            return hasNamedGraphElt(query.getQueryPattern());
+        }
+
+        static boolean hasNamedGraphElt(Element root) {
+            if (root != null) {
+                ElementVisitorNamedGraph visitor = new ElementVisitorNamedGraph();
+                ElementWalker.walk(root, visitor);
+                return visitor.foundNamedGraph;
+            }
+            return false;
+        }
+
+        static GraphView unwrapGraphView(DatasetGraph dsg) {
+            if (dsg instanceof DatasetGraphOne) {
+                if (dsg.getDefaultGraph() instanceof GraphView view) {
+                    return view;
+                }
+            }
+            return null;
+        }
+
+        static boolean isAccepted(DatasetGraph rawDsg, Context context) {
+            boolean result = false;
+            GraphView view = unwrapGraphView(rawDsg);
+            if (view != null) {
+                Node graphName = view.getGraphName();
+                result = (graphName == null || graphName.isURI()) && view.getDataset() instanceof DatasetGraphSparql dsgSparql;
+            }
+            return result;
+        }
+
+        @Override public boolean accept(DatasetGraph rawDsg, Context context) {
+            return isAccepted(rawDsg, context);
+        }
+
+        @Override
+        public QueryExecBuilder create(DatasetGraph rawDsg, Context context) {
+            GraphView view = unwrapGraphView(rawDsg);
+            DatasetGraph dsg = view.getDataset();
+            Node graphName = view.getGraphName();
+
+            // Create a QueryExecBuilder that clear's a queries FROM / FROM NAMED clauses
+            return new QueryExecBuilderDeferredBase() {
+                @Override
+                protected QueryExecBuilder newActualExecBuilder(Context cxt) {
+                    return SparqlAdapter.newQueryExecBuilder(dsg, context);
+                }
+
+                @Override
+                protected void applyQuery(QueryExecBuilder dest, Query rawQuery) {
+                    Query query = rawQuery.cloneQuery();
+                    boolean hasNamedGraphElt = hasNamedGraphElt(query);
+                    query.getNamedGraphURIs().clear();
+                    if (hasNamedGraphElt) {
+                        query.addNamedGraphURI("urn:x-arq:AbsentGraph");
+                    }
+                    query.getGraphURIs().clear();
+                    if (graphName != null) {
+                        query.addGraphURI(graphName.getURI());
+                    }
+                    dest.query(query);
+                }
+
+                @Override
+                protected void applyQueryString(QueryExecBuilder dest, String queryString, Syntax syntax) {
+                    throw new UnsupportedOperationException("Querying a graph view requires a parsed query");
+                }
+            };
+        }
+    }
+
     // ----- Update -----
 
     public static UpdateExecBuilderProvider getDefaultUpdateProvider() {
@@ -275,6 +377,65 @@ import org.slf4j.LoggerFactory;
         @Override
         public UpdateExecBuilder create(DatasetGraph dsg, Context context) {
             return UpdateExecDatasetBuilderImpl.create().dataset(dsg).context(context);
+        }
+    }
+
+    /**
+     * Adapter for queries against GraphViews over DatasetGraphSparql.
+     * The GraphViews are expected to be wrapped as a DatasetGraph via DatasetGraphOne.
+     */
+    private static class UpdateExecBuilderProviderUnwrapDsgSparql implements UpdateExecBuilderProvider {
+        private static final UpdateExecBuilderProvider INSTANCE = new UpdateExecBuilderProviderUnwrapDsgSparql();
+        public static UpdateExecBuilderProvider get() { return INSTANCE; }
+
+        private UpdateExecBuilderProviderUnwrapDsgSparql() {}
+
+        private GraphView unwrapGraphView(DatasetGraph dsg) {
+            return QueryExecBuilderProviderUnwrapDsgSparql.unwrapGraphView(dsg);
+        }
+
+        @Override public boolean accept(DatasetGraph rawDsg, Context context) {
+            return QueryExecBuilderProviderUnwrapDsgSparql.isAccepted(rawDsg, context);
+        }
+
+        @Override
+        public UpdateExecBuilder create(DatasetGraph rawDsg, Context context) {
+            GraphView view = unwrapGraphView(rawDsg);
+            DatasetGraph dsg = view.getDataset();
+            Node graphName = view.getGraphName();
+
+            // Create a QueryExecBuilder that clear's a queries FROM / FROM NAMED clauses
+            return new UpdateExecBuilderDeferredBase() {
+                @Override
+                protected UpdateExecBuilder newActualExecBuilder(Context cxt) {
+                    return SparqlAdapter.newUpdateExecBuilder(dsg, context);
+                }
+
+                @Override
+                protected void applyUpdate(UpdateExecBuilder dest, Update rawUpdate) {
+                    // Restrict updates to the given model.
+
+
+//                    boolean hasNamedGraphElt = hasNamedGraphElt(query);
+//
+//                    Query query = rawQuery.cloneQuery();
+//                    boolean containsNamedGraph = con
+//                    query.getNamedGraphURIs().clear();
+//                    if (visitor.foundNamedGraph) {
+//                        query.addNamedGraphURI("urn:x-arq:AbsentGraph");
+//                    }
+//                    query.getGraphURIs().clear();
+//                    if (graphName != null) {
+//                        query.addGraphURI(graphName.getURI());
+//                    }
+//                    dest.query(query);
+                }
+
+                @Override
+                protected void applyUpdateString(UpdateExecBuilder dest, String updateString) {
+                    throw new UnsupportedOperationException("Querying a graph view requires a parsed Update.");
+                }
+            };
         }
     }
 }

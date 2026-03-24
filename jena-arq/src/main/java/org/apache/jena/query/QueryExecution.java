@@ -76,7 +76,9 @@ public interface QueryExecution extends AutoCloseable
 
     /** Create a local execution builder on a model */
     public static QueryExecutionDatasetBuilder model(Model model) {
-        return QueryExecutionDatasetBuilder.create().model(model);
+        Dataset ds = DatasetFactory.wrap(model);
+        return QueryExecution.dataset(ds);
+        // return QueryExecutionDatasetBuilder.create().model(model);
     }
 
     /** Create a remote execution builder going to an endpoint URL. */
@@ -126,7 +128,7 @@ public interface QueryExecution extends AutoCloseable
      *  over the results.
      *  </p>
      *  */
-	public ResultSet execSelect();
+    public ResultSet execSelect();
 
     /** Execute a CONSTRUCT query */
     public Model execConstruct();
@@ -214,16 +216,16 @@ public interface QueryExecution extends AutoCloseable
     /** Execute a JSON query and return an interator */
     public Iterator<JsonObject> execJsonItems() ;
 
-	/** Stop in mid execution.
-	 *  This method can be called in parallel with other methods on the
+    /** Stop in mid execution.
+     *  This method can be called in parallel with other methods on the
      *  QueryExecution object.
-	 *  There is no guarantee that the concrete implementation actual
+     *  There is no guarantee that the concrete implementation actual
      *  will stop or that it will do so immediately.
      *  No operations on the query execution or any associated
      *  result set are permitted after this call and may cause exceptions to be thrown.
-	 */
+     */
 
-	public void abort();
+    public void abort();
 
     /** Close the query execution and stop query evaluation as soon as convenient.
      *  QueryExecution objects, and a {@link ResultSet} from {@link #execSelect},

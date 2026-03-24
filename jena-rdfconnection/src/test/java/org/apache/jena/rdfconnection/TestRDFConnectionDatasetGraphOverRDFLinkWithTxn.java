@@ -35,8 +35,11 @@ public class TestRDFConnectionDatasetGraphOverRDFLinkWithTxn extends AbstractTes
     @Override
     protected RDFConnection connection() {
         DatasetGraph backendDsg = DatasetGraphFactory.create();
-        DatasetGraphOverRDFLink frontendDsg = DatasetGraphOverRDFLink.newBuilder(() -> RDFLink.connect(backendDsg))
-            .supportsTransactions(true).supportsTransactionAbort(true).build();
+        DatasetGraphOverRDFLink frontendDsg = DatasetGraphOverRDFLink.newBuilder()
+            .linkCreator(() -> RDFLink.connect(backendDsg))
+            .supportsTransactions(true)
+            .supportsTransactionAbort(true)
+            .build();
         Dataset dataset = DatasetFactory.wrap(frontendDsg);
 
         // Here, RDFConnection.connect internally creates an RDFLinkDataset to the frontendDsg (DatasetGraphOverRDFLink).

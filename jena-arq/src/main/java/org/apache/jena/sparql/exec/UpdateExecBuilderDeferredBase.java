@@ -21,12 +21,15 @@
 
 package org.apache.jena.sparql.exec;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.jena.graph.Node;
 import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.engine.Timeouts.Timeout;
 import org.apache.jena.sparql.util.Context;
+import org.apache.jena.update.Update;
 
 /**
  * A deferred update exec builder chooses a destination builder when build is called.
@@ -49,33 +52,54 @@ public abstract class UpdateExecBuilderDeferredBase<X extends UpdateExecBuilderD
 
     /** Transfer settings from this builder to the destination. */
     protected UpdateExecBuilder applySettings(UpdateExecBuilder dest) {
-        if (parseCheck != null) {
-            dest = dest.parseCheck(parseCheck);
-        }
-
+        applyParseCheck(dest, parseCheck);
         for (UpdateElt updateElt : updateEltAcc) {
             if (updateElt.isParsed()) {
-                dest.update(updateElt.update());
+                applyUpdate(dest, updateElt.update());
             } else {
-                dest.update(updateElt.updateString());
+                applyUpdateString(dest, updateElt.updateString());
             }
         }
+        applySubstitutionMap(dest, substitutionMap);
+        Timeout timeout = timeoutBuilder.build();
+        applyTimeout(dest, timeout);
+        applyExecTransforms(dest, updateExecTransforms);
+        return dest;
+    }
 
+    protected void applyParseCheck(UpdateExecBuilder dest, Boolean parseCheck) {
+        if (parseCheck != null) {
+            dest.parseCheck(parseCheck);
+        }
+    }
+
+    protected void applyUpdate(UpdateExecBuilder dest, Update update) {
+        dest.update(update);
+    }
+
+    protected void applyUpdateString(UpdateExecBuilder dest, String updateString) {
+        dest.update(updateString);
+    }
+
+    protected void applySubstitutionMap(UpdateExecBuilder dest, Map<Var, Node> substitutionMap) {
         if (substitutionMap != null) {
             for (Entry<Var, Node> e : substitutionMap.entrySet()) {
                 dest = dest.substitution(e.getKey(), e.getValue());
             }
         }
+    }
 
-        Timeout timeout = timeoutBuilder.build();
+    protected void applyTimeout(UpdateExecBuilder dest, Timeout timeout) {
         if (timeout.hasOverallTimeout()) {
-            dest = dest.timeout(timeout.overallTimeout().amount(), timeout.overallTimeout().unit());
+            dest.timeout(timeout.overallTimeout().amount(), timeout.overallTimeout().unit());
         }
+    }
 
-        for (UpdateExecTransform execTransform : updateExecTransforms) {
-            dest = dest.transformExec(execTransform);
+    protected void applyExecTransforms(UpdateExecBuilder dest, List<UpdateExecTransform> updateExecTransforms) {
+        if (updateExecTransforms != null) {
+            for (UpdateExecTransform execTransform : updateExecTransforms) {
+                dest.transformExec(execTransform);
+            }
         }
-
-        return dest;
     }
 }
