@@ -1,0 +1,2496 @@
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] Apache Jena                                                        [pom]
+[INFO] Apache Jena - IRI3986                                              [jar]
+[INFO] Apache Jena - Language tags                                        [jar]
+[INFO] Apache Jena - Base                                                 [jar]
+[INFO] Apache Jena - Core                                                 [jar]
+[INFO] Apache Jena - ARQ                                                  [jar]
+[INFO] Apache Jena - ONTAPI                                               [jar]
+[INFO] Apache Jena - SHACL                                                [jar]
+[INFO] Apache Jena - ShEx                                                 [jar]
+[INFO] Apache Jena - RDF Patch                                            [jar]
+[INFO] Apache Jena - RDF Connection                                       [jar]
+[INFO] Apache Jena - DBOE Database Operation Environment                  [pom]
+[INFO] Apache Jena - DBOE Base                                            [jar]
+[INFO] Apache Jena - DBOE Transactions                                    [jar]
+[INFO] Apache Jena - DBOE Indexes                                         [jar]
+[INFO] Apache Jena - DBOE Index test suite                                [jar]
+[INFO] Apache Jena - DBOE Transactional Datastructures                    [jar]
+[INFO] Apache Jena - DBOE Storage                                         [jar]
+[INFO] Apache Jena - TDB1 (Native Triple Store)                           [jar]
+[INFO] Apache Jena - TDB2 (Native Triple Store)                           [jar]
+[INFO] Apache Jena - Libraries POM                                        [pom]
+[INFO] Apache Jena - Command line tools                                   [jar]
+[INFO] Apache Jena - SPARQL Text Search                                   [jar]
+[INFO] Apache Jena - Service Enhancer                                     [jar]
+[INFO] Apache Jena - GeoSPARQL Engine                                     [jar]
+[INFO] Apache Jena - Fuseki                                               [pom]
+[INFO] Apache Jena - Fuseki Core Engine                                   [jar]
+[INFO] Apache Jena - Fuseki UI                                            [jar]
+[INFO] Apache Jena - Fuseki Data Access Control                           [jar]
+[INFO] Apache Jena - Fuseki Server Main                                   [jar]
+[INFO] Apache Jena - Fuseki MOD - GeoSPARQL                               [jar]
+[INFO] Apache Jena - Fuseki Server Jar                                    [jar]
+[INFO] Apache Jena - Fuseki Docker Tools                                  [pom]
+[INFO] Apache Jena - Fuseki Binary Distribution                           [pom]
+[INFO] Apache Jena - Fuseki with GeoSPARQL Engine                         [jar]
+[INFO] Apache Jena - CommonsRDF for Jena                                  [jar]
+[INFO] Apache Jena - Query Builder                                        [jar]
+[INFO] Apache Jena - Integration Testing                                  [jar]
+[INFO] Apache Jena - Distribution                                         [pom]
+[INFO] Apache Jena - Code Examples                                        [jar]
+[INFO] Apache Jena - BOM                                                  [pom]
+[INFO] 
+[INFO] ------------------------< org.apache.jena:jena >------------------------
+[INFO] Building Apache Jena 6.2.0-SNAPSHOT                               [1/41]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena ---
+[INFO] org.apache.jena:jena:pom:6.2.0-SNAPSHOT
+[INFO] 
+[INFO] --------------------< org.apache.jena:jena-iri3986 >--------------------
+[INFO] Building Apache Jena - IRI3986 6.2.0-SNAPSHOT                     [2/41]
+[INFO]   from jena-iri3986/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-iri3986 ---
+[INFO] org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] \- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO]    +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO]    \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO]       \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] 
+[INFO] --------------------< org.apache.jena:jena-langtag >--------------------
+[INFO] Building Apache Jena - Language tags 6.2.0-SNAPSHOT               [3/41]
+[INFO]   from jena-langtag/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-langtag ---
+[INFO] org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] \- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO]    +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO]    \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO]       \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] 
+[INFO] ---------------------< org.apache.jena:jena-base >----------------------
+[INFO] Building Apache Jena - Base 6.2.0-SNAPSHOT                        [4/41]
+[INFO]   from jena-base/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-base ---
+[INFO] org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT
+[INFO] +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- org.apache.logging.log4j:log4j-api:jar:2.26.0:compile (optional)
+[INFO] +- org.apache.logging.log4j:log4j-core:jar:2.26.0:compile (optional)
+[INFO] +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] +- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] +- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  \- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] +- org.slf4j:jul-to-slf4j:jar:2.0.17:compile (optional)
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO] \- org.awaitility:awaitility:jar:4.3.0:test
+[INFO]    \- org.hamcrest:hamcrest:jar:2.1:test
+[INFO] 
+[INFO] ---------------------< org.apache.jena:jena-core >----------------------
+[INFO] Building Apache Jena - Core 6.2.0-SNAPSHOT                        [5/41]
+[INFO]   from jena-core/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-core ---
+[INFO] org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] +- org.junit.vintage:junit-vintage-engine:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  +- junit:junit:jar:4.13.2:test
+[INFO] |  |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] +- org.slf4j:jcl-over-slf4j:jar:2.0.17:test
+[INFO] +- org.mockito:mockito-core:jar:5.23.0:test
+[INFO] |  +- net.bytebuddy:byte-buddy:jar:1.18.4:test
+[INFO] |  +- net.bytebuddy:byte-buddy-agent:jar:1.18.4:test
+[INFO] |  \- org.objenesis:objenesis:jar:3.3:test
+[INFO] +- org.awaitility:awaitility:jar:4.3.0:test
+[INFO] |  \- org.hamcrest:hamcrest:jar:2.1:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ----------------------< org.apache.jena:jena-arq >----------------------
+[INFO] Building Apache Jena - ARQ 6.2.0-SNAPSHOT                         [6/41]
+[INFO]   from jena-arq/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-arq ---
+[INFO] org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  \- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] +- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.graalvm.js:js-scriptengine:jar:25.0.3:test
+[INFO] |  \- org.graalvm.polyglot:polyglot:jar:25.0.3:test
+[INFO] |     +- org.graalvm.sdk:collections:jar:25.0.3:test
+[INFO] |     \- org.graalvm.sdk:nativeimage:jar:25.0.3:test
+[INFO] |        \- org.graalvm.sdk:word:jar:25.0.3:test
+[INFO] +- org.graalvm.js:js-community:pom:25.0.3:test
+[INFO] |  \- org.graalvm.js:js:pom:25.0.3:test
+[INFO] |     +- org.graalvm.js:js-language:jar:25.0.3:test
+[INFO] |     |  +- org.graalvm.regex:regex:jar:25.0.3:test
+[INFO] |     |  +- org.graalvm.truffle:truffle-api:jar:25.0.3:test
+[INFO] |     |  \- org.graalvm.shadowed:icu4j:jar:25.0.3:test
+[INFO] |     |     \- org.graalvm.shadowed:xz:jar:25.0.3:test
+[INFO] |     \- org.graalvm.truffle:truffle-runtime:jar:25.0.3:test
+[INFO] |        +- org.graalvm.sdk:jniutils:jar:25.0.3:test
+[INFO] |        \- org.graalvm.truffle:truffle-compiler:jar:25.0.3:test
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] +- org.awaitility:awaitility:jar:4.3.0:test
+[INFO] |  \- org.hamcrest:hamcrest:jar:2.1:test
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO] |  +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO] |  \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] \- org.apache.commons:commons-math4-legacy:jar:4.0-beta1:test
+[INFO]    +- org.apache.commons:commons-statistics-distribution:jar:1.0:test
+[INFO]    +- org.apache.commons:commons-numbers-core:jar:1.1:test
+[INFO]    +- org.apache.commons:commons-numbers-complex:jar:1.1:test
+[INFO]    +- org.apache.commons:commons-numbers-gamma:jar:1.1:test
+[INFO]    |  \- org.apache.commons:commons-numbers-fraction:jar:1.1:test
+[INFO]    +- org.apache.commons:commons-numbers-combinatorics:jar:1.1:test
+[INFO]    +- org.apache.commons:commons-numbers-angle:jar:1.1:test
+[INFO]    +- org.apache.commons:commons-numbers-rootfinder:jar:1.1:test
+[INFO]    +- org.apache.commons:commons-numbers-field:jar:1.1:test
+[INFO]    +- org.apache.commons:commons-numbers-quaternion:jar:1.1:test
+[INFO]    +- org.apache.commons:commons-numbers-arrays:jar:1.1:test
+[INFO]    +- org.apache.commons:commons-rng-client-api:jar:1.5:test
+[INFO]    +- org.apache.commons:commons-rng-simple:jar:1.5:test
+[INFO]    |  \- org.apache.commons:commons-rng-core:jar:1.5:test
+[INFO]    +- org.apache.commons:commons-rng-sampling:jar:1.5:test
+[INFO]    +- org.apache.commons:commons-math4-legacy-exception:jar:4.0-beta1:test
+[INFO]    \- org.apache.commons:commons-math4-legacy-core:jar:4.0-beta1:test
+[INFO]       \- org.apache.commons:commons-math4-core:jar:4.0-beta1:test
+[INFO] 
+[INFO] --------------------< org.apache.jena:jena-ontapi >---------------------
+[INFO] Building Apache Jena - ONTAPI 6.2.0-SNAPSHOT                      [7/41]
+[INFO]   from jena-ontapi/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-ontapi ---
+[INFO] org.apache.jena:jena-ontapi:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ---------------------< org.apache.jena:jena-shacl >---------------------
+[INFO] Building Apache Jena - SHACL 6.2.0-SNAPSHOT                       [8/41]
+[INFO]   from jena-shacl/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-shacl ---
+[INFO] org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ---------------------< org.apache.jena:jena-shex >----------------------
+[INFO] Building Apache Jena - ShEx 6.2.0-SNAPSHOT                        [9/41]
+[INFO]   from jena-shex/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-shex ---
+[INFO] org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- junit:junit:jar:4.13.2:test
+[INFO] |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] -------------------< org.apache.jena:jena-rdfpatch >--------------------
+[INFO] Building Apache Jena - RDF Patch 6.2.0-SNAPSHOT                  [10/41]
+[INFO]   from jena-rdfpatch/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-rdfpatch ---
+[INFO] org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO] |  +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO] |  +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] |  \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] \- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO]    +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO]    \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO]       \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] 
+[INFO] -----------------< org.apache.jena:jena-rdfconnection >-----------------
+[INFO] Building Apache Jena - RDF Connection 6.2.0-SNAPSHOT             [11/41]
+[INFO]   from jena-rdfconnection/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-rdfconnection ---
+[INFO] org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ----------------------< org.apache.jena:jena-db >-----------------------
+[INFO] Building Apache Jena - DBOE Database Operation Environment 6.2.0-SNAPSHOT [12/41]
+[INFO]   from jena-db/pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-db ---
+[INFO] org.apache.jena:jena-db:pom:6.2.0-SNAPSHOT
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:test
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] -------------------< org.apache.jena:jena-dboe-base >-------------------
+[INFO] Building Apache Jena - DBOE Base 6.2.0-SNAPSHOT                  [13/41]
+[INFO]   from jena-db/jena-dboe-base/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-dboe-base ---
+[INFO] org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ---------------< org.apache.jena:jena-dboe-transaction >----------------
+[INFO] Building Apache Jena - DBOE Transactions 6.2.0-SNAPSHOT          [14/41]
+[INFO]   from jena-db/jena-dboe-transaction/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-dboe-transaction ---
+[INFO] org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |     |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |     |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |     |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |     |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |     |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |     |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |     |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |     +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |     |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |     +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |     +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |     |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |     |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |     |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |     +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |     +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |     +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |     \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ------------------< org.apache.jena:jena-dboe-index >-------------------
+[INFO] Building Apache Jena - DBOE Indexes 6.2.0-SNAPSHOT               [15/41]
+[INFO]   from jena-db/jena-dboe-index/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-dboe-index ---
+[INFO] org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |     |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |     |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |     |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |     |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |     |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |     |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |     |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |     +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |     |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |     +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |     +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |     |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |     |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |     |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |     +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |     +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |     +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |     \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ----------------< org.apache.jena:jena-dboe-index-test >----------------
+[INFO] Building Apache Jena - DBOE Index test suite 6.2.0-SNAPSHOT      [16/41]
+[INFO]   from jena-db/jena-dboe-index-test/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-dboe-index-test ---
+[INFO] org.apache.jena:jena-dboe-index-test:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     \- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |        |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |        |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |        |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |        |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |        |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |        |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |        |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |        +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |        |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |        +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |        +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |        |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |        |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |        |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |        +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |        +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |        +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |        \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:compile
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:compile
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:compile
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:compile
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:compile
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:runtime
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:runtime
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:compile
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:compile
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:runtime
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:runtime
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ----------------< org.apache.jena:jena-dboe-trans-data >----------------
+[INFO] Building Apache Jena - DBOE Transactional Datastructures 6.2.0-SNAPSHOT [17/41]
+[INFO]   from jena-db/jena-dboe-trans-data/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-dboe-trans-data ---
+[INFO] org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-dboe-index-test:jar:6.2.0-SNAPSHOT:test
+[INFO] +- org.apache.jena:jena-dboe-base:jar:tests:6.2.0-SNAPSHOT:test
+[INFO] |  \- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |     |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |     |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |     |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |     |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |     |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |     |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |     |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |     +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |     |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |     +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |     +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |     |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |     |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |     |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |     +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |     +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |     +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |     \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] -----------------< org.apache.jena:jena-dboe-storage >------------------
+[INFO] Building Apache Jena - DBOE Storage 6.2.0-SNAPSHOT               [18/41]
+[INFO]   from jena-db/jena-dboe-storage/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-dboe-storage ---
+[INFO] org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |     \- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-arq:jar:tests:6.2.0-SNAPSHOT:test
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ---------------------< org.apache.jena:jena-tdb1 >----------------------
+[INFO] Building Apache Jena - TDB1 (Native Triple Store) 6.2.0-SNAPSHOT [19/41]
+[INFO]   from jena-tdb1/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-tdb1 ---
+[INFO] org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.apache.jena:jena-arq:jar:tests:6.2.0-SNAPSHOT:test
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] +- org.junit.vintage:junit-vintage-engine:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] |  +- junit:junit:jar:4.13.2:test
+[INFO] |  |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ---------------------< org.apache.jena:jena-tdb2 >----------------------
+[INFO] Building Apache Jena - TDB2 (Native Triple Store) 6.2.0-SNAPSHOT [20/41]
+[INFO]   from jena-tdb2/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-tdb2 ---
+[INFO] org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |     \- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-arq:jar:tests:6.2.0-SNAPSHOT:test
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ------------------< org.apache.jena:apache-jena-libs >------------------
+[INFO] Building Apache Jena - Libraries POM 6.2.0-SNAPSHOT              [21/41]
+[INFO]   from apache-jena-libs/pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ apache-jena-libs ---
+[INFO] org.apache.jena:apache-jena-libs:pom:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |     |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |     |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |     |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |     |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |     |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |     |  |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |     |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |     |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |     +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |     |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |     +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |     |  \- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] |     +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |     |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |     |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |     |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |     +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |     +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |     +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |     \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.apache.jena:jena-ontapi:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] \- org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT:compile
+[INFO] 
+[INFO] ---------------------< org.apache.jena:jena-cmds >----------------------
+[INFO] Building Apache Jena - Command line tools 6.2.0-SNAPSHOT         [22/41]
+[INFO]   from jena-cmds/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-cmds ---
+[INFO] org.apache.jena:jena-cmds:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- commons-cli:commons-cli:jar:1.9.0:compile
+[INFO] +- org.apache.jena:jena-arq:jar:tests:6.2.0-SNAPSHOT:compile (optional)
+[INFO] +- org.apache.jena:jena-shacl:jar:tests:6.2.0-SNAPSHOT:compile (optional)
+[INFO] +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:compile (optional)
+[INFO] |  +- org.apache.logging.log4j:log4j-api:jar:2.26.0:compile (optional)
+[INFO] |  \- org.apache.logging.log4j:log4j-core:jar:2.26.0:runtime (optional)
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] \- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO]    +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO]    \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO]       \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] 
+[INFO] ---------------------< org.apache.jena:jena-text >----------------------
+[INFO] Building Apache Jena - SPARQL Text Search 6.2.0-SNAPSHOT         [23/41]
+[INFO]   from jena-text/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-text ---
+[INFO] org.apache.jena:jena-text:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-cmds:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- commons-cli:commons-cli:jar:1.9.0:compile
+[INFO] |  \- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- org.apache.lucene:lucene-core:jar:10.3.1:compile
+[INFO] +- org.apache.lucene:lucene-analysis-common:jar:10.3.1:compile
+[INFO] +- org.apache.lucene:lucene-queryparser:jar:10.3.1:compile
+[INFO] |  +- org.apache.lucene:lucene-queries:jar:10.3.1:compile
+[INFO] |  \- org.apache.lucene:lucene-sandbox:jar:10.3.1:compile
+[INFO] |     \- org.apache.lucene:lucene-facet:jar:10.3.1:compile
+[INFO] +- org.apache.lucene:lucene-highlighter:jar:10.3.1:compile
+[INFO] |  \- org.apache.lucene:lucene-memory:jar:10.3.1:runtime
+[INFO] +- org.apache.lucene:lucene-backward-codecs:jar:10.3.1:compile
+[INFO] +- org.junit.vintage:junit-vintage-engine:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  +- junit:junit:jar:4.13.2:test
+[INFO] |  |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ----------------< org.apache.jena:jena-serviceenhancer >----------------
+[INFO] Building Apache Jena - Service Enhancer 6.2.0-SNAPSHOT           [24/41]
+[INFO]   from jena-serviceenhancer/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-serviceenhancer ---
+[INFO] org.apache.jena:jena-serviceenhancer:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- com.google.guava:guava:jar:33.6.0-jre:compile
+[INFO] |  +- com.google.guava:failureaccess:jar:1.0.3:compile
+[INFO] |  +- com.google.guava:listenablefuture:jar:9999.0-empty-to-avoid-conflict-with-guava:compile
+[INFO] |  +- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  \- com.google.j2objc:j2objc-annotations:jar:3.1:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  \- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO] |  +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO] |  +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] |  \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] \- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:test
+[INFO]    \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:test
+[INFO]       \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:test
+[INFO]          +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:test
+[INFO]          |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:test
+[INFO]          \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:test
+[INFO] 
+[INFO] -------------------< org.apache.jena:jena-geosparql >-------------------
+[INFO] Building Apache Jena - GeoSPARQL Engine 6.2.0-SNAPSHOT           [25/41]
+[INFO]   from jena-geosparql/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-geosparql ---
+[INFO] org.apache.jena:jena-geosparql:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.apache.sis.core:sis-referencing:jar:1.4:compile
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.1:compile
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:2.1.2:compile
+[INFO] |  \- org.apache.sis.core:sis-metadata:jar:1.4:compile
+[INFO] |     \- org.apache.sis.core:sis-utility:jar:1.4:compile
+[INFO] |        +- org.opengis:geoapi:jar:3.0.2:compile
+[INFO] |        \- javax.measure:unit-api:jar:2.1.3:compile
+[INFO] +- org.slf4j:jul-to-slf4j:jar:2.0.17:compile
+[INFO] |  \- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- org.locationtech.jts:jts-core:jar:1.20.0:compile
+[INFO] +- org.locationtech.jts.io:jts-io-common:jar:1.20.0:compile
+[INFO] |  \- com.googlecode.json-simple:json-simple:jar:1.1.1:compile
+[INFO] +- org.jdom:jdom2:jar:2.0.6.1:compile
+[INFO] +- com.esotericsoftware.kryo:kryo5:jar:5.6.2:compile
+[INFO] +- org.apache.sis.non-free:sis-embedded-data:jar:1.4:test
+[INFO] |  +- org.apache.derby:derby:jar:10.15.2.0:test
+[INFO] |  |  \- org.apache.derby:derbyshared:jar:10.15.2.0:test
+[INFO] |  \- org.apache.derby:derbytools:jar:10.15.2.0:test
+[INFO] +- org.junit.vintage:junit-vintage-engine:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  +- junit:junit:jar:4.13.2:test
+[INFO] |  |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] --------------------< org.apache.jena:jena-fuseki >---------------------
+[INFO] Building Apache Jena - Fuseki 6.2.0-SNAPSHOT                     [26/41]
+[INFO]   from jena-fuseki2/pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-fuseki ---
+[INFO] org.apache.jena:jena-fuseki:pom:6.2.0-SNAPSHOT
+[INFO] 
+[INFO] ------------------< org.apache.jena:jena-fuseki-core >------------------
+[INFO] Building Apache Jena - Fuseki Core Engine 6.2.0-SNAPSHOT         [27/41]
+[INFO]   from jena-fuseki2/jena-fuseki-core/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-fuseki-core ---
+[INFO] org.apache.jena:jena-fuseki-core:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |     |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |     |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |     |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |     |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |     |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |     |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |     +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |     |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |     +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |     +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |     |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |     |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |     |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |     +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |     +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |     +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |     \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.commons:commons-fileupload2-jakarta-servlet6:jar:2.0.0-M5:compile
+[INFO] |  +- org.apache.commons:commons-fileupload2-core:jar:2.0.0-M5:compile
+[INFO] |  \- commons-io:commons-io:jar:2.22.0:compile
+[INFO] +- jakarta.servlet:jakarta.servlet-api:jar:6.1.0:compile
+[INFO] +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:compile (optional)
+[INFO] |  +- org.apache.logging.log4j:log4j-api:jar:2.26.0:compile (optional)
+[INFO] |  \- org.apache.logging.log4j:log4j-core:jar:2.26.0:runtime (optional)
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  \- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] +- io.micrometer:micrometer-core:jar:1.16.5:compile
+[INFO] |  +- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- io.micrometer:micrometer-commons:jar:1.16.5:compile
+[INFO] |  +- io.micrometer:micrometer-observation:jar:1.16.5:compile
+[INFO] |  +- org.hdrhistogram:HdrHistogram:jar:2.2.2:runtime
+[INFO] |  \- org.latencyutils:LatencyUtils:jar:2.0.3:runtime
+[INFO] +- io.micrometer:micrometer-registry-prometheus:jar:1.16.5:compile
+[INFO] |  +- io.prometheus:prometheus-metrics-core:jar:1.4.3:compile
+[INFO] |  |  +- io.prometheus:prometheus-metrics-model:jar:1.4.3:compile
+[INFO] |  |  \- io.prometheus:prometheus-metrics-config:jar:1.4.3:compile
+[INFO] |  +- io.prometheus:prometheus-metrics-tracer-common:jar:1.4.3:compile
+[INFO] |  \- io.prometheus:prometheus-metrics-exposition-formats:jar:1.4.3:runtime
+[INFO] |     \- io.prometheus:prometheus-metrics-exposition-textformats:jar:1.4.3:runtime
+[INFO] \- org.mockito:mockito-core:jar:5.23.0:test
+[INFO]    +- net.bytebuddy:byte-buddy:jar:1.18.4:test
+[INFO]    +- net.bytebuddy:byte-buddy-agent:jar:1.18.4:test
+[INFO]    \- org.objenesis:objenesis:jar:3.3:test
+[INFO] 
+[INFO] -------------------< org.apache.jena:jena-fuseki-ui >-------------------
+[INFO] Building Apache Jena - Fuseki UI 6.2.0-SNAPSHOT                  [28/41]
+[INFO]   from jena-fuseki2/jena-fuseki-ui/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-fuseki-ui ---
+[INFO] org.apache.jena:jena-fuseki-ui:jar:6.2.0-SNAPSHOT
+[INFO] 
+[INFO] -----------------< org.apache.jena:jena-fuseki-access >-----------------
+[INFO] Building Apache Jena - Fuseki Data Access Control 6.2.0-SNAPSHOT [29/41]
+[INFO]   from jena-fuseki2/jena-fuseki-access/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-fuseki-access ---
+[INFO] org.apache.jena:jena-fuseki-access:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-fuseki-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |     +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |     |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |     |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |     |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |     |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |     |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |     |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |     |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |     |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |     |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |     |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  |     +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |     |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  |     +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  |     +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |     |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |     |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |     |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  |     +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  |     +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  |     +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  |     \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] |  +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.commons:commons-fileupload2-jakarta-servlet6:jar:2.0.0-M5:compile
+[INFO] |  |  +- org.apache.commons:commons-fileupload2-core:jar:2.0.0-M5:compile
+[INFO] |  |  \- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  +- jakarta.servlet:jakarta.servlet-api:jar:6.1.0:compile
+[INFO] |  +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] |  +- io.micrometer:micrometer-core:jar:1.16.5:compile
+[INFO] |  |  +- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  |  +- io.micrometer:micrometer-commons:jar:1.16.5:compile
+[INFO] |  |  +- io.micrometer:micrometer-observation:jar:1.16.5:compile
+[INFO] |  |  +- org.hdrhistogram:HdrHistogram:jar:2.2.2:runtime
+[INFO] |  |  \- org.latencyutils:LatencyUtils:jar:2.0.3:runtime
+[INFO] |  \- io.micrometer:micrometer-registry-prometheus:jar:1.16.5:compile
+[INFO] |     +- io.prometheus:prometheus-metrics-core:jar:1.4.3:compile
+[INFO] |     |  +- io.prometheus:prometheus-metrics-model:jar:1.4.3:compile
+[INFO] |     |  \- io.prometheus:prometheus-metrics-config:jar:1.4.3:compile
+[INFO] |     +- io.prometheus:prometheus-metrics-tracer-common:jar:1.4.3:compile
+[INFO] |     \- io.prometheus:prometheus-metrics-exposition-formats:jar:1.4.3:runtime
+[INFO] |        \- io.prometheus:prometheus-metrics-exposition-textformats:jar:1.4.3:runtime
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  \- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ------------------< org.apache.jena:jena-fuseki-main >------------------
+[INFO] Building Apache Jena - Fuseki Server Main 6.2.0-SNAPSHOT         [30/41]
+[INFO]   from jena-fuseki2/jena-fuseki-main/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-fuseki-main ---
+[INFO] org.apache.jena:jena-fuseki-main:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-fuseki-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.commons:commons-fileupload2-jakarta-servlet6:jar:2.0.0-M5:compile
+[INFO] |  |  +- org.apache.commons:commons-fileupload2-core:jar:2.0.0-M5:compile
+[INFO] |  |  \- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  +- jakarta.servlet:jakarta.servlet-api:jar:6.1.0:compile
+[INFO] |  +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] |  +- io.micrometer:micrometer-core:jar:1.16.5:compile
+[INFO] |  |  +- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  |  +- io.micrometer:micrometer-commons:jar:1.16.5:compile
+[INFO] |  |  +- io.micrometer:micrometer-observation:jar:1.16.5:compile
+[INFO] |  |  +- org.hdrhistogram:HdrHistogram:jar:2.2.2:runtime
+[INFO] |  |  \- org.latencyutils:LatencyUtils:jar:2.0.3:runtime
+[INFO] |  \- io.micrometer:micrometer-registry-prometheus:jar:1.16.5:compile
+[INFO] |     +- io.prometheus:prometheus-metrics-core:jar:1.4.3:compile
+[INFO] |     |  +- io.prometheus:prometheus-metrics-model:jar:1.4.3:compile
+[INFO] |     |  \- io.prometheus:prometheus-metrics-config:jar:1.4.3:compile
+[INFO] |     +- io.prometheus:prometheus-metrics-tracer-common:jar:1.4.3:compile
+[INFO] |     \- io.prometheus:prometheus-metrics-exposition-formats:jar:1.4.3:runtime
+[INFO] |        \- io.prometheus:prometheus-metrics-exposition-textformats:jar:1.4.3:runtime
+[INFO] +- org.apache.jena:jena-fuseki-access:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-cmds:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- commons-cli:commons-cli:jar:1.9.0:compile
+[INFO] +- org.apache.jena:jena-fuseki-ui:jar:6.2.0-SNAPSHOT:test
+[INFO] +- org.eclipse.jetty.ee11:jetty-ee11-servlet:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-server:jar:12.1.9:compile
+[INFO] |  \- org.eclipse.jetty:jetty-session:jar:12.1.9:compile
+[INFO] +- org.eclipse.jetty.ee11:jetty-ee11-servlets:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-http:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-io:jar:12.1.9:compile
+[INFO] |  \- org.eclipse.jetty:jetty-util:jar:12.1.9:compile
+[INFO] +- org.eclipse.jetty:jetty-security:jar:12.1.9:compile
+[INFO] +- org.eclipse.jetty:jetty-xml:jar:12.1.9:compile
+[INFO] +- org.apache.shiro:shiro-core:jar:2.1.0:compile
+[INFO] |  +- org.apache.shiro:shiro-lang:jar:2.1.0:compile
+[INFO] |  +- org.apache.shiro:shiro-cache:jar:2.1.0:compile
+[INFO] |  +- org.apache.shiro:shiro-crypto-hash:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-crypto-core:jar:2.1.0:compile
+[INFO] |  |  \- org.bouncycastle:bcprov-jdk18on:jar:1.82:compile
+[INFO] |  +- org.apache.shiro.crypto:shiro-hashes-argon2:jar:2.1.0:runtime
+[INFO] |  +- org.apache.shiro.crypto:shiro-hashes-bcrypt:jar:2.1.0:runtime
+[INFO] |  +- org.apache.shiro:shiro-crypto-cipher:jar:2.1.0:compile
+[INFO] |  +- org.apache.shiro:shiro-config-core:jar:2.1.0:compile
+[INFO] |  +- org.apache.shiro:shiro-config-ogdl:jar:2.1.0:compile
+[INFO] |  |  \- commons-beanutils:commons-beanutils:jar:1.11.0:compile
+[INFO] |  |     \- commons-collections:commons-collections:jar:3.2.2:compile
+[INFO] |  \- org.apache.shiro:shiro-event:jar:2.1.0:compile
+[INFO] +- org.apache.shiro:shiro-web:jar:jakarta:2.1.0:compile
+[INFO] |  \- org.owasp.encoder:encoder:jar:1.4.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  \- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] +- org.awaitility:awaitility:jar:4.3.0:test
+[INFO] |  \- org.hamcrest:hamcrest:jar:2.1:test
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:compile (optional)
+[INFO] |  +- org.apache.logging.log4j:log4j-api:jar:2.26.0:compile (optional)
+[INFO] |  \- org.apache.logging.log4j:log4j-core:jar:2.26.0:runtime (optional)
+[INFO] +- org.graalvm.js:js-scriptengine:jar:25.0.3:test
+[INFO] |  \- org.graalvm.polyglot:polyglot:jar:25.0.3:test
+[INFO] |     +- org.graalvm.sdk:collections:jar:25.0.3:test
+[INFO] |     \- org.graalvm.sdk:nativeimage:jar:25.0.3:test
+[INFO] |        \- org.graalvm.sdk:word:jar:25.0.3:test
+[INFO] \- org.graalvm.js:js-community:pom:25.0.3:test
+[INFO]    \- org.graalvm.js:js:pom:25.0.3:test
+[INFO]       +- org.graalvm.js:js-language:jar:25.0.3:test
+[INFO]       |  +- org.graalvm.regex:regex:jar:25.0.3:test
+[INFO]       |  +- org.graalvm.truffle:truffle-api:jar:25.0.3:test
+[INFO]       |  \- org.graalvm.shadowed:icu4j:jar:25.0.3:test
+[INFO]       |     \- org.graalvm.shadowed:xz:jar:25.0.3:test
+[INFO]       \- org.graalvm.truffle:truffle-runtime:jar:25.0.3:test
+[INFO]          +- org.graalvm.sdk:jniutils:jar:25.0.3:test
+[INFO]          \- org.graalvm.truffle:truffle-compiler:jar:25.0.3:test
+[INFO] 
+[INFO] -------------< org.apache.jena:jena-fuseki-mod-geosparql >--------------
+[INFO] Building Apache Jena - Fuseki MOD - GeoSPARQL 6.2.0-SNAPSHOT     [31/41]
+[INFO]   from jena-fuseki2/jena-fuseki-mod-geosparql/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-fuseki-mod-geosparql ---
+[INFO] org.apache.jena:jena-fuseki-mod-geosparql:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-geosparql:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  |  \- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  +- org.apache.sis.core:sis-referencing:jar:1.4:compile
+[INFO] |  |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.1:compile
+[INFO] |  |  |  \- jakarta.activation:jakarta.activation-api:jar:2.1.2:compile
+[INFO] |  |  \- org.apache.sis.core:sis-metadata:jar:1.4:compile
+[INFO] |  |     \- org.apache.sis.core:sis-utility:jar:1.4:compile
+[INFO] |  |        +- org.opengis:geoapi:jar:3.0.2:compile
+[INFO] |  |        \- javax.measure:unit-api:jar:2.1.3:compile
+[INFO] |  +- org.slf4j:jul-to-slf4j:jar:2.0.17:compile
+[INFO] |  +- org.locationtech.jts:jts-core:jar:1.20.0:compile
+[INFO] |  +- org.locationtech.jts.io:jts-io-common:jar:1.20.0:compile
+[INFO] |  |  \- com.googlecode.json-simple:json-simple:jar:1.1.1:compile
+[INFO] |  +- org.jdom:jdom2:jar:2.0.6.1:compile
+[INFO] |  \- com.esotericsoftware.kryo:kryo5:jar:5.6.2:compile
+[INFO] +- org.apache.jena:jena-fuseki-main:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-fuseki-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.commons:commons-fileupload2-jakarta-servlet6:jar:2.0.0-M5:compile
+[INFO] |  |  |  \- org.apache.commons:commons-fileupload2-core:jar:2.0.0-M5:compile
+[INFO] |  |  +- jakarta.servlet:jakarta.servlet-api:jar:6.1.0:compile
+[INFO] |  |  +- io.micrometer:micrometer-core:jar:1.16.5:compile
+[INFO] |  |  |  +- io.micrometer:micrometer-commons:jar:1.16.5:compile
+[INFO] |  |  |  +- io.micrometer:micrometer-observation:jar:1.16.5:compile
+[INFO] |  |  |  +- org.hdrhistogram:HdrHistogram:jar:2.2.2:runtime
+[INFO] |  |  |  \- org.latencyutils:LatencyUtils:jar:2.0.3:runtime
+[INFO] |  |  \- io.micrometer:micrometer-registry-prometheus:jar:1.16.5:compile
+[INFO] |  |     +- io.prometheus:prometheus-metrics-core:jar:1.4.3:compile
+[INFO] |  |     |  +- io.prometheus:prometheus-metrics-model:jar:1.4.3:compile
+[INFO] |  |     |  \- io.prometheus:prometheus-metrics-config:jar:1.4.3:compile
+[INFO] |  |     +- io.prometheus:prometheus-metrics-tracer-common:jar:1.4.3:compile
+[INFO] |  |     \- io.prometheus:prometheus-metrics-exposition-formats:jar:1.4.3:runtime
+[INFO] |  |        \- io.prometheus:prometheus-metrics-exposition-textformats:jar:1.4.3:runtime
+[INFO] |  +- org.apache.jena:jena-fuseki-access:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-cmds:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- commons-cli:commons-cli:jar:1.9.0:compile
+[INFO] |  +- org.eclipse.jetty.ee11:jetty-ee11-servlet:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-server:jar:12.1.9:compile
+[INFO] |  |  \- org.eclipse.jetty:jetty-session:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty.ee11:jetty-ee11-servlets:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-http:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-io:jar:12.1.9:compile
+[INFO] |  |  \- org.eclipse.jetty:jetty-util:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-security:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-xml:jar:12.1.9:compile
+[INFO] |  +- org.apache.shiro:shiro-core:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-lang:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-cache:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-crypto-hash:jar:2.1.0:compile
+[INFO] |  |  |  +- org.apache.shiro:shiro-crypto-core:jar:2.1.0:compile
+[INFO] |  |  |  \- org.bouncycastle:bcprov-jdk18on:jar:1.82:compile
+[INFO] |  |  +- org.apache.shiro.crypto:shiro-hashes-argon2:jar:2.1.0:runtime
+[INFO] |  |  +- org.apache.shiro.crypto:shiro-hashes-bcrypt:jar:2.1.0:runtime
+[INFO] |  |  +- org.apache.shiro:shiro-crypto-cipher:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-config-core:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-config-ogdl:jar:2.1.0:compile
+[INFO] |  |  |  \- commons-beanutils:commons-beanutils:jar:1.11.0:compile
+[INFO] |  |  |     \- commons-collections:commons-collections:jar:3.2.2:compile
+[INFO] |  |  \- org.apache.shiro:shiro-event:jar:2.1.0:compile
+[INFO] |  \- org.apache.shiro:shiro-web:jar:jakarta:2.1.0:compile
+[INFO] |     \- org.owasp.encoder:encoder:jar:1.4.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] +- org.apache.logging.log4j:log4j-core:jar:2.26.0:test
+[INFO] |  \- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO] |  \- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- org.seleniumhq.selenium:selenium-java:jar:4.43.0:test
+[INFO] |  +- org.seleniumhq.selenium:selenium-api:jar:4.43.0:test
+[INFO] |  +- org.seleniumhq.selenium:selenium-chrome-driver:jar:4.43.0:test
+[INFO] |  |  +- com.google.auto.service:auto-service-annotations:jar:1.1.1:test
+[INFO] |  |  +- org.seleniumhq.selenium:selenium-chromium-driver:jar:4.43.0:test
+[INFO] |  |  +- org.seleniumhq.selenium:selenium-json:jar:4.43.0:test
+[INFO] |  |  \- org.seleniumhq.selenium:selenium-manager:jar:4.43.0:test
+[INFO] |  +- org.seleniumhq.selenium:selenium-devtools-v145:jar:4.43.0:test
+[INFO] |  +- org.seleniumhq.selenium:selenium-devtools-v146:jar:4.43.0:test
+[INFO] |  +- org.seleniumhq.selenium:selenium-devtools-v147:jar:4.43.0:test
+[INFO] |  +- org.seleniumhq.selenium:selenium-edge-driver:jar:4.43.0:test
+[INFO] |  +- org.seleniumhq.selenium:selenium-firefox-driver:jar:4.43.0:test
+[INFO] |  |  \- org.seleniumhq.selenium:selenium-http:jar:4.43.0:test
+[INFO] |  +- org.seleniumhq.selenium:selenium-ie-driver:jar:4.43.0:test
+[INFO] |  +- org.seleniumhq.selenium:selenium-remote-driver:jar:4.43.0:test
+[INFO] |  |  +- com.google.guava:guava:jar:33.6.0-jre:test
+[INFO] |  |  |  +- com.google.guava:failureaccess:jar:1.0.3:test
+[INFO] |  |  |  +- com.google.guava:listenablefuture:jar:9999.0-empty-to-avoid-conflict-with-guava:test
+[INFO] |  |  |  \- com.google.j2objc:j2objc-annotations:jar:3.1:test
+[INFO] |  |  +- io.opentelemetry:opentelemetry-api:jar:1.60.1:test
+[INFO] |  |  +- io.opentelemetry:opentelemetry-context:jar:1.60.1:test
+[INFO] |  |  |  \- io.opentelemetry:opentelemetry-common:jar:1.60.1:test
+[INFO] |  |  +- io.opentelemetry:opentelemetry-exporter-logging:jar:1.60.1:test
+[INFO] |  |  +- io.opentelemetry:opentelemetry-sdk-common:jar:1.60.1:test
+[INFO] |  |  +- io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi:jar:1.60.1:test
+[INFO] |  |  +- io.opentelemetry:opentelemetry-sdk-extension-autoconfigure:jar:1.60.1:test
+[INFO] |  |  +- io.opentelemetry:opentelemetry-sdk-trace:jar:1.60.1:test
+[INFO] |  |  +- io.opentelemetry:opentelemetry-sdk:jar:1.60.1:test
+[INFO] |  |  |  +- io.opentelemetry:opentelemetry-sdk-metrics:jar:1.60.1:test
+[INFO] |  |  |  \- io.opentelemetry:opentelemetry-sdk-logs:jar:1.60.1:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.18.4:test
+[INFO] |  |  \- org.seleniumhq.selenium:selenium-os:jar:4.43.0:test
+[INFO] |  +- org.seleniumhq.selenium:selenium-safari-driver:jar:4.43.0:test
+[INFO] |  \- org.seleniumhq.selenium:selenium-support:jar:4.43.0:test
+[INFO] \- io.github.bonigarcia:webdrivermanager:jar:6.3.4:test
+[INFO]    +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO]    |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO]    +- com.github.docker-java:docker-java:jar:3.7.1:test
+[INFO]    |  \- com.github.docker-java:docker-java-core:jar:3.7.1:test
+[INFO]    |     +- com.github.docker-java:docker-java-api:jar:3.7.1:test
+[INFO]    |     |  \- com.fasterxml.jackson.core:jackson-annotations:jar:2.20:test
+[INFO]    |     \- com.fasterxml.jackson.core:jackson-databind:jar:2.20.1:test
+[INFO]    |        \- com.fasterxml.jackson.core:jackson-core:jar:2.20.1:test
+[INFO]    +- com.github.docker-java:docker-java-transport-httpclient5:jar:3.7.1:test
+[INFO]    |  +- com.github.docker-java:docker-java-transport:jar:3.7.1:test
+[INFO]    |  \- net.java.dev.jna:jna:jar:5.18.1:test
+[INFO]    +- org.brotli:dec:jar:0.1.2:test
+[INFO]    +- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO]    +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO]    |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO]    |  \- commons-io:commons-io:jar:2.22.0:compile
+[INFO]    \- org.apache.httpcomponents.client5:httpclient5:jar:5.6:test
+[INFO]       +- org.apache.httpcomponents.core5:httpcore5:jar:5.4:test
+[INFO]       \- org.apache.httpcomponents.core5:httpcore5-h2:jar:5.4:test
+[INFO] 
+[INFO] -----------------< org.apache.jena:jena-fuseki-server >-----------------
+[INFO] Building Apache Jena - Fuseki Server Jar 6.2.0-SNAPSHOT          [32/41]
+[INFO]   from jena-fuseki2/jena-fuseki-server/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-fuseki-server ---
+[INFO] org.apache.jena:jena-fuseki-server:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-fuseki-main:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-fuseki-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.commons:commons-fileupload2-jakarta-servlet6:jar:2.0.0-M5:compile
+[INFO] |  |  |  +- org.apache.commons:commons-fileupload2-core:jar:2.0.0-M5:compile
+[INFO] |  |  |  \- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  +- jakarta.servlet:jakarta.servlet-api:jar:6.1.0:compile
+[INFO] |  |  +- io.micrometer:micrometer-core:jar:1.16.5:compile
+[INFO] |  |  |  +- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  |  |  +- io.micrometer:micrometer-commons:jar:1.16.5:compile
+[INFO] |  |  |  +- io.micrometer:micrometer-observation:jar:1.16.5:compile
+[INFO] |  |  |  +- org.hdrhistogram:HdrHistogram:jar:2.2.2:runtime
+[INFO] |  |  |  \- org.latencyutils:LatencyUtils:jar:2.0.3:runtime
+[INFO] |  |  \- io.micrometer:micrometer-registry-prometheus:jar:1.16.5:compile
+[INFO] |  |     +- io.prometheus:prometheus-metrics-core:jar:1.4.3:compile
+[INFO] |  |     |  +- io.prometheus:prometheus-metrics-model:jar:1.4.3:compile
+[INFO] |  |     |  \- io.prometheus:prometheus-metrics-config:jar:1.4.3:compile
+[INFO] |  |     +- io.prometheus:prometheus-metrics-tracer-common:jar:1.4.3:compile
+[INFO] |  |     \- io.prometheus:prometheus-metrics-exposition-formats:jar:1.4.3:runtime
+[INFO] |  |        \- io.prometheus:prometheus-metrics-exposition-textformats:jar:1.4.3:runtime
+[INFO] |  +- org.eclipse.jetty.ee11:jetty-ee11-servlet:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-server:jar:12.1.9:compile
+[INFO] |  |  \- org.eclipse.jetty:jetty-session:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty.ee11:jetty-ee11-servlets:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-http:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-io:jar:12.1.9:compile
+[INFO] |  |  \- org.eclipse.jetty:jetty-util:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-security:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-xml:jar:12.1.9:compile
+[INFO] |  +- org.apache.shiro:shiro-core:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-lang:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-cache:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-crypto-hash:jar:2.1.0:compile
+[INFO] |  |  |  +- org.apache.shiro:shiro-crypto-core:jar:2.1.0:compile
+[INFO] |  |  |  \- org.bouncycastle:bcprov-jdk18on:jar:1.82:compile
+[INFO] |  |  +- org.apache.shiro.crypto:shiro-hashes-argon2:jar:2.1.0:runtime
+[INFO] |  |  +- org.apache.shiro.crypto:shiro-hashes-bcrypt:jar:2.1.0:runtime
+[INFO] |  |  +- org.apache.shiro:shiro-crypto-cipher:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-config-core:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-config-ogdl:jar:2.1.0:compile
+[INFO] |  |  |  \- commons-beanutils:commons-beanutils:jar:1.11.0:compile
+[INFO] |  |  |     \- commons-collections:commons-collections:jar:3.2.2:compile
+[INFO] |  |  \- org.apache.shiro:shiro-event:jar:2.1.0:compile
+[INFO] |  \- org.apache.shiro:shiro-web:jar:jakarta:2.1.0:compile
+[INFO] |     \- org.owasp.encoder:encoder:jar:1.4.0:compile
+[INFO] +- org.apache.jena:jena-fuseki-ui:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-text:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] |  +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.lucene:lucene-core:jar:10.3.1:compile
+[INFO] |  +- org.apache.lucene:lucene-analysis-common:jar:10.3.1:compile
+[INFO] |  +- org.apache.lucene:lucene-queryparser:jar:10.3.1:compile
+[INFO] |  |  +- org.apache.lucene:lucene-queries:jar:10.3.1:compile
+[INFO] |  |  \- org.apache.lucene:lucene-sandbox:jar:10.3.1:compile
+[INFO] |  |     \- org.apache.lucene:lucene-facet:jar:10.3.1:compile
+[INFO] |  +- org.apache.lucene:lucene-highlighter:jar:10.3.1:compile
+[INFO] |  |  \- org.apache.lucene:lucene-memory:jar:10.3.1:runtime
+[INFO] |  \- org.apache.lucene:lucene-backward-codecs:jar:10.3.1:compile
+[INFO] +- org.apache.jena:jena-fuseki-access:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-cmds:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- commons-cli:commons-cli:jar:1.9.0:compile
+[INFO] |  \- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- org.apache.jena:jena-fuseki-mod-geosparql:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-geosparql:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     +- org.apache.sis.core:sis-referencing:jar:1.4:compile
+[INFO] |     |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.1:compile
+[INFO] |     |  |  \- jakarta.activation:jakarta.activation-api:jar:2.1.2:compile
+[INFO] |     |  \- org.apache.sis.core:sis-metadata:jar:1.4:compile
+[INFO] |     |     \- org.apache.sis.core:sis-utility:jar:1.4:compile
+[INFO] |     |        +- org.opengis:geoapi:jar:3.0.2:compile
+[INFO] |     |        \- javax.measure:unit-api:jar:2.1.3:compile
+[INFO] |     +- org.slf4j:jul-to-slf4j:jar:2.0.17:compile
+[INFO] |     +- org.locationtech.jts:jts-core:jar:1.20.0:compile
+[INFO] |     +- org.locationtech.jts.io:jts-io-common:jar:1.20.0:compile
+[INFO] |     |  \- com.googlecode.json-simple:json-simple:jar:1.1.1:compile
+[INFO] |     +- org.jdom:jdom2:jar:2.0.6.1:compile
+[INFO] |     \- com.esotericsoftware.kryo:kryo5:jar:5.6.2:compile
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:compile
+[INFO] +- org.apache.logging.log4j:log4j-api:jar:2.26.0:runtime
+[INFO] \- org.apache.logging.log4j:log4j-core:jar:2.26.0:runtime
+[INFO] 
+[INFO] -----------------< org.apache.jena:jena-fuseki-docker >-----------------
+[INFO] Building Apache Jena - Fuseki Docker Tools 6.2.0-SNAPSHOT        [33/41]
+[INFO]   from jena-fuseki2/jena-fuseki-docker/pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-fuseki-docker ---
+[INFO] org.apache.jena:jena-fuseki-docker:pom:6.2.0-SNAPSHOT
+[INFO] 
+[INFO] -----------------< org.apache.jena:apache-jena-fuseki >-----------------
+[INFO] Building Apache Jena - Fuseki Binary Distribution 6.2.0-SNAPSHOT [34/41]
+[INFO]   from jena-fuseki2/apache-jena-fuseki/pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ apache-jena-fuseki ---
+[INFO] org.apache.jena:apache-jena-fuseki:pom:6.2.0-SNAPSHOT
+[INFO] \- org.apache.jena:jena-fuseki-server:jar:6.2.0-SNAPSHOT:compile
+[INFO]    +- org.apache.jena:jena-fuseki-main:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  +- org.apache.jena:jena-fuseki-core:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  |  +- org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  |  +- org.apache.commons:commons-fileupload2-jakarta-servlet6:jar:2.0.0-M5:compile
+[INFO]    |  |  |  +- org.apache.commons:commons-fileupload2-core:jar:2.0.0-M5:compile
+[INFO]    |  |  |  \- commons-io:commons-io:jar:2.22.0:compile
+[INFO]    |  |  +- jakarta.servlet:jakarta.servlet-api:jar:6.1.0:compile
+[INFO]    |  |  +- io.micrometer:micrometer-core:jar:1.16.5:compile
+[INFO]    |  |  |  +- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO]    |  |  |  +- io.micrometer:micrometer-commons:jar:1.16.5:compile
+[INFO]    |  |  |  +- io.micrometer:micrometer-observation:jar:1.16.5:compile
+[INFO]    |  |  |  +- org.hdrhistogram:HdrHistogram:jar:2.2.2:runtime
+[INFO]    |  |  |  \- org.latencyutils:LatencyUtils:jar:2.0.3:runtime
+[INFO]    |  |  \- io.micrometer:micrometer-registry-prometheus:jar:1.16.5:compile
+[INFO]    |  |     +- io.prometheus:prometheus-metrics-core:jar:1.4.3:compile
+[INFO]    |  |     |  +- io.prometheus:prometheus-metrics-model:jar:1.4.3:compile
+[INFO]    |  |     |  \- io.prometheus:prometheus-metrics-config:jar:1.4.3:compile
+[INFO]    |  |     +- io.prometheus:prometheus-metrics-tracer-common:jar:1.4.3:compile
+[INFO]    |  |     \- io.prometheus:prometheus-metrics-exposition-formats:jar:1.4.3:runtime
+[INFO]    |  |        \- io.prometheus:prometheus-metrics-exposition-textformats:jar:1.4.3:runtime
+[INFO]    |  +- org.eclipse.jetty.ee11:jetty-ee11-servlet:jar:12.1.9:compile
+[INFO]    |  |  +- org.eclipse.jetty:jetty-server:jar:12.1.9:compile
+[INFO]    |  |  \- org.eclipse.jetty:jetty-session:jar:12.1.9:compile
+[INFO]    |  +- org.eclipse.jetty.ee11:jetty-ee11-servlets:jar:12.1.9:compile
+[INFO]    |  |  +- org.eclipse.jetty:jetty-http:jar:12.1.9:compile
+[INFO]    |  |  +- org.eclipse.jetty:jetty-io:jar:12.1.9:compile
+[INFO]    |  |  \- org.eclipse.jetty:jetty-util:jar:12.1.9:compile
+[INFO]    |  +- org.eclipse.jetty:jetty-security:jar:12.1.9:compile
+[INFO]    |  +- org.eclipse.jetty:jetty-xml:jar:12.1.9:compile
+[INFO]    |  +- org.apache.shiro:shiro-core:jar:2.1.0:compile
+[INFO]    |  |  +- org.apache.shiro:shiro-lang:jar:2.1.0:compile
+[INFO]    |  |  +- org.apache.shiro:shiro-cache:jar:2.1.0:compile
+[INFO]    |  |  +- org.apache.shiro:shiro-crypto-hash:jar:2.1.0:compile
+[INFO]    |  |  |  +- org.apache.shiro:shiro-crypto-core:jar:2.1.0:compile
+[INFO]    |  |  |  \- org.bouncycastle:bcprov-jdk18on:jar:1.82:compile
+[INFO]    |  |  +- org.apache.shiro.crypto:shiro-hashes-argon2:jar:2.1.0:runtime
+[INFO]    |  |  +- org.apache.shiro.crypto:shiro-hashes-bcrypt:jar:2.1.0:runtime
+[INFO]    |  |  +- org.apache.shiro:shiro-crypto-cipher:jar:2.1.0:compile
+[INFO]    |  |  +- org.apache.shiro:shiro-config-core:jar:2.1.0:compile
+[INFO]    |  |  +- org.apache.shiro:shiro-config-ogdl:jar:2.1.0:compile
+[INFO]    |  |  |  \- commons-beanutils:commons-beanutils:jar:1.11.0:compile
+[INFO]    |  |  |     \- commons-collections:commons-collections:jar:3.2.2:compile
+[INFO]    |  |  \- org.apache.shiro:shiro-event:jar:2.1.0:compile
+[INFO]    |  \- org.apache.shiro:shiro-web:jar:jakarta:2.1.0:compile
+[INFO]    |     \- org.owasp.encoder:encoder:jar:1.4.0:compile
+[INFO]    +- org.apache.jena:jena-fuseki-ui:jar:6.2.0-SNAPSHOT:compile
+[INFO]    +- org.apache.jena:jena-text:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO]    |  |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO]    |  |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO]    |  |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO]    |  |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO]    |  |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO]    |  |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO]    |  |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO]    |  |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO]    |  |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO]    |  |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO]    |  +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  +- org.apache.lucene:lucene-core:jar:10.3.1:compile
+[INFO]    |  +- org.apache.lucene:lucene-analysis-common:jar:10.3.1:compile
+[INFO]    |  +- org.apache.lucene:lucene-queryparser:jar:10.3.1:compile
+[INFO]    |  |  +- org.apache.lucene:lucene-queries:jar:10.3.1:compile
+[INFO]    |  |  \- org.apache.lucene:lucene-sandbox:jar:10.3.1:compile
+[INFO]    |  |     \- org.apache.lucene:lucene-facet:jar:10.3.1:compile
+[INFO]    |  +- org.apache.lucene:lucene-highlighter:jar:10.3.1:compile
+[INFO]    |  |  \- org.apache.lucene:lucene-memory:jar:10.3.1:runtime
+[INFO]    |  \- org.apache.lucene:lucene-backward-codecs:jar:10.3.1:compile
+[INFO]    +- org.apache.jena:jena-fuseki-access:jar:6.2.0-SNAPSHOT:compile
+[INFO]    +- org.apache.jena:jena-cmds:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO]    |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO]    |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO]    |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO]    |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO]    |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO]    |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO]    |  +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  +- commons-cli:commons-cli:jar:1.9.0:compile
+[INFO]    |  \- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    +- org.apache.jena:jena-fuseki-mod-geosparql:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |  \- org.apache.jena:jena-geosparql:jar:6.2.0-SNAPSHOT:compile
+[INFO]    |     +- org.apache.sis.core:sis-referencing:jar:1.4:compile
+[INFO]    |     |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.1:compile
+[INFO]    |     |  |  \- jakarta.activation:jakarta.activation-api:jar:2.1.2:compile
+[INFO]    |     |  \- org.apache.sis.core:sis-metadata:jar:1.4:compile
+[INFO]    |     |     \- org.apache.sis.core:sis-utility:jar:1.4:compile
+[INFO]    |     |        +- org.opengis:geoapi:jar:3.0.2:compile
+[INFO]    |     |        \- javax.measure:unit-api:jar:2.1.3:compile
+[INFO]    |     +- org.slf4j:jul-to-slf4j:jar:2.0.17:compile
+[INFO]    |     +- org.locationtech.jts:jts-core:jar:1.20.0:compile
+[INFO]    |     +- org.locationtech.jts.io:jts-io-common:jar:1.20.0:compile
+[INFO]    |     |  \- com.googlecode.json-simple:json-simple:jar:1.1.1:compile
+[INFO]    |     +- org.jdom:jdom2:jar:2.0.6.1:compile
+[INFO]    |     \- com.esotericsoftware.kryo:kryo5:jar:5.6.2:compile
+[INFO]    +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:compile (optional)
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:compile (optional)
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:runtime (optional)
+[INFO] 
+[INFO] ---------------< org.apache.jena:jena-fuseki-geosparql >----------------
+[INFO] Building Apache Jena - Fuseki with GeoSPARQL Engine 6.2.0-SNAPSHOT [35/41]
+[INFO]   from jena-fuseki2/jena-fuseki-geosparql/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-fuseki-geosparql ---
+[INFO] org.apache.jena:jena-fuseki-geosparql:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-geosparql:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  |  \- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  +- org.apache.sis.core:sis-referencing:jar:1.4:compile
+[INFO] |  |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.1:compile
+[INFO] |  |  |  \- jakarta.activation:jakarta.activation-api:jar:2.1.2:compile
+[INFO] |  |  \- org.apache.sis.core:sis-metadata:jar:1.4:compile
+[INFO] |  |     \- org.apache.sis.core:sis-utility:jar:1.4:compile
+[INFO] |  |        +- org.opengis:geoapi:jar:3.0.2:compile
+[INFO] |  |        \- javax.measure:unit-api:jar:2.1.3:compile
+[INFO] |  +- org.locationtech.jts:jts-core:jar:1.20.0:compile
+[INFO] |  +- org.locationtech.jts.io:jts-io-common:jar:1.20.0:compile
+[INFO] |  |  \- com.googlecode.json-simple:json-simple:jar:1.1.1:compile
+[INFO] |  +- org.jdom:jdom2:jar:2.0.6.1:compile
+[INFO] |  \- com.esotericsoftware.kryo:kryo5:jar:5.6.2:compile
+[INFO] +- org.apache.jena:jena-fuseki-main:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-fuseki-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.commons:commons-fileupload2-jakarta-servlet6:jar:2.0.0-M5:compile
+[INFO] |  |  |  +- org.apache.commons:commons-fileupload2-core:jar:2.0.0-M5:compile
+[INFO] |  |  |  \- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  +- jakarta.servlet:jakarta.servlet-api:jar:6.1.0:compile
+[INFO] |  |  +- io.micrometer:micrometer-core:jar:1.16.5:compile
+[INFO] |  |  |  +- io.micrometer:micrometer-commons:jar:1.16.5:compile
+[INFO] |  |  |  +- io.micrometer:micrometer-observation:jar:1.16.5:compile
+[INFO] |  |  |  +- org.hdrhistogram:HdrHistogram:jar:2.2.2:runtime
+[INFO] |  |  |  \- org.latencyutils:LatencyUtils:jar:2.0.3:runtime
+[INFO] |  |  \- io.micrometer:micrometer-registry-prometheus:jar:1.16.5:compile
+[INFO] |  |     +- io.prometheus:prometheus-metrics-core:jar:1.4.3:compile
+[INFO] |  |     |  +- io.prometheus:prometheus-metrics-model:jar:1.4.3:compile
+[INFO] |  |     |  \- io.prometheus:prometheus-metrics-config:jar:1.4.3:compile
+[INFO] |  |     +- io.prometheus:prometheus-metrics-tracer-common:jar:1.4.3:compile
+[INFO] |  |     \- io.prometheus:prometheus-metrics-exposition-formats:jar:1.4.3:runtime
+[INFO] |  |        \- io.prometheus:prometheus-metrics-exposition-textformats:jar:1.4.3:runtime
+[INFO] |  +- org.apache.jena:jena-fuseki-access:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-cmds:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- commons-cli:commons-cli:jar:1.9.0:compile
+[INFO] |  +- org.eclipse.jetty.ee11:jetty-ee11-servlet:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-server:jar:12.1.9:compile
+[INFO] |  |  \- org.eclipse.jetty:jetty-session:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty.ee11:jetty-ee11-servlets:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-http:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-io:jar:12.1.9:compile
+[INFO] |  |  \- org.eclipse.jetty:jetty-util:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-security:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-xml:jar:12.1.9:compile
+[INFO] |  +- org.apache.shiro:shiro-core:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-lang:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-cache:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-crypto-hash:jar:2.1.0:compile
+[INFO] |  |  |  +- org.apache.shiro:shiro-crypto-core:jar:2.1.0:compile
+[INFO] |  |  |  \- org.bouncycastle:bcprov-jdk18on:jar:1.82:compile
+[INFO] |  |  +- org.apache.shiro.crypto:shiro-hashes-argon2:jar:2.1.0:runtime
+[INFO] |  |  +- org.apache.shiro.crypto:shiro-hashes-bcrypt:jar:2.1.0:runtime
+[INFO] |  |  +- org.apache.shiro:shiro-crypto-cipher:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-config-core:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-config-ogdl:jar:2.1.0:compile
+[INFO] |  |  \- org.apache.shiro:shiro-event:jar:2.1.0:compile
+[INFO] |  \- org.apache.shiro:shiro-web:jar:jakarta:2.1.0:compile
+[INFO] |     \- org.owasp.encoder:encoder:jar:1.4.0:compile
+[INFO] +- com.opencsv:opencsv:jar:5.12.0:compile
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] |  +- org.apache.commons:commons-text:jar:1.13.1:compile
+[INFO] |  \- commons-beanutils:commons-beanutils:jar:1.11.0:compile
+[INFO] |     \- commons-collections:commons-collections:jar:3.2.2:compile
+[INFO] +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  \- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] +- com.beust:jcommander:jar:1.82:compile
+[INFO] +- org.slf4j:jul-to-slf4j:jar:2.0.17:compile
+[INFO] +- org.apache.logging.log4j:log4j-api:jar:2.26.0:compile
+[INFO] +- org.apache.logging.log4j:log4j-core:jar:2.26.0:runtime
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:runtime
+[INFO] \- org.junit.vintage:junit-vintage-engine:jar:6.0.3:test
+[INFO]    +- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO]    |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO]    |  \- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO]    +- junit:junit:jar:4.13.2:test
+[INFO]    |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO]    +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO]    \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] 
+[INFO] ------------------< org.apache.jena:jena-commonsrdf >-------------------
+[INFO] Building Apache Jena - CommonsRDF for Jena 6.2.0-SNAPSHOT        [36/41]
+[INFO]   from jena-commonsrdf/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-commonsrdf ---
+[INFO] org.apache.jena:jena-commonsrdf:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.apache.commons:commons-rdf-api:jar:0.5.0:compile
+[INFO] +- org.apache.commons:commons-rdf-api:jar:tests:0.5.0:test
+[INFO] +- org.apache.commons:commons-rdf-simple:jar:0.5.0:test
+[INFO] +- org.junit.vintage:junit-vintage-engine:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  +- junit:junit:jar:4.13.2:test
+[INFO] |  |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] -----------------< org.apache.jena:jena-querybuilder >------------------
+[INFO] Building Apache Jena - Query Builder 6.2.0-SNAPSHOT              [37/41]
+[INFO]   from jena-querybuilder/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-querybuilder ---
+[INFO] org.apache.jena:jena-querybuilder:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.slf4j:jcl-over-slf4j:jar:2.0.17:test
+[INFO] |  \- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- org.mockito:mockito-core:jar:5.23.0:test
+[INFO] |  +- net.bytebuddy:byte-buddy:jar:1.18.4:test
+[INFO] |  +- net.bytebuddy:byte-buddy-agent:jar:1.18.4:test
+[INFO] |  \- org.objenesis:objenesis:jar:3.3:test
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] \- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO]    +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO]    \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] 
+[INFO] ---------------< org.apache.jena:jena-integration-tests >---------------
+[INFO] Building Apache Jena - Integration Testing 6.2.0-SNAPSHOT        [38/41]
+[INFO]   from jena-integration-tests/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-integration-tests ---
+[INFO] org.apache.jena:jena-integration-tests:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:apache-jena-libs:pom:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-ontapi:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |        \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |     |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |     +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |     +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |     |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |     |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |     |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |     +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |     +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |     \- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] +- org.apache.jena:jena-rdfconnection:jar:tests:6.2.0-SNAPSHOT:test
+[INFO] +- org.apache.jena:jena-cmds:jar:6.2.0-SNAPSHOT:test
+[INFO] |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- commons-cli:commons-cli:jar:1.9.0:test
+[INFO] |  \- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- org.apache.jena:jena-geosparql:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.sis.core:sis-referencing:jar:1.4:compile
+[INFO] |  |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.1:compile
+[INFO] |  |  |  \- jakarta.activation:jakarta.activation-api:jar:2.1.2:compile
+[INFO] |  |  \- org.apache.sis.core:sis-metadata:jar:1.4:compile
+[INFO] |  |     \- org.apache.sis.core:sis-utility:jar:1.4:compile
+[INFO] |  |        +- org.opengis:geoapi:jar:3.0.2:compile
+[INFO] |  |        \- javax.measure:unit-api:jar:2.1.3:compile
+[INFO] |  +- org.slf4j:jul-to-slf4j:jar:2.0.17:compile
+[INFO] |  +- org.locationtech.jts:jts-core:jar:1.20.0:compile
+[INFO] |  +- org.locationtech.jts.io:jts-io-common:jar:1.20.0:compile
+[INFO] |  |  \- com.googlecode.json-simple:json-simple:jar:1.1.1:compile
+[INFO] |  +- org.jdom:jdom2:jar:2.0.6.1:compile
+[INFO] |  \- com.esotericsoftware.kryo:kryo5:jar:5.6.2:compile
+[INFO] +- org.apache.jena:jena-fuseki-main:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-fuseki-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-fuseki-access:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.eclipse.jetty.ee11:jetty-ee11-servlet:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-server:jar:12.1.9:compile
+[INFO] |  |  \- org.eclipse.jetty:jetty-session:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty.ee11:jetty-ee11-servlets:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-http:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-io:jar:12.1.9:compile
+[INFO] |  |  \- org.eclipse.jetty:jetty-util:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-security:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-xml:jar:12.1.9:compile
+[INFO] |  +- org.apache.shiro:shiro-core:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-lang:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-cache:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-crypto-hash:jar:2.1.0:compile
+[INFO] |  |  |  +- org.apache.shiro:shiro-crypto-core:jar:2.1.0:compile
+[INFO] |  |  |  \- org.bouncycastle:bcprov-jdk18on:jar:1.82:compile
+[INFO] |  |  +- org.apache.shiro.crypto:shiro-hashes-argon2:jar:2.1.0:runtime
+[INFO] |  |  +- org.apache.shiro.crypto:shiro-hashes-bcrypt:jar:2.1.0:runtime
+[INFO] |  |  +- org.apache.shiro:shiro-crypto-cipher:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-config-core:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-config-ogdl:jar:2.1.0:compile
+[INFO] |  |  |  \- commons-beanutils:commons-beanutils:jar:1.11.0:compile
+[INFO] |  |  |     \- commons-collections:commons-collections:jar:3.2.2:compile
+[INFO] |  |  \- org.apache.shiro:shiro-event:jar:2.1.0:compile
+[INFO] |  \- org.apache.shiro:shiro-web:jar:jakarta:2.1.0:compile
+[INFO] |     \- org.owasp.encoder:encoder:jar:1.4.0:compile
+[INFO] +- org.apache.jena:jena-fuseki-core:jar:tests:6.2.0-SNAPSHOT:test
+[INFO] |  +- org.apache.commons:commons-fileupload2-jakarta-servlet6:jar:2.0.0-M5:compile
+[INFO] |  |  \- org.apache.commons:commons-fileupload2-core:jar:2.0.0-M5:compile
+[INFO] |  +- jakarta.servlet:jakarta.servlet-api:jar:6.1.0:compile
+[INFO] |  +- io.micrometer:micrometer-core:jar:1.16.5:compile
+[INFO] |  |  +- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  |  +- io.micrometer:micrometer-commons:jar:1.16.5:compile
+[INFO] |  |  +- io.micrometer:micrometer-observation:jar:1.16.5:compile
+[INFO] |  |  +- org.hdrhistogram:HdrHistogram:jar:2.2.2:runtime
+[INFO] |  |  \- org.latencyutils:LatencyUtils:jar:2.0.3:runtime
+[INFO] |  \- io.micrometer:micrometer-registry-prometheus:jar:1.16.5:compile
+[INFO] |     +- io.prometheus:prometheus-metrics-core:jar:1.4.3:compile
+[INFO] |     |  +- io.prometheus:prometheus-metrics-model:jar:1.4.3:compile
+[INFO] |     |  \- io.prometheus:prometheus-metrics-config:jar:1.4.3:compile
+[INFO] |     +- io.prometheus:prometheus-metrics-tracer-common:jar:1.4.3:compile
+[INFO] |     \- io.prometheus:prometheus-metrics-exposition-formats:jar:1.4.3:runtime
+[INFO] |        \- io.prometheus:prometheus-metrics-exposition-textformats:jar:1.4.3:runtime
+[INFO] +- org.apache.jena:jena-fuseki-main:jar:tests:6.2.0-SNAPSHOT:test
+[INFO] +- org.apache.jena:jena-text:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.lucene:lucene-core:jar:10.3.1:compile
+[INFO] |  +- org.apache.lucene:lucene-analysis-common:jar:10.3.1:compile
+[INFO] |  +- org.apache.lucene:lucene-queryparser:jar:10.3.1:compile
+[INFO] |  |  +- org.apache.lucene:lucene-queries:jar:10.3.1:compile
+[INFO] |  |  \- org.apache.lucene:lucene-sandbox:jar:10.3.1:compile
+[INFO] |  |     \- org.apache.lucene:lucene-facet:jar:10.3.1:compile
+[INFO] |  +- org.apache.lucene:lucene-highlighter:jar:10.3.1:compile
+[INFO] |  |  \- org.apache.lucene:lucene-memory:jar:10.3.1:runtime
+[INFO] |  \- org.apache.lucene:lucene-backward-codecs:jar:10.3.1:compile
+[INFO] +- org.apache.jena:jena-base:jar:tests:6.2.0-SNAPSHOT:test
+[INFO] |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] +- org.apache.jena:jena-dboe-index-test:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] |     \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-dboe-trans-data:jar:tests:6.2.0-SNAPSHOT:test
+[INFO] |  \- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:6.0.3:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:6.0.3:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:6.0.3:test
+[INFO] |  |  \- org.apiguardian:apiguardian-api:jar:1.1.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:6.0.3:test
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:6.0.3:test
+[INFO] +- org.junit.platform:junit-platform-suite:jar:6.0.3:test
+[INFO] |  +- org.junit.platform:junit-platform-suite-api:jar:6.0.3:test
+[INFO] |  \- org.junit.platform:junit-platform-suite-engine:jar:6.0.3:test
+[INFO] |     \- org.junit.platform:junit-platform-launcher:jar:6.0.3:test
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:test
+[INFO] |  +- org.apache.logging.log4j:log4j-api:jar:2.26.0:test (optional)
+[INFO] |  \- org.apache.logging.log4j:log4j-core:jar:2.26.0:test (optional)
+[INFO] +- org.openjdk.jmh:jmh-core:jar:1.37:test
+[INFO] |  +- net.sf.jopt-simple:jopt-simple:jar:5.0.4:test
+[INFO] |  \- org.apache.commons:commons-math3:jar:3.6.1:test
+[INFO] \- org.openjdk.jmh:jmh-generator-annprocess:jar:1.37:test
+[INFO] 
+[INFO] --------------------< org.apache.jena:apache-jena >---------------------
+[INFO] Building Apache Jena - Distribution 6.2.0-SNAPSHOT               [39/41]
+[INFO]   from apache-jena/pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ apache-jena ---
+[INFO] org.apache.jena:apache-jena:pom:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  +- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] +- org.apache.jena:jena-core:jar:sources:6.2.0-SNAPSHOT:compile (optional)
+[INFO] +- org.apache.jena:jena-ontapi:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-ontapi:jar:sources:6.2.0-SNAPSHOT:compile (optional)
+[INFO] +- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO] |  |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO] |  |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO] |  |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO] |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] +- org.apache.jena:jena-arq:jar:sources:6.2.0-SNAPSHOT:compile (optional)
+[INFO] +- org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-rdfconnection:jar:sources:6.2.0-SNAPSHOT:compile (optional)
+[INFO] +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-shacl:jar:sources:6.2.0-SNAPSHOT:compile (optional)
+[INFO] +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-shex:jar:sources:6.2.0-SNAPSHOT:compile (optional)
+[INFO] +- org.apache.jena:jena-cmds:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- commons-cli:commons-cli:jar:1.9.0:compile
+[INFO] |  \- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-api:jar:2.26.0:compile (optional)
+[INFO] |  \- org.apache.logging.log4j:log4j-core:jar:2.26.0:runtime (optional)
+[INFO] \- org.apache.jena:jena-cmds:jar:sources:6.2.0-SNAPSHOT:compile (optional)
+[INFO] 
+[INFO] -------------------< org.apache.jena:jena-examples >--------------------
+[INFO] Building Apache Jena - Code Examples 6.2.0-SNAPSHOT              [40/41]
+[INFO]   from jena-examples/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-examples ---
+[INFO] org.apache.jena:jena-examples:jar:6.2.0-SNAPSHOT
+[INFO] +- org.apache.jena:apache-jena-libs:pom:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-rdfpatch:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-ontapi:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-shacl:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-shex:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-tdb1:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-tdb2:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.apache.jena:jena-dboe-storage:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |     \- org.apache.jena:jena-dboe-trans-data:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        +- org.apache.jena:jena-dboe-transaction:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        |  \- org.apache.jena:jena-dboe-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |        \- org.apache.jena:jena-dboe-index:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  \- org.apache.jena:jena-rdfconnection:jar:6.2.0-SNAPSHOT:compile
+[INFO] +- org.apache.jena:jena-fuseki-main:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-fuseki-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.commons:commons-fileupload2-jakarta-servlet6:jar:2.0.0-M5:compile
+[INFO] |  |  |  +- org.apache.commons:commons-fileupload2-core:jar:2.0.0-M5:compile
+[INFO] |  |  |  \- commons-io:commons-io:jar:2.22.0:compile
+[INFO] |  |  +- jakarta.servlet:jakarta.servlet-api:jar:6.1.0:compile
+[INFO] |  |  +- io.micrometer:micrometer-core:jar:1.16.5:compile
+[INFO] |  |  |  +- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  |  |  +- io.micrometer:micrometer-commons:jar:1.16.5:compile
+[INFO] |  |  |  +- io.micrometer:micrometer-observation:jar:1.16.5:compile
+[INFO] |  |  |  +- org.hdrhistogram:HdrHistogram:jar:2.2.2:runtime
+[INFO] |  |  |  \- org.latencyutils:LatencyUtils:jar:2.0.3:runtime
+[INFO] |  |  \- io.micrometer:micrometer-registry-prometheus:jar:1.16.5:compile
+[INFO] |  |     +- io.prometheus:prometheus-metrics-core:jar:1.4.3:compile
+[INFO] |  |     |  +- io.prometheus:prometheus-metrics-model:jar:1.4.3:compile
+[INFO] |  |     |  \- io.prometheus:prometheus-metrics-config:jar:1.4.3:compile
+[INFO] |  |     +- io.prometheus:prometheus-metrics-tracer-common:jar:1.4.3:compile
+[INFO] |  |     \- io.prometheus:prometheus-metrics-exposition-formats:jar:1.4.3:runtime
+[INFO] |  |        \- io.prometheus:prometheus-metrics-exposition-textformats:jar:1.4.3:runtime
+[INFO] |  +- org.apache.jena:jena-fuseki-access:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.apache.jena:jena-cmds:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.jena:jena-core:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.apache.jena:jena-base:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  |  |  +- org.apache.commons:commons-csv:jar:1.14.1:compile
+[INFO] |  |  |  |  +- commons-codec:commons-codec:jar:1.22.0:compile
+[INFO] |  |  |  |  +- org.apache.commons:commons-compress:jar:1.28.0:compile
+[INFO] |  |  |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.4:compile
+[INFO] |  |  |  |  \- com.github.andrewoma.dexx:collection:jar:0.7:compile
+[INFO] |  |  |  \- org.roaringbitmap:RoaringBitmap:jar:1.6.14:compile
+[INFO] |  |  +- org.apache.jena:jena-iri3986:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  |  \- org.apache.jena:jena-langtag:jar:6.2.0-SNAPSHOT:compile
+[INFO] |  +- org.eclipse.jetty.ee11:jetty-ee11-servlet:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-server:jar:12.1.9:compile
+[INFO] |  |  \- org.eclipse.jetty:jetty-session:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty.ee11:jetty-ee11-servlets:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-http:jar:12.1.9:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-io:jar:12.1.9:compile
+[INFO] |  |  \- org.eclipse.jetty:jetty-util:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-security:jar:12.1.9:compile
+[INFO] |  +- org.eclipse.jetty:jetty-xml:jar:12.1.9:compile
+[INFO] |  +- org.apache.shiro:shiro-core:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-lang:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-cache:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-crypto-hash:jar:2.1.0:compile
+[INFO] |  |  |  +- org.apache.shiro:shiro-crypto-core:jar:2.1.0:compile
+[INFO] |  |  |  \- org.bouncycastle:bcprov-jdk18on:jar:1.82:compile
+[INFO] |  |  +- org.apache.shiro.crypto:shiro-hashes-argon2:jar:2.1.0:runtime
+[INFO] |  |  +- org.apache.shiro.crypto:shiro-hashes-bcrypt:jar:2.1.0:runtime
+[INFO] |  |  +- org.apache.shiro:shiro-crypto-cipher:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-config-core:jar:2.1.0:compile
+[INFO] |  |  +- org.apache.shiro:shiro-config-ogdl:jar:2.1.0:compile
+[INFO] |  |  |  \- commons-beanutils:commons-beanutils:jar:1.11.0:compile
+[INFO] |  |  |     \- commons-collections:commons-collections:jar:3.2.2:compile
+[INFO] |  |  \- org.apache.shiro:shiro-event:jar:2.1.0:compile
+[INFO] |  \- org.apache.shiro:shiro-web:jar:jakarta:2.1.0:compile
+[INFO] |     \- org.owasp.encoder:encoder:jar:1.4.0:compile
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.26.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-api:jar:2.26.0:compile (optional)
+[INFO] |  +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] |  \- org.apache.logging.log4j:log4j-core:jar:2.26.0:runtime (optional)
+[INFO] +- commons-cli:commons-cli:jar:1.9.0:compile
+[INFO] \- org.apache.jena:jena-querybuilder:jar:6.2.0-SNAPSHOT:compile
+[INFO]    \- org.apache.jena:jena-arq:jar:6.2.0-SNAPSHOT:compile
+[INFO]       +- com.google.code.gson:gson:jar:2.14.0:compile
+[INFO]       |  \- com.google.errorprone:error_prone_annotations:jar:2.48.0:compile
+[INFO]       +- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO]       +- com.apicatalog:titanium-json-ld:jar:1.7.0:compile
+[INFO]       |  +- com.apicatalog:titanium-jcs:jar:1.1.1:compile
+[INFO]       |  +- com.apicatalog:titanium-rdf-api:jar:1.0.0:compile
+[INFO]       |  \- com.apicatalog:titanium-rdf-n-quads:jar:1.0.2:compile
+[INFO]       +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO]       +- com.google.protobuf:protobuf-java:jar:4.34.1:compile
+[INFO]       +- org.apache.thrift:libthrift:jar:0.23.0:compile
+[INFO]       \- org.apache.commons:commons-lang3:jar:3.20.0:compile
+[INFO] 
+[INFO] ----------------------< org.apache.jena:jena-bom >----------------------
+[INFO] Building Apache Jena - BOM 6.2.0-SNAPSHOT                        [41/41]
+[INFO]   from jena-bom/pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ jena-bom ---
+[INFO] org.apache.jena:jena-bom:pom:6.2.0-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for Apache Jena 6.2.0-SNAPSHOT:
+[INFO] 
+[INFO] Apache Jena ........................................ SUCCESS [  0.725 s]
+[INFO] Apache Jena - IRI3986 .............................. SUCCESS [  0.110 s]
+[INFO] Apache Jena - Language tags ........................ SUCCESS [  0.027 s]
+[INFO] Apache Jena - Base ................................. SUCCESS [  0.098 s]
+[INFO] Apache Jena - Core ................................. SUCCESS [  0.053 s]
+[INFO] Apache Jena - ARQ .................................. SUCCESS [  0.117 s]
+[INFO] Apache Jena - ONTAPI ............................... SUCCESS [  0.010 s]
+[INFO] Apache Jena - SHACL ................................ SUCCESS [  0.008 s]
+[INFO] Apache Jena - ShEx ................................. SUCCESS [  0.007 s]
+[INFO] Apache Jena - RDF Patch ............................ SUCCESS [  0.007 s]
+[INFO] Apache Jena - RDF Connection ....................... SUCCESS [  0.007 s]
+[INFO] Apache Jena - DBOE Database Operation Environment .. SUCCESS [  0.006 s]
+[INFO] Apache Jena - DBOE Base ............................ SUCCESS [  0.010 s]
+[INFO] Apache Jena - DBOE Transactions .................... SUCCESS [  0.013 s]
+[INFO] Apache Jena - DBOE Indexes ......................... SUCCESS [  0.011 s]
+[INFO] Apache Jena - DBOE Index test suite ................ SUCCESS [  0.012 s]
+[INFO] Apache Jena - DBOE Transactional Datastructures .... SUCCESS [  0.016 s]
+[INFO] Apache Jena - DBOE Storage ......................... SUCCESS [  0.015 s]
+[INFO] Apache Jena - TDB1 (Native Triple Store) ........... SUCCESS [  0.012 s]
+[INFO] Apache Jena - TDB2 (Native Triple Store) ........... SUCCESS [  0.014 s]
+[INFO] Apache Jena - Libraries POM ........................ SUCCESS [  0.015 s]
+[INFO] Apache Jena - Command line tools ................... SUCCESS [  0.022 s]
+[INFO] Apache Jena - SPARQL Text Search ................... SUCCESS [  0.012 s]
+[INFO] Apache Jena - Service Enhancer ..................... SUCCESS [  0.010 s]
+[INFO] Apache Jena - GeoSPARQL Engine ..................... SUCCESS [  0.027 s]
+[INFO] Apache Jena - Fuseki ............................... SUCCESS [  0.003 s]
+[INFO] Apache Jena - Fuseki Core Engine ................... SUCCESS [  0.040 s]
+[INFO] Apache Jena - Fuseki UI ............................ SUCCESS [  0.017 s]
+[INFO] Apache Jena - Fuseki Data Access Control ........... SUCCESS [  0.009 s]
+[INFO] Apache Jena - Fuseki Server Main ................... SUCCESS [  0.112 s]
+[INFO] Apache Jena - Fuseki MOD - GeoSPARQL ............... SUCCESS [  0.093 s]
+[INFO] Apache Jena - Fuseki Server Jar .................... SUCCESS [  0.037 s]
+[INFO] Apache Jena - Fuseki Docker Tools .................. SUCCESS [  0.003 s]
+[INFO] Apache Jena - Fuseki Binary Distribution ........... SUCCESS [  0.019 s]
+[INFO] Apache Jena - Fuseki with GeoSPARQL Engine ......... SUCCESS [  0.025 s]
+[INFO] Apache Jena - CommonsRDF for Jena .................. SUCCESS [  0.011 s]
+[INFO] Apache Jena - Query Builder ........................ SUCCESS [  0.005 s]
+[INFO] Apache Jena - Integration Testing .................. SUCCESS [  0.019 s]
+[INFO] Apache Jena - Distribution ......................... SUCCESS [  0.008 s]
+[INFO] Apache Jena - Code Examples ........................ SUCCESS [  0.007 s]
+[INFO] Apache Jena - BOM .................................. SUCCESS [  0.001 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.485 s
+[INFO] Finished at: 2026-05-13T11:17:58+02:00
+[INFO] ------------------------------------------------------------------------

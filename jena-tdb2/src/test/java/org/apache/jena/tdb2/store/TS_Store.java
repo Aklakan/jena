@@ -42,6 +42,7 @@ import org.apache.jena.tdb2.sys.SystemTDB;
     , TestDatasetTDBPersist.class
     , Test_SPARQL_TDB.class
     , TestQueryExecTDB.class
+    , TestQueryExecLeapFrogTDB.class
     , TestDynamicDatasetTDB.class
     , TestStoreConnectionMem.class
     , TestStoreConnectionDirect.class

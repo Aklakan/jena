@@ -19,18 +19,30 @@
  *   SPDX-License-Identifier: Apache-2.0
  */
 
-package org.apache.jena.tdb2.solver;
+package org.apache.jena.tdb2.store;
 
-import org.junit.platform.suite.api.SelectClasses;
-import org.junit.platform.suite.api.Suite;
+import org.apache.jena.query.Dataset;
+import org.apache.jena.query.ReadWrite;
+import org.apache.jena.sparql.core.AbstractTestQueryExec;
+import org.apache.jena.tdb2.DatasetFactoryLeapFrog;
+import org.apache.jena.tdb2.junit.TL;
 
-@Suite
-@SelectClasses({
+/**
+ * Test query execution with leap frog join enabled.
+ * Extends AbstractTestQueryExec to run all ARQ query execution tests
+ * against TDB2 with leap frog join optimization.
+ */
+public class TestQueryExecLeapFrogTDB extends AbstractTestQueryExec {
+    @Override
+    protected Dataset createDataset() {
+        Dataset ds = DatasetFactoryLeapFrog.createDatasetLeapFrog();
+        ds.begin(ReadWrite.WRITE);
+        return ds;
+    }
 
-    TestSolverTDB.class
-    , TestStats.class
-    , TS_LeapFrogJoin.class
-})
-
-public class TS_SolverTDB
-{}
+    @Override
+    protected void releaseDataset(Dataset ds) { 
+        ds.abort(); 
+        TL.expel(ds);
+    }
+}
