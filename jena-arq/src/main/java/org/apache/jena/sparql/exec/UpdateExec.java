@@ -22,8 +22,10 @@
 package org.apache.jena.sparql.exec;
 
 import org.apache.jena.graph.Graph;
+import org.apache.jena.sparql.SystemARQ;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
+import org.apache.jena.sparql.exec.adapter.SparqlAdapter;
 import org.apache.jena.sparql.exec.http.UpdateExecHTTP;
 import org.apache.jena.update.UpdateProcessor;
 
@@ -31,7 +33,10 @@ public interface UpdateExec extends UpdateProcessor
 {
     /** Create a {@link UpdateExecBuilder} for a dataset. */
     public static UpdateExecBuilder dataset(DatasetGraph dataset) {
-        return UpdateExecDatasetBuilder.create().dataset(dataset);
+        UpdateExecBuilder builder = SystemARQ.DeferredExecBuilders
+                ? SparqlAdapter.newUpdateExecBuilder(dataset, null)
+                : UpdateExecDatasetBuilderImpl.create().dataset(dataset);
+        return builder;
     }
 
     /**
@@ -40,7 +45,7 @@ public interface UpdateExec extends UpdateProcessor
      */
     public static UpdateExecBuilder dataset(Graph graph) {
         DatasetGraph dsg = DatasetGraphFactory.wrap(graph);
-        return UpdateExecDatasetBuilder.create().dataset(dsg);
+        return dataset(dsg);
     }
 
     /** Create a {@link UpdateExecBuilder} for a remote endpoint. */
@@ -51,8 +56,4 @@ public interface UpdateExec extends UpdateProcessor
     public static UpdateExecDatasetBuilder newBuilder() {
         return UpdateExecDatasetBuilder.create();
     }
-
-    /** Execute */
-    @Override
-    public void execute();
 }
