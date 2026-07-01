@@ -21,6 +21,7 @@
 
 package org.apache.jena.tdb2.solver.index;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -60,7 +61,16 @@ import org.apache.jena.sparql.expr.Expr;
 import org.apache.jena.sparql.expr.ExprAggregator;
 import org.apache.jena.sparql.expr.ExprList;
 import org.apache.jena.sparql.expr.ExprVar;
+import org.apache.jena.sparql.expr.aggregate.AggAvgDistinct;
 import org.apache.jena.sparql.expr.aggregate.AggCountVarDistinct;
+import org.apache.jena.sparql.expr.aggregate.AggGroupConcatDistinct;
+import org.apache.jena.sparql.expr.aggregate.AggMax;
+import org.apache.jena.sparql.expr.aggregate.AggMedianDistinct;
+import org.apache.jena.sparql.expr.aggregate.AggMin;
+import org.apache.jena.sparql.expr.aggregate.AggModeDistinct;
+import org.apache.jena.sparql.expr.aggregate.AggSample;
+import org.apache.jena.sparql.expr.aggregate.AggSampleDistinct;
+import org.apache.jena.sparql.expr.aggregate.AggSumDistinct;
 import org.apache.jena.sparql.expr.aggregate.Aggregator;
 import org.apache.jena.sparql.expr.aggregate.AggregatorFactory;
 import org.apache.jena.tdb2.solver.BindingNodeId;
@@ -147,19 +157,23 @@ public class OpExecutorTDB2SkipScan {
         return new IndexMatch(canDoDirectDistinct, residualConditions, numResidualConditions, keyLen, valLen);
     }
 
+    /** Resolve the {@link NodeTupleTable} for a pattern of the given tuple length. */
+    private static NodeTupleTable resolveTable(int tupleLength, ExecutionContext execCxt) {
+        if (tupleLength == 3) {
+            GraphTDB graph = (GraphTDB)execCxt.getActiveGraph();
+            return graph.getNodeTupleTable();
+        } else if (tupleLength == 4) {
+            DatasetGraphTDB ds = (DatasetGraphTDB)execCxt.getDataset();
+            return ds.getQuadTable().getNodeTupleTable();
+        } else {
+            throw new IllegalStateException("Unexpected tuple length: " + tupleLength);
+        }
+    }
+
     public static QueryIterator tryExec(PatternQuery patternQuery, QueryIterator input, ExecutionContext execCxt) {
         QueryIterator qIter = null;
         Node[] testTuple = patternQuery.tuple();
-        NodeTupleTable table;
-        if (testTuple.length == 3) {
-            GraphTDB graph = (GraphTDB)execCxt.getActiveGraph();
-            table = graph.getNodeTupleTable();
-        } else if (testTuple.length == 4) {
-            DatasetGraphTDB ds = (DatasetGraphTDB)execCxt.getDataset();
-            table = ds.getQuadTable().getNodeTupleTable();
-        } else {
-            throw new IllegalStateException("Unexpected tuple length: " + testTuple.length);
-        }
+        NodeTupleTable table = resolveTable(testTuple.length, execCxt);
 
         qIter = QueryIter.flatMap(input, b -> {
             PatternQuery subst = PatternQuery.substitute(patternQuery, b);
@@ -172,11 +186,29 @@ public class OpExecutorTDB2SkipScan {
     }
 
     public static QueryIterator tryExec(NodeTupleTable nodeTupleTable, boolean distinct, TuplePatternSpec lookup, ExecutionContext execCxt) {
-        TupleTable tupleTable = nodeTupleTable.getTupleTable();
-        NodeTable nodeTable = nodeTupleTable.getNodeTable();
+        List<SkipScanCandidate> candidates = planCandidates(nodeTupleTable, lookup);
+        SkipScanCandidate best = pickBest(candidates);
 
-        TupleIndex bestIndex = null;
-        IndexMatch bestMatch = null;
+        // In the end we must build a tuple with the constants
+        if (logger.isDebugEnabled()) {
+            logger.debug("Best matching index: " + (best == null ? null : best.index()));
+        }
+
+        if (best == null) {
+            return null;
+        }
+        return execCandidate(nodeTupleTable, distinct, lookup, best, execCxt);
+    }
+
+    /**
+     * Enumerate the usable indexes for the given lookup. Each returned candidate carries
+     * the matched index, its {@link IndexMatch}, and the variable order the index produces.
+     * This is the planning phase: it does not touch the node table or execute anything, so
+     * callers may inspect candidate orders and choose a combination before executing.
+     */
+    public static List<SkipScanCandidate> planCandidates(NodeTupleTable nodeTupleTable, TuplePatternSpec lookup) {
+        TupleTable tupleTable = nodeTupleTable.getTupleTable();
+        List<SkipScanCandidate> candidates = new ArrayList<>();
 
         for (TupleIndex tupleIndex : tupleTable.getIndexes()) {
             if (logger.isDebugEnabled()) {
@@ -199,42 +231,73 @@ public class OpExecutorTDB2SkipScan {
                 continue;
             }
 
-            int d = IndexMatch.COMPARATOR.compare(match, bestMatch);
-            if (d < 0) {
-                bestIndex = tupleIndex;
-                bestMatch = match;
+            List<Var> order = producedOrder(lookup, match, tm);
+            candidates.add(new SkipScanCandidate(tupleIndex, match, order));
+        }
+        return candidates;
+    }
+
+    /** Choose the best candidate using {@link IndexMatch#COMPARATOR}, or null if none. */
+    public static SkipScanCandidate pickBest(List<SkipScanCandidate> candidates) {
+        SkipScanCandidate best = null;
+        for (SkipScanCandidate candidate : candidates) {
+            if (best == null || IndexMatch.COMPARATOR.compare(candidate.match(), best.match()) < 0) {
+                best = candidate;
             }
         }
+        return best;
+    }
 
-        // In the end we must build a tuple with the constants
+    /**
+     * The variable order produced by an index for a given lookup: the projected variables
+     * in index-slot order over the needed slots. Variables that participate in equality
+     * links are omitted because their direct slot order is not externally observable.
+     */
+    private static List<Var> producedOrder(TuplePatternSpec lookup, IndexMatch match, TupleMap tm) {
+        Node[] quad = lookup.tuple();
+        int neededSlots = match.numNeededSlots();
+        List<Var> order = new ArrayList<>(neededSlots);
+        for (int i = 0; i < neededSlots; ++i) {
+            int tupleSlot = tm.mapIdx(i);
+            Node node = quad[tupleSlot];
+            if (node.isVariable()) {
+                Var v = Var.alloc(node);
+                if (lookup.projection().contains(v) && !order.contains(v)) {
+                    order.add(v);
+                }
+            }
+        }
+        return order;
+    }
+
+    /** Execute a previously planned candidate. */
+    public static QueryIterator execCandidate(NodeTupleTable nodeTupleTable, boolean distinct, TuplePatternSpec lookup,
+                                              SkipScanCandidate candidate, ExecutionContext execCxt) {
+        NodeTable nodeTable = nodeTupleTable.getNodeTable();
+        TupleIndex bestIndex = candidate.index();
+        IndexMatch bestMatch = candidate.match();
+
+        TupleMap tm = bestIndex.getMapping();
+        IndexMap im = tryComputeIndexMap(lookup, bestMatch, tm, nodeTable);
+        if (im == null) {
+            // If null then at least one Node had no corresponding NodeId in the nodeTable.
+            return new QueryIterNullIterator(execCxt);
+        }
+
         if (logger.isDebugEnabled()) {
-            logger.debug("Best matching index: " + bestIndex);
+            logger.debug("IndexMap Match Data: " + im);
+            logger.debug("IndexMap Projection: " + Arrays.toString(im.proj()));
+            logger.debug("IndexMap Conditions: " + Arrays.toString(im.residualConditions()));
+            logger.debug("IndexMap Links: " + Arrays.toString(im.equalityLinks()));
+            logger.debug("IndexMap Query Tuple: " + Arrays.asList(im.tuple()));
         }
 
-        if (bestIndex != null && bestMatch != null) { // Redundancy: bestIndex != null actually implies bestMatch != null
-            TupleMap tm = bestIndex.getMapping();
-            IndexMap im = tryComputeIndexMap(lookup, bestMatch, tm, nodeTable);
-            if (im == null) {
-                // If null then at least one Node had no corresponding NodeId in the nodeTable.
-                return new QueryIterNullIterator(execCxt);
-            }
+        QueryIterator r = exec(bestIndex, nodeTable, lookup.projection(), im, execCxt);
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("IndexMap Match Data: " + im);
-                logger.debug("IndexMap Projection: " + Arrays.toString(im.proj()));
-                logger.debug("IndexMap Conditions: " + Arrays.toString(im.residualConditions()));
-                logger.debug("IndexMap Links: " + Arrays.toString(im.equalityLinks()));
-                logger.debug("IndexMap Query Tuple: " + Arrays.asList(im.tuple()));
-            }
-
-            QueryIterator r = exec(bestIndex, nodeTable, lookup.projection(), im, execCxt);
-
-            if (distinct && !bestMatch.canDoDirectDistinct()) {
-                r = new QueryIterDistinct(r, null, execCxt);
-            }
-            return r;
+        if (distinct && !bestMatch.canDoDirectDistinct()) {
+            r = new QueryIterDistinct(r, null, execCxt);
         }
-        return null;
+        return r;
     }
 
     /**
@@ -493,39 +556,236 @@ public class OpExecutorTDB2SkipScan {
     /** −−− Execution of OpGroupBy −−− */
 
     public static QueryIterator tryExec(OpGroup opGroup, QueryIterator input, ExecutionContext execCxt) {
-        if (opGroup.getGroupVars().getExprs().isEmpty() && opGroup.getAggregators().size() == 1) {
-            // We come here iff there is only grouping by simple variables (no expressions)
-            // and a single aggregator.
-            Var v = distinctVarOrNull(opGroup.getAggregators().getFirst().getAggregator());
-            if (v != null) {
-                JoinKey newProj = JoinKey.newBuilder()
-                    .addAll(opGroup.getGroupVars().getVars())
-                    .add(v)
-                    .build();
-                Op newOp = new OpDistinct(new OpProject(opGroup.getSubOp(), newProj));
+        // Only handle grouping by plain variables (no group-by expressions).
+        if (!opGroup.getGroupVars().getExprs().isEmpty()) {
+            return null;
+        }
 
-                PatternQuery patternQuery = PatternQuery.createOrNull(newOp);
-                if (patternQuery != null) {
-                    QueryIterator qIter = OpExecutorTDB2SkipScan.tryExec(patternQuery, input, execCxt);
+        List<ExprAggregator> aggregators = opGroup.getAggregators();
+        if (aggregators.isEmpty()) {
+            return null;
+        }
 
-                    if (qIter != null) {
-                        // Remove redundant distinct - it is ensured by the pattern execution.
-                        List<ExprAggregator> newAggs = List.of(convertToNonDistinct(opGroup.getAggregators().getFirst()));
-                        qIter = new QueryIterGroup(qIter, opGroup.getGroupVars(), newAggs, execCxt);
-                        return qIter;
-                    }
+        List<Var> groupVars = opGroup.getGroupVars().getVars();
+
+        // Determine the set of value variables (one skip-scan per distinct value var).
+        // All-or-nothing: every aggregator must be skip-scan-suitable (DISTINCT single-var,
+        // or MIN/MAX/SAMPLE). Aggregators that share a value var share a single skip-scan so
+        // each distinct value is emitted exactly once per group.
+        List<Var> valueVars = new ArrayList<>();
+        for (ExprAggregator eAgg : aggregators) {
+            Var v = suitableVarOrNull(eAgg.getAggregator());
+            if (v == null) {
+                return null;
+            }
+            if (!valueVars.contains(v)) {
+                valueVars.add(v);
+            }
+        }
+
+        // Build one pattern query per distinct value var.
+        List<PatternQuery> patternQueries = new ArrayList<>(valueVars.size());
+        for (Var v : valueVars) {
+            JoinKey newProj = JoinKey.newBuilder()
+                .addAll(groupVars)
+                .add(v)
+                .build();
+            Op newOp = new OpDistinct(new OpProject(opGroup.getSubOp(), newProj));
+            PatternQuery patternQuery = PatternQuery.createOrNull(newOp);
+            if (patternQuery == null) {
+                return null;
+            }
+            patternQueries.add(patternQuery);
+        }
+
+        // Non-distinct aggregators - the skip-scan input already yields each value once per group.
+        List<ExprAggregator> newAggs = new ArrayList<>(aggregators.size());
+        for (ExprAggregator eAgg : aggregators) {
+            newAggs.add(convertToNonDistinct(eAgg));
+        }
+
+        // The merged, grouped input is built per input binding. Index availability and the
+        // achievable group-by order do not depend on the concrete substituted values, so a
+        // static feasibility check is sufficient to decide whether to take over execution.
+        if (!isMergeFeasible(patternQueries, groupVars, execCxt)) {
+            return null;
+        }
+
+        QueryIterator merged = QueryIter.flatMap(input, b -> {
+            QueryIterator combined = buildMergedForBinding(patternQueries, valueVars, groupVars, b, execCxt);
+            return combined;
+        }, execCxt);
+
+        return new QueryIterGroup(merged, opGroup.getGroupVars(), newAggs, execCxt);
+    }
+
+    /**
+     * Static feasibility: every aggregator's pattern must have at least one usable index,
+     * and there must exist a single group-by variable order achievable by every aggregator
+     * so the per-aggregator skip-scans can be combined with a single order-aware merge.
+     */
+    private static boolean isMergeFeasible(List<PatternQuery> patternQueries, List<Var> groupVars, ExecutionContext execCxt) {
+        List<List<SkipScanCandidate>> perAgg = new ArrayList<>(patternQueries.size());
+        for (PatternQuery pq : patternQueries) {
+            NodeTupleTable table = resolveTable(pq.tuple().length, execCxt);
+            TuplePatternSpec lookup = TuplePatternSpec.create(pq.tuple(), pq.project());
+            List<SkipScanCandidate> candidates = planCandidates(table, lookup);
+            if (candidates.isEmpty()) {
+                return false;
+            }
+            perAgg.add(candidates);
+        }
+        return chooseCommonOrder(perAgg, groupVars) != null;
+    }
+
+    /**
+     * Find a group-by variable order achievable by at least one candidate of every
+     * aggregator. Returns that order (the group vars in a consistent sequence), or null.
+     *
+     * <p>Single-aggregator queries trivially succeed. For multiple aggregators, the leading
+     * group-by variables must appear in the same sequence in some candidate of each
+     * aggregator so prefix-based equal-group comparison in the merge is valid.</p>
+     */
+    private static List<Var> chooseCommonOrder(List<List<SkipScanCandidate>> perAgg, List<Var> groupVars) {
+        Set<Var> groupVarSet = new HashSet<>(groupVars);
+        // Candidate orders for the first aggregator, projected onto the group vars.
+        for (SkipScanCandidate c0 : perAgg.get(0)) {
+            List<Var> order = groupByOrder(c0, groupVarSet);
+            if (order == null) {
+                continue;
+            }
+            boolean okForAll = true;
+            for (int i = 1; i < perAgg.size(); ++i) {
+                if (!hasCandidateWithOrder(perAgg.get(i), groupVarSet, order)) {
+                    okForAll = false;
+                    break;
                 }
+            }
+            if (okForAll) {
+                return order;
             }
         }
         return null;
     }
 
-    private static Var distinctVarOrNull(Aggregator agg) {
-        Var v = null;
-        if (agg instanceof AggCountVarDistinct acvd) {
-            v = varOrNull(acvd); // ExprList guaranteed to have exactly one expr.
+    /**
+     * The group-by variable order produced by a candidate: the candidate's produced order
+     * restricted to the group vars. Returns null if not all group vars are covered (the
+     * candidate cannot establish the required grouping order).
+     */
+    private static List<Var> groupByOrder(SkipScanCandidate candidate, Set<Var> groupVarSet) {
+        List<Var> order = new ArrayList<>(groupVarSet.size());
+        for (Var v : candidate.order()) {
+            if (groupVarSet.contains(v) && !order.contains(v)) {
+                order.add(v);
+            }
         }
-        return v;
+        return order.size() == groupVarSet.size() ? order : null;
+    }
+
+    private static boolean hasCandidateWithOrder(List<SkipScanCandidate> candidates, Set<Var> groupVarSet, List<Var> wanted) {
+        for (SkipScanCandidate c : candidates) {
+            List<Var> order = groupByOrder(c, groupVarSet);
+            if (wanted.equals(order)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Build the merged, group-ordered iterator for a single input binding. Substitutes the
+     * binding into each aggregator's pattern, executes the candidate matching the common
+     * group-by order, and merges the resulting iterators. Returns an empty iterator if the
+     * binding cannot be planned.
+     */
+    private static QueryIterator buildMergedForBinding(List<PatternQuery> patternQueries, List<Var> valueVars,
+                                                       List<Var> groupVars, Binding b, ExecutionContext execCxt) {
+        List<List<SkipScanCandidate>> perAgg = new ArrayList<>(patternQueries.size());
+        List<TuplePatternSpec> lookups = new ArrayList<>(patternQueries.size());
+        List<NodeTupleTable> tables = new ArrayList<>(patternQueries.size());
+        List<Var> substValueVars = new ArrayList<>(patternQueries.size());
+
+        for (int i = 0; i < patternQueries.size(); ++i) {
+            PatternQuery subst = PatternQuery.substitute(patternQueries.get(i), b);
+            NodeTupleTable table = resolveTable(subst.tuple().length, execCxt);
+            TuplePatternSpec lookup = TuplePatternSpec.create(subst.tuple(), subst.project());
+            List<SkipScanCandidate> candidates = planCandidates(table, lookup);
+            if (candidates.isEmpty()) {
+                return new QueryIterNullIterator(execCxt);
+            }
+            perAgg.add(candidates);
+            lookups.add(lookup);
+            tables.add(table);
+            substValueVars.add(valueVars.get(i));
+        }
+
+        // The group vars that are still variable after substitution.
+        List<Var> remainingGroupVars = new ArrayList<>(groupVars.size());
+        for (Var v : groupVars) {
+            if (!b.contains(v)) {
+                remainingGroupVars.add(v);
+            }
+        }
+
+        List<Var> commonOrder = chooseCommonOrder(perAgg, remainingGroupVars);
+        if (commonOrder == null) {
+            return new QueryIterNullIterator(execCxt);
+        }
+
+        List<QueryIterator> iters = new ArrayList<>(patternQueries.size());
+        for (int i = 0; i < patternQueries.size(); ++i) {
+            SkipScanCandidate chosen = pickCandidateForOrder(perAgg.get(i), new HashSet<>(remainingGroupVars), commonOrder);
+            QueryIterator it = execCandidate(tables.get(i), patternQueries.get(i).distinct(), lookups.get(i), chosen, execCxt);
+            iters.add(it);
+        }
+
+        if (iters.size() == 1) {
+            return iters.get(0);
+        }
+        NodeTable nodeTable = tables.get(0).getNodeTable();
+        return new QueryIterMergeScanGroup(iters, substValueVars, commonOrder, nodeTable, execCxt);
+    }
+
+    private static SkipScanCandidate pickCandidateForOrder(List<SkipScanCandidate> candidates, Set<Var> groupVarSet, List<Var> wanted) {
+        for (SkipScanCandidate c : candidates) {
+            if (wanted.equals(groupByOrder(c, groupVarSet))) {
+                return c;
+            }
+        }
+        // Should not happen: feasibility was checked. Fall back to best candidate.
+        return pickBest(candidates);
+    }
+
+    /**
+     * If the aggregator is suitable for skip-scan execution then return its single
+     * value variable, else null.
+     *
+     * <p>An aggregator is suitable iff its result is invariant under removing duplicate
+     * values of a single value expression that is a plain variable. This covers every
+     * DISTINCT single-var aggregator (COUNT, SUM, AVG, MEDIAN, MODE, SAMPLE, GROUP_CONCAT)
+     * plus the non-distinct MIN, MAX and SAMPLE aggregators (for which DISTINCT is
+     * irrelevant).</p>
+     */
+    static Var suitableVarOrNull(Aggregator agg) {
+        if (!isSkipScanSuitable(agg)) {
+            return null;
+        }
+        return varOrNull(agg);
+    }
+
+    private static boolean isSkipScanSuitable(Aggregator agg) {
+        return agg instanceof AggCountVarDistinct
+            || agg instanceof AggSumDistinct
+            || agg instanceof AggAvgDistinct
+            || agg instanceof AggMedianDistinct
+            || agg instanceof AggModeDistinct
+            || agg instanceof AggSampleDistinct
+            || agg instanceof AggGroupConcatDistinct
+            // Non-distinct MIN/MAX/SAMPLE are distinct-invariant.
+            || agg instanceof AggMin
+            || agg instanceof AggMax
+            || agg instanceof AggSample;
     }
 
     private static ExprAggregator convertToNonDistinct(ExprAggregator eAgg) {
@@ -533,18 +793,40 @@ public class OpExecutorTDB2SkipScan {
         return new ExprAggregator(eAgg.getVar(), newAgg);
     }
 
+    /**
+     * Convert a (possibly DISTINCT) skip-scan-suitable aggregator into its non-distinct
+     * equivalent. Because the skip-scan input yields each value at most once per group,
+     * the non-distinct aggregator computes the same result. MIN/MAX/SAMPLE (already
+     * distinct-invariant) are returned unchanged.
+     */
     private static Aggregator convertToNonDistinct(Aggregator agg) {
-        if (agg instanceof AggCountVarDistinct acd) {
-            return AggregatorFactory.createCountExpr(false, acd.getExprList().get(0));
+        Expr expr = agg.getExprList().get(0);
+        if (agg instanceof AggCountVarDistinct) {
+            return AggregatorFactory.createCountExpr(false, expr);
+        } else if (agg instanceof AggSumDistinct) {
+            return AggregatorFactory.createSum(false, expr);
+        } else if (agg instanceof AggAvgDistinct) {
+            return AggregatorFactory.createAvg(false, expr);
+        } else if (agg instanceof AggMedianDistinct) {
+            return AggregatorFactory.createMedian(false, expr);
+        } else if (agg instanceof AggModeDistinct) {
+            return AggregatorFactory.createMode(false, expr);
+        } else if (agg instanceof AggSampleDistinct) {
+            return AggregatorFactory.createSample(false, expr);
+        } else if (agg instanceof AggGroupConcatDistinct acd) {
+            return AggregatorFactory.createGroupConcat(false, expr, acd.getSeparator(), null);
         }
+        // AggMin, AggMax, AggSample: already non-distinct and distinct-invariant.
         return agg;
     }
 
-    /** Extract the first argument of the agg's exprList. */
+    /** Extract the first argument of the agg's exprList as a Var, or null. */
     private static Var varOrNull(Aggregator agg) {
         ExprList el = agg.getExprList();
+        if (el == null || el.size() != 1) {
+            return null;
+        }
         Expr e = el.get(0);
-        Var v = e.isVariable() ? e.asVar() : null;
-        return v;
+        return e.isVariable() ? e.asVar() : null;
     }
 }

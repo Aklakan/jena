@@ -23,6 +23,7 @@ package org.apache.jena.tdb2.solver.index;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import org.apache.commons.collections4.iterators.PermutationIterator;
@@ -30,6 +31,7 @@ import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryFactory;
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.sparql.core.BasicPattern;
 import org.apache.jena.sparql.core.DatasetGraph;
@@ -41,6 +43,8 @@ import org.apache.jena.sparql.expr.Expr;
 import org.apache.jena.sparql.expr.ExprVar;
 import org.apache.jena.sparql.expr.aggregate.AggCountDistinct;
 import org.apache.jena.sparql.expr.aggregate.AggCountVarDistinct;
+import org.apache.jena.sparql.expr.aggregate.Aggregator;
+import org.apache.jena.sparql.expr.aggregate.AggregatorFactory;
 import org.apache.jena.sparql.sse.SSE;
 import org.apache.jena.sparql.syntax.ElementNamedGraph;
 import org.apache.jena.sparql.syntax.ElementTriplesBlock;
@@ -119,6 +123,197 @@ public class TestOpExecutorTDB2SkipScan
         addResourceObjectsAsSubjects(referenceDsg);
         List<DynamicTest> tests = createTestsCountVarDistinct(referenceDsg, testDsg, referenceDsg);
         return tests;
+    }
+
+    /** Dataset with numeric objects so SUM/AVG/MIN/MAX produce real values. */
+    public static DatasetGraph newNumericReferenceDsg() {
+        return SSE.parseDatasetGraph(
+                """
+                (dataset
+                    (graph
+                      (:s1 :p 1)
+                      (:s1 :p 2)
+                      (:s1 :p 2)
+                      (:s1 :p 3)
+                      (:s2 :p 5)
+                      (:s2 :p 5)
+                      (:s2 :p 10)
+                    )
+                )
+                """);
+    }
+
+    /**
+     * Numeric tests with concrete expected aggregate values, exercising the real merge and
+     * non-distinct accumulation paths against the reference engine.
+     */
+    @TestFactory
+    public List<DynamicTest> testNumericAggregates() {
+        DatasetGraph referenceDsg = newNumericReferenceDsg();
+        DatasetGraph testDsg = TDBInternal.getDatasetGraphTDB(TDB2Factory.createDataset());
+        try (AutoTxn writeTxn = Txn.autoTxn(testDsg, ReadWrite.WRITE);
+             AutoTxn readTxn = Txn.autoTxn(referenceDsg, ReadWrite.READ)) {
+            testDsg.addAll(referenceDsg);
+            writeTxn.commit();
+        }
+
+        String prefix = "PREFIX : <http://example/> ";
+        List<String> queries = List.of(
+            prefix + "SELECT ?s (SUM(DISTINCT ?o) AS ?x)   { ?s :p ?o } GROUP BY ?s",
+            prefix + "SELECT ?s (AVG(DISTINCT ?o) AS ?x)   { ?s :p ?o } GROUP BY ?s",
+            prefix + "SELECT ?s (MIN(?o) AS ?x)            { ?s :p ?o } GROUP BY ?s",
+            prefix + "SELECT ?s (MAX(?o) AS ?x)            { ?s :p ?o } GROUP BY ?s",
+            prefix + "SELECT ?s (COUNT(DISTINCT ?o) AS ?x) { ?s :p ?o } GROUP BY ?s",
+            prefix + "SELECT (SUM(DISTINCT ?o) AS ?x)      { ?s :p ?o }",
+            // Multi-aggregator over the same GROUP BY and same value var: shared skip-scan.
+            prefix + "SELECT ?s (COUNT(DISTINCT ?o) AS ?c) (SUM(DISTINCT ?o) AS ?sm) (MIN(?o) AS ?mn) (MAX(?o) AS ?mx) { ?s :p ?o } GROUP BY ?s"
+        );
+
+        return queries.stream().map(qs -> {
+            Query query = QueryFactory.create(qs);
+            return DynamicTest.dynamicTest(
+                getTestLabel() + " " + qs,
+                new GraphCompareSelectResultExecutable(getTestLabel(), query, referenceDsg, testDsg));
+        }).toList();
+    }
+
+    @TestFactory
+    public List<DynamicTest> testSumDistinct() {
+        return aggregatorTests((distinct, expr) -> AggregatorFactory.createSum(distinct, expr), true);
+    }
+
+    @TestFactory
+    public List<DynamicTest> testAvgDistinct() {
+        return aggregatorTests((distinct, expr) -> AggregatorFactory.createAvg(distinct, expr), true);
+    }
+
+    @TestFactory
+    public List<DynamicTest> testMin() {
+        return aggregatorTests((distinct, expr) -> AggregatorFactory.createMin(false, expr), false);
+    }
+
+    @TestFactory
+    public List<DynamicTest> testMax() {
+        return aggregatorTests((distinct, expr) -> AggregatorFactory.createMax(false, expr), false);
+    }
+
+    @TestFactory
+    public List<DynamicTest> testMultiAggregator() {
+        DatasetGraph referenceDsg = newReferenceDsg();
+        DatasetGraph testDsg = TDBInternal.getDatasetGraphTDB(TDB2Factory.createDataset());
+
+        try (AutoTxn writeTxn = Txn.autoTxn(testDsg, ReadWrite.WRITE);
+             AutoTxn readTxn = Txn.autoTxn(referenceDsg, ReadWrite.READ)) {
+            testDsg.addAll(referenceDsg);
+            writeTxn.commit();
+        }
+
+        addResourceObjectsAsSubjects(referenceDsg);
+
+        List<Quad> findQuads = createFindQuads(referenceDsg).toList();
+        List<DynamicTest> tests = findQuads.stream().flatMap(rawQuad -> {
+            Quad quad = anyToVar(rawQuad);
+            List<Var> vars = new ArrayList<>(4);
+            Vars.addVarsFromQuad(vars, quad);
+
+            // Need at least two vars: at least one for each of two aggregators.
+            if (vars.size() < 2) {
+                return Stream.of();
+            }
+            Query query = createQueryMultiAgg(quad, vars);
+            String queryStr = query.toString().replaceAll("\n", " ").replaceAll(" +", " ");
+            return Stream.of(DynamicTest.dynamicTest(
+                getTestLabel() + " " + queryStr,
+                new GraphCompareSelectResultExecutable(getTestLabel(), query, referenceDsg, testDsg)));
+        }).toList();
+        return tests;
+    }
+
+    /**
+     * Run comparison tests for a single-aggregator GROUP BY query, parameterized by an
+     * aggregator factory. When {@code distinct} is true the DISTINCT form is used.
+     */
+    private List<DynamicTest> aggregatorTests(BiFunction<Boolean, Expr, Aggregator> aggFactory, boolean distinct) {
+        DatasetGraph referenceDsg = newReferenceDsg();
+        DatasetGraph testDsg = TDBInternal.getDatasetGraphTDB(TDB2Factory.createDataset());
+
+        try (AutoTxn writeTxn = Txn.autoTxn(testDsg, ReadWrite.WRITE);
+             AutoTxn readTxn = Txn.autoTxn(referenceDsg, ReadWrite.READ)) {
+            testDsg.addAll(referenceDsg);
+            writeTxn.commit();
+        }
+
+        addResourceObjectsAsSubjects(referenceDsg);
+
+        List<Quad> findQuads = createFindQuads(referenceDsg).toList();
+        List<DynamicTest> tests = findQuads.stream().flatMap(rawQuad -> {
+            Quad quad = anyToVar(rawQuad);
+            List<Var> vars = new ArrayList<>(4);
+            Vars.addVarsFromQuad(vars, quad);
+
+            if (vars.isEmpty()) {
+                return Stream.of();
+            }
+
+            return Iter.asStream(new PermutationIterator<>(vars)).map(vs -> {
+                Query query = createQuerySingleAgg(quad, vs, aggFactory, distinct);
+                String queryStr = query.toString().replaceAll("\n", " ").replaceAll(" +", " ");
+                return DynamicTest.dynamicTest(
+                    getTestLabel() + " " + queryStr,
+                    new GraphCompareSelectResultExecutable(getTestLabel(), query, referenceDsg, testDsg));
+            });
+        }).toList();
+        return tests;
+    }
+
+    /**
+     * Create a single-aggregator GROUP BY query: the last var is the aggregator value var,
+     * the rest are group-by/projection vars.
+     */
+    public static Query createQuerySingleAgg(Quad nq, List<Var> vars, BiFunction<Boolean, Expr, Aggregator> aggFactory, boolean distinct) {
+        Node g = nq.getGraph();
+        List<Triple> ts = List.of(nq.asTriple());
+
+        Query q = new Query();
+        Var resultVar = Var.alloc("agg");
+
+        List<Var> groupVars = vars.subList(0, vars.size() - 1);
+        Var v = vars.getLast();
+        groupVars.forEach(q::addGroupBy);
+        q.addProjectVars(groupVars);
+        Expr aggExpr = q.allocAggregate(aggFactory.apply(distinct, new ExprVar(v)));
+        q.getProject().add(resultVar, aggExpr);
+
+        q.setQuerySelectType();
+        q.setQueryPattern(new ElementNamedGraph(g, new ElementTriplesBlock(new BasicPattern(ts))));
+        return q;
+    }
+
+    /**
+     * Create a query with two aggregators over the same GROUP BY:
+     * {@code (COUNT(DISTINCT ?a) AS ?c) (SUM(DISTINCT ?b) AS ?s)}. The first two vars are
+     * the two aggregator value vars; remaining vars are group-by/projection vars.
+     */
+    public static Query createQueryMultiAgg(Quad nq, List<Var> vars) {
+        Node g = nq.getGraph();
+        List<Triple> ts = List.of(nq.asTriple());
+
+        Query q = new Query();
+
+        Var a = vars.get(0);
+        Var b = vars.get(1);
+        List<Var> groupVars = vars.subList(2, vars.size());
+        groupVars.forEach(q::addGroupBy);
+        q.addProjectVars(groupVars);
+
+        Expr countExpr = q.allocAggregate(AggregatorFactory.createCountExpr(true, new ExprVar(a)));
+        q.getProject().add(Var.alloc("c"), countExpr);
+        Expr sumExpr = q.allocAggregate(AggregatorFactory.createSum(true, new ExprVar(b)));
+        q.getProject().add(Var.alloc("s"), sumExpr);
+
+        q.setQuerySelectType();
+        q.setQueryPattern(new ElementNamedGraph(g, new ElementTriplesBlock(new BasicPattern(ts))));
+        return q;
     }
 
     /**
