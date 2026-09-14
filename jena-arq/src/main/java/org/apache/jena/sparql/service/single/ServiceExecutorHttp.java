@@ -45,7 +45,7 @@ public class ServiceExecutorHttp
         boolean silent = opExecute.getSilent();
 
         try {
-            QueryIterator qIter = Service.exec(opExecute, context);
+            QueryIterator qIter = Service.exec(opExecute, context, execCxt);
 
             // ---- Execute
             if ( qIter == null )

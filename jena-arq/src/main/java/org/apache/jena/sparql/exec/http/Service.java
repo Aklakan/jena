@@ -43,12 +43,13 @@ import org.apache.jena.sparql.algebra.OpAsQuery ;
 import org.apache.jena.sparql.algebra.OpVars;
 import org.apache.jena.sparql.algebra.op.OpService ;
 import org.apache.jena.sparql.core.Var;
+import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.QueryIterator ;
 import org.apache.jena.sparql.engine.Rename;
 import org.apache.jena.sparql.engine.http.HttpParams;
 import org.apache.jena.sparql.engine.http.QueryExceptionHTTP;
 import org.apache.jena.sparql.engine.iterator.QueryIter;
-import org.apache.jena.sparql.engine.iterator.QueryIterPlainWrapper;
+import org.apache.jena.sparql.engine.iterator.QueryIterMaterializeQueryExec;
 import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.syntax.Element;
 import org.apache.jena.sparql.syntax.ElementSubQuery;
@@ -147,6 +148,10 @@ public class Service {
 
     /** Plain service execution. */
     public static QueryIterator exec(OpService op, Context context) {
+        return exec(op, context, null);
+    }
+
+    public static QueryIterator exec(OpService op, Context context, ExecutionContext execCxt) {
         checkServiceAllowed(context);
         //checkForOldParameters(context);
 
@@ -230,7 +235,7 @@ public class Service {
         // -- End setup
 
         // Build the execution
-        try (QueryExecHTTP qExec = QueryExecHTTP.newBuilder()
+        QueryExecHTTP qExec = QueryExecHTTP.newBuilder()
                 .endpoint(serviceURL)
                 .timeout(timeoutMillis, TimeUnit.MILLISECONDS)
                 .httpHeader(HttpNames.hUserAgent, HttpEnv.UserAgent)
@@ -239,17 +244,30 @@ public class Service {
                 .context(context)
                 .httpClient(httpClient)
                 .sendMode(querySendMode)
-                .build()) {
+                .build();
 
-            // Detach from the network stream.
-            RowSet rowSet = qExec.select().materialize();
-            QueryIterator qIter = QueryIterPlainWrapper.create(rowSet);
-            if (requiresRemapping)
-                qIter = QueryIter.map(qIter, varMapping);
-            return qIter;
-        } catch (HttpException ex) {
-            throw QueryExceptionHTTP.rewrap(ex);
+        // Build and access the rowSet here because
+        // some tests expect Service.exec to raise a QueryExceptionHTTP immediately.
+        RowSet rowSet;
+        try {
+            rowSet = qExec.select();
+            rowSet.hasNext();
+        } catch (Throwable t) {
+            try {
+                if (t instanceof HttpException ex) {
+                    throw QueryExceptionHTTP.rewrap(ex);
+                }
+                throw t;
+            } finally {
+                qExec.close();
+            }
         }
+
+        QueryIterator qIter = new QueryIterMaterializeQueryExec(execCxt, qExec, rowSet);
+        if (requiresRemapping)
+            qIter = QueryIter.map(qIter, varMapping);
+
+        return qIter;
     }
 
     private static HttpClient chooseHttpClient(String serviceURL, Context context) {

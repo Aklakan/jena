@@ -32,8 +32,9 @@
         <version>6.3.0-SNAPSHOT</version>
     </parent>
 
-    <properties> 
+    <properties>
         <node.version>v24.16.0</node.version>
+        <corepack.version>0.31.0</corepack.version>
         <automatic.module.name>org.apache.jena.fuseki.ui</automatic.module.name>
 
         <!-- 
@@ -93,6 +94,7 @@
                       <phase>generate-resources</phase>
                         <configuration>
                             <nodeVersion>${node.version}</nodeVersion>
+                            <corepackVersion>${corepack.version}</corepackVersion>
                             <!-- The Yarn version is managed by Corepack via the "packageManager"
                                  field in package.json -->
                         </configuration>
