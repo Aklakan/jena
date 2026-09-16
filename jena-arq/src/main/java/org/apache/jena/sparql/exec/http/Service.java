@@ -24,11 +24,13 @@ package org.apache.jena.sparql.exec.http;
 //import static org.apache.jena.query.ARQ.*;
 
 import java.net.http.HttpClient;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.atlas.logging.Log;
@@ -36,6 +38,7 @@ import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.http.HttpEnv;
 import org.apache.jena.http.RegistryHttpClient;
 import org.apache.jena.query.*;
+import org.apache.jena.riot.rowset.RowSetWrapper;
 import org.apache.jena.riot.web.HttpNames;
 import org.apache.jena.sparql.SystemARQ ;
 import org.apache.jena.sparql.algebra.Op ;
@@ -46,11 +49,13 @@ import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.engine.ExecutionContext;
 import org.apache.jena.sparql.engine.QueryIterator ;
 import org.apache.jena.sparql.engine.Rename;
+import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.http.HttpParams;
 import org.apache.jena.sparql.engine.http.QueryExceptionHTTP;
 import org.apache.jena.sparql.engine.iterator.QueryIter;
 import org.apache.jena.sparql.engine.iterator.QueryIterMaterializeQueryExec;
 import org.apache.jena.sparql.exec.RowSet;
+import org.apache.jena.sparql.exec.RowSetStream;
 import org.apache.jena.sparql.syntax.Element;
 import org.apache.jena.sparql.syntax.ElementSubQuery;
 import org.apache.jena.sparql.util.Context ;
@@ -147,11 +152,19 @@ public class Service {
     }
 
     /** Plain service execution. */
+    @Deprecated
     public static QueryIterator exec(OpService op, Context context) {
-        return exec(op, context, null);
+        ExecutionContext execCxt = ExecutionContext.create(context);
+    	return exec(op, context, execCxt);
     }
 
-    public static QueryIterator exec(OpService op, Context context, ExecutionContext execCxt) {
+    public static QueryIterator exec(OpService op, ExecutionContext execCxt) {
+        return exec(op, execCxt.getContext(), execCxt);
+    }
+
+    private static QueryIterator exec(OpService op, Context context, ExecutionContext execCxt) {
+    	// Refuse HTTP work if already cancelled
+    	execCxt.checkCancelSignal();
         checkServiceAllowed(context);
         //checkForOldParameters(context);
 
@@ -248,10 +261,20 @@ public class Service {
 
         // Build and access the rowSet here because
         // some tests expect Service.exec to raise a QueryExceptionHTTP immediately.
-        RowSet rowSet;
+        QueryIterator qIter = null;
         try {
-            rowSet = qExec.select();
-            rowSet.hasNext();
+            RowSet baseRowSet = qExec.select();
+            RowSet rowSet = new RowSetWrapper(baseRowSet) {
+            	@Override
+            	public Binding next() {
+            		execCxt.checkCancelSignal();
+            		return super.next();
+            	}
+            };
+
+            qIter = new QueryIterMaterializeQueryExec(execCxt, qExec, rowSet);
+            // hasNext checks connection and cancel; does not materialize.
+            qIter.hasNext();
         } catch (Throwable t) {
             try {
                 if (t instanceof HttpException ex) {
@@ -259,11 +282,15 @@ public class Service {
                 }
                 throw t;
             } finally {
-                qExec.close();
+            	// If qIter was constructed then closing it closes the backing qExec.
+            	if (qIter != null) {
+            		qIter.close();
+            	} else {
+            		qExec.close();
+            	}
             }
         }
 
-        QueryIterator qIter = new QueryIterMaterializeQueryExec(execCxt, qExec, rowSet);
         if (requiresRemapping)
             qIter = QueryIter.map(qIter, varMapping);
 

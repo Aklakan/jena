@@ -220,7 +220,7 @@ public class EvaluatorDispatch implements OpVisitor {
 
     @Override
     public void visit(OpService opService) {
-        QueryIterator qIter = Service.exec(opService, ARQ.getContext());
+        QueryIterator qIter = Service.exec(opService, evaluator.getExecContext());
         Table table = TableFactory.create(qIter);
         push(table);
     }

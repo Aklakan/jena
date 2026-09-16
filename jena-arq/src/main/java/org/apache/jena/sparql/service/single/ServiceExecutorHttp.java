@@ -41,11 +41,10 @@ public class ServiceExecutorHttp
     @Override
     public QueryIterator createExecution(OpService opExecute, OpService opOriginal,
                                          Binding binding, ExecutionContext execCxt) {
-        Context context = execCxt.getContext();
         boolean silent = opExecute.getSilent();
 
         try {
-            QueryIterator qIter = Service.exec(opExecute, context, execCxt);
+            QueryIterator qIter = Service.exec(opExecute, execCxt);
 
             // ---- Execute
             if ( qIter == null )

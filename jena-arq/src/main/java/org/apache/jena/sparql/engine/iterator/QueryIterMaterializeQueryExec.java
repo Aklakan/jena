@@ -67,6 +67,9 @@ public class QueryIterMaterializeQueryExec
     protected Binding moveToNextBinding() {
         try {
             if (materializeRowSet == null) {
+            	RowSet x = 
+            	
+            	// BUG - underling rows set does not have a cancel check!
                 materializeRowSet = baseRowSet.materialize();
             }
             return materializeRowSet.next();
