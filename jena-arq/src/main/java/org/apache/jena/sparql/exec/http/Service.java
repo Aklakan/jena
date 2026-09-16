@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.jena.atlas.lib.Creator;
 import org.apache.jena.atlas.logging.FmtLog;
 import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.atlas.web.HttpException;
@@ -54,6 +55,8 @@ import org.apache.jena.sparql.engine.http.HttpParams;
 import org.apache.jena.sparql.engine.http.QueryExceptionHTTP;
 import org.apache.jena.sparql.engine.iterator.QueryIter;
 import org.apache.jena.sparql.engine.iterator.QueryIterMaterializeQueryExec;
+import org.apache.jena.sparql.engine.iterator.QueryIterThreadedSubExecution;
+import org.apache.jena.sparql.exec.QueryExec;
 import org.apache.jena.sparql.exec.RowSet;
 import org.apache.jena.sparql.exec.RowSetStream;
 import org.apache.jena.sparql.syntax.Element;
@@ -247,49 +250,67 @@ public class Service {
 
         // -- End setup
 
+        Context finalContext = context;
+        Query finalQuery = query;
         // Build the execution
-        QueryExecHTTP qExec = QueryExecHTTP.newBuilder()
+        Creator<? extends QueryExec> qExecCreator = () -> QueryExecHTTP.newBuilder()
                 .endpoint(serviceURL)
                 .timeout(timeoutMillis, TimeUnit.MILLISECONDS)
                 .httpHeader(HttpNames.hUserAgent, HttpEnv.UserAgent)
-                .query(query)
+                .query(finalQuery)
                 .params(serviceParams)
-                .context(context)
+                .context(finalContext)
                 .httpClient(httpClient)
                 .sendMode(querySendMode)
                 .build();
 
-        // Build and access the rowSet here because
-        // some tests expect Service.exec to raise a QueryExceptionHTTP immediately.
-        QueryIterator qIter = null;
-        try {
-            RowSet baseRowSet = qExec.select();
-            RowSet rowSet = new RowSetWrapper(baseRowSet) {
-            	@Override
-            	public Binding next() {
-            		execCxt.checkCancelSignal();
-            		return super.next();
-            	}
-            };
+        QueryIterator qIter = new QueryIterThreadedSubExecution(execCxt, qExecCreator);
 
-            qIter = new QueryIterMaterializeQueryExec(execCxt, qExec, rowSet);
-            // hasNext checks connection and cancel; does not materialize.
-            qIter.hasNext();
-        } catch (Throwable t) {
-            try {
-                if (t instanceof HttpException ex) {
-                    throw QueryExceptionHTTP.rewrap(ex);
-                }
-                throw t;
-            } finally {
-            	// If qIter was constructed then closing it closes the backing qExec.
-            	if (qIter != null) {
-            		qIter.close();
-            	} else {
-            		qExec.close();
-            	}
-            }
-        }
+        try {
+        	qIter.hasNext();
+	    } catch (Throwable t) {
+	        try {
+	            if (t instanceof HttpException ex) {
+	                throw QueryExceptionHTTP.rewrap(ex);
+	            }
+	            throw t;
+	        } finally {
+	      		qIter.close();
+	        }
+	  }
+
+//
+//        // Build and access the rowSet here because
+//        // some tests expect Service.exec to raise a QueryExceptionHTTP immediately.
+//        QueryIterator qIter = null;
+//        try {
+//            RowSet baseRowSet = qExec.select();
+//            RowSet rowSet = new RowSetWrapper(baseRowSet) {
+//            	@Override
+//            	public Binding next() {
+//            		execCxt.checkCancelSignal();
+//            		return super.next();
+//            	}
+//            };
+//
+//            qIter = new QueryIterMaterializeQueryExec(execCxt, qExec, rowSet);
+//            // hasNext checks connection and cancel; does not materialize.
+//            qIter.hasNext();
+//        } catch (Throwable t) {
+//            try {
+//                if (t instanceof HttpException ex) {
+//                    throw QueryExceptionHTTP.rewrap(ex);
+//                }
+//                throw t;
+//            } finally {
+//            	// If qIter was constructed then closing it closes the backing qExec.
+//            	if (qIter != null) {
+//            		qIter.close();
+//            	} else {
+//            		qExec.close();
+//            	}
+//            }
+//        }
 
         if (requiresRemapping)
             qIter = QueryIter.map(qIter, varMapping);
